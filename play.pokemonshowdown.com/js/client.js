@@ -311,6 +311,9 @@ function toId() {
 					// success!
 					self.set('registered', data.curuser);
 					self.finishRename(name, data.assertion);
+
+					Storage.prefs('user', name);
+					Storage.prefs('pass', password);
 				} else {
 					// wrong password
 					if (special === '@gmail') {
@@ -342,7 +345,13 @@ function toId() {
 				 */
 				this.challstr = challstr;
 				var self = this;
-				$.post(this.getActionPHP(), {
+				self.loaded = true;
+				if (Storage.prefs('user') && Storage.prefs('pass')) {
+					self.passwordRename(Storage.prefs('user'), Storage.prefs('pass'));
+				} else {
+					app.topbar.updateUserbar();
+				}
+				/* $.post(this.getActionPHP(), {
 					act: 'upkeep',
 					challstr: this.challstr
 				}, Storage.safeJSON(function (data) {
@@ -362,7 +371,7 @@ function toId() {
 						});
 					}
 					self.finishRename(data.username, data.assertion);
-				}), 'text');
+				}), 'text'); */
 			}
 		},
 		/**
@@ -373,6 +382,10 @@ function toId() {
 				act: 'logout',
 				userid: this.get('userid')
 			});
+
+			Storage.prefs('user', false);
+			Storage.prefs('pass', false);
+
 			app.send('/logout');
 			app.trigger('init:socketclosed', "You have been logged out and disconnected.<br /><br />If you wanted to change your name while staying connected, use the 'Change Name' button or the '/nick' command.", false);
 			app.socket.close();
@@ -420,8 +433,9 @@ function toId() {
 			// 		type: 'modal'
 			// 	});
 			} else {
-				var hostname = document.location.hostname;
-				if (hostname === Config.routes.client || Config.testclient || hostname.startsWith(Config.defaultserver.id + '-')) {
+				/* var hostname = document.location.hostname;
+				if (hostname === Config.routes.client || Config.testclient || hostname.startsWith(Config.defaultserver.id + '-')) { */
+				if (document.location.hostname === Config.routes.client || Config.testclient) {
 					this.addRoom('rooms', null, true);
 				} else {
 					this.addRoom('lobby', null, true);
@@ -735,11 +749,12 @@ function toId() {
 		 */
 		initializeConnection: function () {
 			Storage.whenPrefsLoaded(function () {
-				app.setAFD();
+				//app.setAFD();
+				// if (Config.server.id !== 'smogtours') Config.server.afd = true;
 				app.connect();
 			});
 		},
-		setAFD: function (mode) {
+		/* setAFD: function (mode) {
 			if (mode === undefined) {
 				// init
 				if (typeof BattleTextAFD !== 'undefined') {
@@ -772,7 +787,7 @@ function toId() {
 			} else {
 				BattleText = BattleTextNotAFD;
 			}
-		},
+		}, */
 		/**
 		 * This function establishes the actual connection to the sim server.
 		 * This is intended to be called only by `initializeConnection` above.
@@ -1543,7 +1558,7 @@ function toId() {
 						var shortLinks = /^(rooms?suggestions?|suggestions?|adminrequests?|forgotpassword|bugs?(reports?)?|formatsuggestions|rules?|faq|credits?|news|privacy|contact|dex|(damage)?calc|insecure|replays?|devdiscord|smogdex|smogcord|forums?|trustworthy\-dlc\-link)$/;
 						if (target === 'appeal' || target === 'appeals') target = 'view-help-request--appeal';
 						if (target === 'report') target = 'view-help-request--report';
-						if (target === 'requesthelp') target = 'view-help-request--other';
+						//if (target === 'requesthelp') target = 'view-help-request--other';
 
 						if (isReplayLink) {
 							if (!target || target === 'search') {
