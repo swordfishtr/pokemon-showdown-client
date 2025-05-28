@@ -9,9 +9,7 @@ const rootDir = path.resolve(__dirname, '..');
 process.chdir(rootDir);
 
 if (!fs.existsSync('caches/pokemon-showdown')) {
-	child_process.execSync('git clone https://github.com/smogon/pokemon-showdown.git', {
-		cwd: 'caches',
-	});
+	throw new Error('Pokemon Showdown missing from caches. Manually clone and checkout hog');
 }
 
 process.stdout.write("Syncing data from Git repository... ");
