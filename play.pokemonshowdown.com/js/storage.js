@@ -537,6 +537,7 @@ Storage.initTestClient = function () {
 				data.sid = sid;
 				get(uri, data, callback, type);
 			} else {
+				console.log(`=a=${uri}`);
 				app.addPopup(ProxyPopup, { uri: uri, callback: callback });
 			}
 		};
@@ -559,6 +560,7 @@ Storage.initTestClient = function () {
 					src += '<input type=hidden name="' + i + '" value="' + BattleLog.escapeHTML(data[i]) + '">';
 				}
 				src += '<input type=submit value="Please click this button first."></form></body></html>';
+				console.log(`=b=${"data:text/html;charset=UTF-8," + encodeURIComponent(src)}`);
 				app.addPopup(ProxyPopup, { uri: "data:text/html;charset=UTF-8," + encodeURIComponent(src), callback: callback });
 			}
 		};
