@@ -1,0 +1,1 @@
+../../pokemonshowdown.com

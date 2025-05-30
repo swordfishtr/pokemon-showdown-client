@@ -1,0 +1,1 @@
+../../replay.pokemonshowdown.com
