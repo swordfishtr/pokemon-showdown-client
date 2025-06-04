@@ -561,6 +561,7 @@ abstract class BattleTypedSearch<T extends SearchType> {
 	 * "Doubles" and "Let's Go" from the name.
 	 */
 	format = '' as ID;
+	formatFull = '' as ID;
 	/**
 	 * `species` is the second of two base filters. It constrains results to
 	 * things that species can use, and affects the default sort.
@@ -593,6 +594,7 @@ abstract class BattleTypedSearch<T extends SearchType> {
 
 	constructor(searchType: T, format = '' as ID, speciesOrSet: ID | Dex.PokemonSet = '' as ID) {
 		this.searchType = searchType;
+		this.formatFull = format;
 
 		this.baseResults = null;
 		this.baseIllegalResults = null;
@@ -975,6 +977,25 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 	getBaseResults(): SearchRow[] {
 		const format = this.format;
 		if (!format) return this.getDefaultResults();
+
+		console.log(`getBaseResults() for ${this.formatFull} shortly ${format}`);
+
+		// let table = BattleTeambuilderTable[format];
+		// if (!table.tierSet) {
+		// 	table.tierSet = table.tiers.map((r: any) => {
+		// 		if (typeof r === 'string') return ['pokemon', r];
+		// 		return [r[0], r[1]];
+		// 	});
+		// 	table.tiers = null;
+		// }
+
+		// let tierSet: SearchRow[] = table.tierSet;
+		// if(table.whitelist) tierSet = tierSet.filter(([type, id]) => (id in table.whitelist));
+		// if(table.blacklist) tierSet = tierSet.filter(([type, id]) => !(id in table.blacklist));
+
+		// return tierSet;
+
+
 		const isVGCOrBS = format.startsWith('battlespot') || format.startsWith('bss') ||
 			format.startsWith('battlestadium') || format.startsWith('vgc');
 		const isHackmons = format.includes('hackmons') || format.endsWith('bh');
