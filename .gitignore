@@ -5,6 +5,7 @@ npm-debug.log
 /config/
 /vendor/
 /caches/
+*.old
 
 /play.pokemonshowdown.com/dirindex/webfonts/
 /play.pokemonshowdown.com/dirindex/fontawesome5*
