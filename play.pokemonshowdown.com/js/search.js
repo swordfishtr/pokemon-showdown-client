@@ -297,7 +297,7 @@
 		var buf = '<li class="result"><a' + attrs + ' data-entry="pokemon|' + BattleLog.escapeHTML(pokemon.name) + '">';
 
 		// number
-		var tier = this.engine ? this.engine.getTier(pokemon) : pokemon.num;
+		var tier = this.engine ? this.engine.getNumCol(pokemon) : pokemon.num;
 		// buf += '<span class="col numcol">' + (pokemon.num >= 0 ? pokemon.num : 'CAP') + '</span> ';
 		buf += '<span class="col numcol">' + tier + '</span> ';
 
