@@ -221,8 +221,8 @@ export class DexSearch {
 		return this.typedSearch?.illegalReasons?.[id] || null;
 	}
 
-	getTier(species: Dex.Species) {
-		return this.typedSearch?.getTier(species) || '';
+	getNumCol(species: Dex.Species) {
+		return this.typedSearch?.getNumCol(species) || '';
 	}
 
 	textSearch(query: string): SearchRow[] {
@@ -864,49 +864,9 @@ abstract class BattleTypedSearch<T extends SearchType> {
 		}
 		return false;
 	}
-	getTier(pokemon: Dex.Species) {
-		if (this.formatType === 'metronome') {
-			return pokemon.num >= 0 ? String(pokemon.num) : pokemon.tier;
-		}
-		let table = window.BattleTeambuilderTable;
-		const gen = this.dex.gen;
-		const tableKey = this.formatType === 'doubles' ? `gen${gen}doubles` :
-			this.formatType === 'letsgo' ? 'gen7letsgo' :
-			this.formatType === 'bdsp' ? 'gen8bdsp' :
-			this.formatType === 'bdspdoubles' ? 'gen8bdspdoubles' :
-			this.formatType === 'bw1' ? 'gen5bw1' :
-			this.formatType === 'rs' ? 'gen3rs' :
-			this.formatType === 'nfe' ? `gen${gen}nfe` :
-			this.formatType === 'lc' ? `gen${gen}lc` :
-			this.formatType === 'ssdlc1' ? 'gen8dlc1' :
-			this.formatType === 'ssdlc1doubles' ? 'gen8dlc1doubles' :
-			this.formatType === 'predlc' ? 'gen9predlc' :
-			this.formatType === 'predlcdoubles' ? 'gen9predlcdoubles' :
-			this.formatType === 'predlcnatdex' ? 'gen9predlcnatdex' :
-			this.formatType === 'svdlc1' ? 'gen9dlc1' :
-			this.formatType === 'svdlc1doubles' ? 'gen9dlc1doubles' :
-			this.formatType === 'svdlc1natdex' ? 'gen9dlc1natdex' :
-			this.formatType === 'natdex' ? `gen${gen}natdex` :
-			this.formatType === 'stadium' ? `gen${gen}stadium${gen > 1 ? gen : ''}` :
-			`gen${gen}`;
-		if (table?.[tableKey]) {
-			table = table[tableKey];
-		}
-		if (!table) return pokemon.tier;
-
-		let id = pokemon.id;
-		if (id in table.overrideTier) {
-			return table.overrideTier[id];
-		}
-		if (id.endsWith('totem') && id.slice(0, -5) in table.overrideTier) {
-			return table.overrideTier[id.slice(0, -5)];
-		}
-		id = toID(pokemon.baseSpecies);
-		if (id in table.overrideTier) {
-			return table.overrideTier[id];
-		}
-
-		return pokemon.tier;
+	getNumCol(pokemon: Dex.Species): string {
+		// TODO: 35moves custom number column
+		return String(pokemon.num);
 	}
 	eggMovesOnly(child: ID, father: ID) {
 		if (this.dex.species.get(child).baseSpecies === this.dex.species.get(father).baseSpecies) return false;
@@ -1220,7 +1180,7 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 				if (species.eggGroups[0] !== value && species.eggGroups[1] !== value) return false;
 				break;
 			case 'tier':
-				if (this.getTier(species) !== value) return false;
+				if (this.getNumCol(species) !== value) return false;
 				break;
 			case 'ability':
 				if (!Dex.hasAbility(species, value)) return false;

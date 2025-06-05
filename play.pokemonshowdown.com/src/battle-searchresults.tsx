@@ -73,7 +73,7 @@ export class PSSearchResults extends preact.Component<{
 				href={`${this.URL_ROOT}pokemon/${id}`} class={id === this.speciesId ? 'cur' : ''}
 				data-target="push" data-entry={`pokemon|${pokemon.name}`}
 			>
-				<span class="col numcol">{search.getTier(pokemon)}</span>
+				<span class="col numcol">{search.getNumCol(pokemon)}</span>
 
 				<span class="col iconcol">
 					<span class="pixelated" style={Dex.getPokemonIcon(pokemon.id)}></span>
@@ -90,7 +90,7 @@ export class PSSearchResults extends preact.Component<{
 				href={`${this.URL_ROOT}pokemon/${id}`} class={id === this.speciesId ? 'cur' : ''}
 				data-target="push" data-entry={`pokemon|${pokemon.name}`}
 			>
-				<span class="col numcol">{search.getTier(pokemon)}</span>
+				<span class="col numcol">{search.getNumCol(pokemon)}</span>
 
 				<span class="col iconcol">
 					<span class="pixelated" style={Dex.getPokemonIcon(pokemon.id)}></span>
