@@ -976,11 +976,119 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 	}
 	getBaseResults(): SearchRow[] {
 		const format = this.format;
-		if (!format) return this.getDefaultResults();
+		const defaultResults = this.getDefaultResults();
+		if (!format) return defaultResults;
 
+		// gen9nd35pokesjun2025 shortly 35pokesjun2025
 		console.log(`getBaseResults() for ${this.formatFull} shortly ${format}`);
 
-		// let table = BattleTeambuilderTable[format];
+		const dex = this.dex;
+		let table = BattleTeambuilderTable;
+		if(dex.gen < 9 && !this.formatType) {
+			table = table[`gen${dex.gen}`];
+		}
+		else if(this.formatType === 'natdex') {
+			table = table[`gen${dex.gen}natdex`];
+		}
+		else if(this.formatType === 'doubles') {
+			table = table[`gen${dex.gen}doubles`];
+		}
+		else if(this.formatType === 'bdsp') {
+			table = table['gen8bdsp'];
+		}
+		else if(this.formatType === 'letsgo') {
+			table = table['gen7letsgo'];
+		}
+		else if(this.formatType === 'bw1') {
+			table = table['gen5bw1'];
+		}
+		else if(this.formatType === 'rs') {
+			table = table['gen3rs'];
+		}
+
+		if(!table) {
+			console.log(`Missing table for ${this.formatFull}`);
+			table = BattleTeambuilderTable;
+		}
+
+		let results = defaultResults;
+		if(table.whitelists?.[format]) results = results.filter(([type, id]) => table.whitelists[format].includes(id));
+		if(table.blacklists?.[format]) results = results.filter(([type, id]) => !table.blacklists[format].includes(id));
+
+		return results;
+
+		//////////////////////
+
+		// const isVGCOrBS = format.startsWith('battlespot') || format.startsWith('bss') ||
+		// 	format.startsWith('battlestadium') || format.startsWith('vgc');
+		// const isHackmons = format.includes('hackmons') || format.endsWith('bh');
+		// let isDoublesOrBS = isVGCOrBS || this.formatType?.includes('doubles');
+		// const dex = this.dex;
+
+		// let table = BattleTeambuilderTable;
+		// if ((format.endsWith('cap') || format.endsWith('caplc')) && dex.gen < 9) {
+		// 	table = table[`gen${dex.gen}`];
+		// } else if (isVGCOrBS) {
+		// 	table = table[`gen${dex.gen}vgc`];
+		// } else if (dex.gen === 9 && isHackmons && !this.formatType) {
+		// 	table = table['bh'];
+		// } else if (
+		// 	table[`gen${dex.gen}doubles`] && dex.gen > 4 &&
+		// 	this.formatType !== 'letsgo' && this.formatType !== 'bdspdoubles' &&
+		// 	this.formatType !== 'ssdlc1doubles' && this.formatType !== 'predlcdoubles' &&
+		// 	this.formatType !== 'svdlc1doubles' && !this.formatType?.includes('natdex') &&
+		// 	(
+		// 		format.includes('doubles') || format.includes('triples') ||
+		// 		format === 'freeforall' || format.startsWith('ffa') ||
+		// 		format === 'partnersincrime'
+		// 	)
+		// ) {
+		// 	table = table[`gen${dex.gen}doubles`];
+		// 	isDoublesOrBS = true;
+		// } else if (dex.gen < 9 && !this.formatType) {
+		// 	table = table[`gen${dex.gen}`];
+		// } else if (this.formatType?.startsWith('bdsp')) {
+		// 	table = table['gen8' + this.formatType];
+		// } else if (this.formatType === 'letsgo') {
+		// 	table = table['gen7letsgo'];
+		// } else if (this.formatType === 'bw1') {
+		// 	table = table['gen5bw1'];
+		// } else if (this.formatType === 'rs') {
+		// 	table = table['gen3rs'];
+		// } else if (this.formatType === 'natdex') {
+		// 	table = table[`gen${dex.gen}natdex`];
+		// } else if (this.formatType === 'metronome') {
+		// 	table = table[`gen${dex.gen}metronome`];
+		// } else if (this.formatType === 'nfe') {
+		// 	table = table[`gen${dex.gen}nfe`];
+		// } else if (this.formatType === 'lc') {
+		// 	table = table[`gen${dex.gen}lc`];
+		// } else if (this.formatType?.startsWith('ssdlc1')) {
+		// 	if (this.formatType.includes('doubles')) {
+		// 		table = table['gen8dlc1doubles'];
+		// 	} else {
+		// 		table = table['gen8dlc1'];
+		// 	}
+		// } else if (this.formatType?.startsWith('predlc')) {
+		// 	if (this.formatType.includes('doubles')) {
+		// 		table = table['gen9predlcdoubles'];
+		// 	} else if (this.formatType.includes('natdex')) {
+		// 		table = table['gen9predlcnatdex'];
+		// 	} else {
+		// 		table = table['gen9predlc'];
+		// 	}
+		// } else if (this.formatType?.startsWith('svdlc1')) {
+		// 	if (this.formatType.includes('doubles')) {
+		// 		table = table['gen9dlc1doubles'];
+		// 	} else if (this.formatType.includes('natdex')) {
+		// 		table = table['gen9dlc1natdex'];
+		// 	} else {
+		// 		table = table['gen9dlc1'];
+		// 	}
+		// } else if (this.formatType === 'stadium') {
+		// 	table = table[`gen${dex.gen}stadium${dex.gen > 1 ? dex.gen : ''}`];
+		// }
+
 		// if (!table.tierSet) {
 		// 	table.tierSet = table.tiers.map((r: any) => {
 		// 		if (typeof r === 'string') return ['pokemon', r];
@@ -988,201 +1096,116 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 		// 	});
 		// 	table.tiers = null;
 		// }
-
 		// let tierSet: SearchRow[] = table.tierSet;
-		// if(table.whitelist) tierSet = tierSet.filter(([type, id]) => (id in table.whitelist));
-		// if(table.blacklist) tierSet = tierSet.filter(([type, id]) => !(id in table.blacklist));
+		// let slices: { [k: string]: number } = table.formatSlices;
+		// if (format === 'ubers' || format === 'uber' || format === 'ubersuu' || format === 'nationaldexdoubles') {
+		// 	tierSet = tierSet.slice(slices.Uber);
+		// } else if (isVGCOrBS || (isHackmons && dex.gen === 9 && !this.formatType)) {
+		// 	if (format.endsWith('series13') || isHackmons) {
+		// 		// Show Mythicals
+		// 	} else if (
+		// 		format === 'vgc2010' || format === 'vgc2016' || format.startsWith('vgc2019') ||
+		// 		format === 'vgc2022' || format.endsWith('regg') || format.endsWith('regi')
+		// 	) {
+		// 		tierSet = tierSet.slice(slices["Restricted Legendary"]);
+		// 	} else {
+		// 		tierSet = tierSet.slice(slices.Regular);
+		// 	}
+
+		// 	if (format.endsWith('regh')) {
+		// 		tierSet = tierSet.filter(([type, id]) => {
+		// 			const tags = Dex.species.get(Dex.species.get(id).baseSpecies).tags;
+		// 			return !tags.includes('Sub-Legendary') && !tags.includes('Paradox') &&
+		// 				// The game does not classify these as Paradox Pokemon (Booster Energy can be knocked off)
+		// 				!['gougingfire', 'ironboulder', 'ironcrown', 'ragingbolt'].includes(id);
+		// 		});
+		// 	}
+		// } else if (format === 'ou') tierSet = tierSet.slice(slices.OU);
+		// else if (format === 'uubl') tierSet = tierSet.slice(slices.UUBL);
+		// else if (format === 'uu') tierSet = tierSet.slice(slices.UU);
+		// else if (format === 'ru') tierSet = tierSet.slice(slices.RU || slices.UU);
+		// else if (format === 'nu') tierSet = tierSet.slice(slices.NU || slices.RU || slices.UU);
+		// else if (format === 'pu') tierSet = tierSet.slice(slices.PU || slices.NU);
+		// else if (format === 'zu' && dex.gen === 5) tierSet = tierSet.slice(slices.PU || slices.NU);
+		// else if (format === 'zu') tierSet = tierSet.slice(slices.ZU || slices.PU || slices.NU);
+		// else if (
+		// 	format === 'lc' || format === 'lcuu' || format.startsWith('lc') || (format !== 'caplc' && format.endsWith('lc'))
+		// ) tierSet = tierSet.slice(slices.LC);
+		// else if (format === 'cap' || format.endsWith('cap')) {
+		// 	tierSet = tierSet.slice(0, slices.AG || slices.Uber).concat(tierSet.slice(slices.OU));
+		// } else if (format === 'caplc') {
+		// 	tierSet = tierSet.slice(slices['CAP LC'], slices.AG || slices.Uber).concat(tierSet.slice(slices.LC));
+		// } else if (format === 'anythinggoes' || format.endsWith('ag') || format.startsWith('ag')) {
+		// 	tierSet = tierSet.slice(slices.AG);
+		// } else if (isHackmons && (dex.gen < 9 || this.formatType === 'natdex')) {
+		// 	tierSet = tierSet.slice(slices.AG || slices.Uber);
+		// } else if (format === 'monotype' || format.startsWith('monothreat')) tierSet = tierSet.slice(slices.Uber);
+		// else if (format === 'doublesubers') tierSet = tierSet.slice(slices.DUber);
+		// else if (format === 'doublesou' && dex.gen > 4) tierSet = tierSet.slice(slices.DOU);
+		// else if (format === 'doublesuu') tierSet = tierSet.slice(slices.DUU);
+		// else if (format === 'doublesnu') tierSet = tierSet.slice(slices.DNU || slices.DUU);
+		// else if (this.formatType?.startsWith('bdsp') || this.formatType === 'letsgo' || this.formatType === 'stadium') {
+		// 	tierSet = tierSet.slice(slices.Uber);
+		// } else if (this.formatType === 'rs') {
+		// 	tierSet = tierSet.slice(slices.Regular);
+		// } else if (!isDoublesOrBS) {
+		// 	tierSet = [
+		// 		...tierSet.slice(slices.OU, slices.UU),
+		// 		...tierSet.slice(slices.AG, slices.Uber),
+		// 		...tierSet.slice(slices.Uber, slices.OU),
+		// 		...tierSet.slice(slices.UU),
+		// 	];
+		// } else {
+		// 	tierSet = [
+		// 		...tierSet.slice(slices.DOU, slices.DUU),
+		// 		...tierSet.slice(slices.DUber, slices.DOU),
+		// 		...tierSet.slice(slices.DUU),
+		// 	];
+		// }
+		// if (format === 'ubersuu' && table.ubersUUBans) {
+		// 	tierSet = tierSet.filter(([type, id]) => {
+		// 		if (id in table.ubersUUBans) return false;
+		// 		return true;
+		// 	});
+		// }
+		// if (format === 'doubles' && this.formatType === 'natdex' && table.ndDoublesBans) {
+		// 	tierSet = tierSet.filter(([type, id]) => {
+		// 		if (id in table.ndDoublesBans) return false;
+		// 		return true;
+		// 	});
+		// }
+		// if (format === '35pokes' && table.thirtyfivePokes) {
+		// 	tierSet = tierSet.filter(([type, id]) => {
+		// 		if (id in table.thirtyfivePokes) return true;
+		// 		return false;
+		// 	});
+		// }
+		// if (dex.gen >= 5) {
+		// 	if ((format === 'monotype' || format.startsWith('monothreat')) && table.monotypeBans) {
+		// 		tierSet = tierSet.filter(([type, id]) => {
+		// 			if (id in table.monotypeBans) return false;
+		// 			return true;
+		// 		});
+		// 	}
+		// }
+		// if (format === 'zu' && dex.gen === 5 && table.gen5zuBans) {
+		// 	tierSet = tierSet.filter(([type, id]) => {
+		// 		if (id in table.gen5zuBans) return false;
+		// 		return true;
+		// 	});
+		// }
+
+		// // Filter out Gmax Pokemon from standard tier selection
+		// if (!(/^(battlestadium|vgc|doublesubers)/g.test(format) || (format === 'doubles' && this.formatType === 'natdex'))) {
+		// 	tierSet = tierSet.filter(([type, id]) => {
+		// 		if (type === 'header' && id === 'DUber by technicality') return false;
+		// 		if (type === 'header' && id === 'Uber by technicality') return false;
+		// 		if (type === 'pokemon') return !id.endsWith('gmax');
+		// 		return true;
+		// 	});
+		// }
 
 		// return tierSet;
-
-
-		const isVGCOrBS = format.startsWith('battlespot') || format.startsWith('bss') ||
-			format.startsWith('battlestadium') || format.startsWith('vgc');
-		const isHackmons = format.includes('hackmons') || format.endsWith('bh');
-		let isDoublesOrBS = isVGCOrBS || this.formatType?.includes('doubles');
-		const dex = this.dex;
-
-		let table = BattleTeambuilderTable;
-		if ((format.endsWith('cap') || format.endsWith('caplc')) && dex.gen < 9) {
-			table = table[`gen${dex.gen}`];
-		} else if (isVGCOrBS) {
-			table = table[`gen${dex.gen}vgc`];
-		} else if (dex.gen === 9 && isHackmons && !this.formatType) {
-			table = table['bh'];
-		} else if (
-			table[`gen${dex.gen}doubles`] && dex.gen > 4 &&
-			this.formatType !== 'letsgo' && this.formatType !== 'bdspdoubles' &&
-			this.formatType !== 'ssdlc1doubles' && this.formatType !== 'predlcdoubles' &&
-			this.formatType !== 'svdlc1doubles' && !this.formatType?.includes('natdex') &&
-			(
-				format.includes('doubles') || format.includes('triples') ||
-				format === 'freeforall' || format.startsWith('ffa') ||
-				format === 'partnersincrime'
-			)
-		) {
-			table = table[`gen${dex.gen}doubles`];
-			isDoublesOrBS = true;
-		} else if (dex.gen < 9 && !this.formatType) {
-			table = table[`gen${dex.gen}`];
-		} else if (this.formatType?.startsWith('bdsp')) {
-			table = table['gen8' + this.formatType];
-		} else if (this.formatType === 'letsgo') {
-			table = table['gen7letsgo'];
-		} else if (this.formatType === 'bw1') {
-			table = table['gen5bw1'];
-		} else if (this.formatType === 'rs') {
-			table = table['gen3rs'];
-		} else if (this.formatType === 'natdex') {
-			table = table[`gen${dex.gen}natdex`];
-		} else if (this.formatType === 'metronome') {
-			table = table[`gen${dex.gen}metronome`];
-		} else if (this.formatType === 'nfe') {
-			table = table[`gen${dex.gen}nfe`];
-		} else if (this.formatType === 'lc') {
-			table = table[`gen${dex.gen}lc`];
-		} else if (this.formatType?.startsWith('ssdlc1')) {
-			if (this.formatType.includes('doubles')) {
-				table = table['gen8dlc1doubles'];
-			} else {
-				table = table['gen8dlc1'];
-			}
-		} else if (this.formatType?.startsWith('predlc')) {
-			if (this.formatType.includes('doubles')) {
-				table = table['gen9predlcdoubles'];
-			} else if (this.formatType.includes('natdex')) {
-				table = table['gen9predlcnatdex'];
-			} else {
-				table = table['gen9predlc'];
-			}
-		} else if (this.formatType?.startsWith('svdlc1')) {
-			if (this.formatType.includes('doubles')) {
-				table = table['gen9dlc1doubles'];
-			} else if (this.formatType.includes('natdex')) {
-				table = table['gen9dlc1natdex'];
-			} else {
-				table = table['gen9dlc1'];
-			}
-		} else if (this.formatType === 'stadium') {
-			table = table[`gen${dex.gen}stadium${dex.gen > 1 ? dex.gen : ''}`];
-		}
-
-		if (!table.tierSet) {
-			table.tierSet = table.tiers.map((r: any) => {
-				if (typeof r === 'string') return ['pokemon', r];
-				return [r[0], r[1]];
-			});
-			table.tiers = null;
-		}
-		let tierSet: SearchRow[] = table.tierSet;
-		let slices: { [k: string]: number } = table.formatSlices;
-		if (format === 'ubers' || format === 'uber' || format === 'ubersuu' || format === 'nationaldexdoubles') {
-			tierSet = tierSet.slice(slices.Uber);
-		} else if (isVGCOrBS || (isHackmons && dex.gen === 9 && !this.formatType)) {
-			if (format.endsWith('series13') || isHackmons) {
-				// Show Mythicals
-			} else if (
-				format === 'vgc2010' || format === 'vgc2016' || format.startsWith('vgc2019') ||
-				format === 'vgc2022' || format.endsWith('regg') || format.endsWith('regi')
-			) {
-				tierSet = tierSet.slice(slices["Restricted Legendary"]);
-			} else {
-				tierSet = tierSet.slice(slices.Regular);
-			}
-
-			if (format.endsWith('regh')) {
-				tierSet = tierSet.filter(([type, id]) => {
-					const tags = Dex.species.get(Dex.species.get(id).baseSpecies).tags;
-					return !tags.includes('Sub-Legendary') && !tags.includes('Paradox') &&
-						// The game does not classify these as Paradox Pokemon (Booster Energy can be knocked off)
-						!['gougingfire', 'ironboulder', 'ironcrown', 'ragingbolt'].includes(id);
-				});
-			}
-		} else if (format === 'ou') tierSet = tierSet.slice(slices.OU);
-		else if (format === 'uubl') tierSet = tierSet.slice(slices.UUBL);
-		else if (format === 'uu') tierSet = tierSet.slice(slices.UU);
-		else if (format === 'ru') tierSet = tierSet.slice(slices.RU || slices.UU);
-		else if (format === 'nu') tierSet = tierSet.slice(slices.NU || slices.RU || slices.UU);
-		else if (format === 'pu') tierSet = tierSet.slice(slices.PU || slices.NU);
-		else if (format === 'zu' && dex.gen === 5) tierSet = tierSet.slice(slices.PU || slices.NU);
-		else if (format === 'zu') tierSet = tierSet.slice(slices.ZU || slices.PU || slices.NU);
-		else if (
-			format === 'lc' || format === 'lcuu' || format.startsWith('lc') || (format !== 'caplc' && format.endsWith('lc'))
-		) tierSet = tierSet.slice(slices.LC);
-		else if (format === 'cap' || format.endsWith('cap')) {
-			tierSet = tierSet.slice(0, slices.AG || slices.Uber).concat(tierSet.slice(slices.OU));
-		} else if (format === 'caplc') {
-			tierSet = tierSet.slice(slices['CAP LC'], slices.AG || slices.Uber).concat(tierSet.slice(slices.LC));
-		} else if (format === 'anythinggoes' || format.endsWith('ag') || format.startsWith('ag')) {
-			tierSet = tierSet.slice(slices.AG);
-		} else if (isHackmons && (dex.gen < 9 || this.formatType === 'natdex')) {
-			tierSet = tierSet.slice(slices.AG || slices.Uber);
-		} else if (format === 'monotype' || format.startsWith('monothreat')) tierSet = tierSet.slice(slices.Uber);
-		else if (format === 'doublesubers') tierSet = tierSet.slice(slices.DUber);
-		else if (format === 'doublesou' && dex.gen > 4) tierSet = tierSet.slice(slices.DOU);
-		else if (format === 'doublesuu') tierSet = tierSet.slice(slices.DUU);
-		else if (format === 'doublesnu') tierSet = tierSet.slice(slices.DNU || slices.DUU);
-		else if (this.formatType?.startsWith('bdsp') || this.formatType === 'letsgo' || this.formatType === 'stadium') {
-			tierSet = tierSet.slice(slices.Uber);
-		} else if (this.formatType === 'rs') {
-			tierSet = tierSet.slice(slices.Regular);
-		} else if (!isDoublesOrBS) {
-			tierSet = [
-				...tierSet.slice(slices.OU, slices.UU),
-				...tierSet.slice(slices.AG, slices.Uber),
-				...tierSet.slice(slices.Uber, slices.OU),
-				...tierSet.slice(slices.UU),
-			];
-		} else {
-			tierSet = [
-				...tierSet.slice(slices.DOU, slices.DUU),
-				...tierSet.slice(slices.DUber, slices.DOU),
-				...tierSet.slice(slices.DUU),
-			];
-		}
-		if (format === 'ubersuu' && table.ubersUUBans) {
-			tierSet = tierSet.filter(([type, id]) => {
-				if (id in table.ubersUUBans) return false;
-				return true;
-			});
-		}
-		if (format === 'doubles' && this.formatType === 'natdex' && table.ndDoublesBans) {
-			tierSet = tierSet.filter(([type, id]) => {
-				if (id in table.ndDoublesBans) return false;
-				return true;
-			});
-		}
-		if (format === '35pokes' && table.thirtyfivePokes) {
-			tierSet = tierSet.filter(([type, id]) => {
-				if (id in table.thirtyfivePokes) return true;
-				return false;
-			});
-		}
-		if (dex.gen >= 5) {
-			if ((format === 'monotype' || format.startsWith('monothreat')) && table.monotypeBans) {
-				tierSet = tierSet.filter(([type, id]) => {
-					if (id in table.monotypeBans) return false;
-					return true;
-				});
-			}
-		}
-		if (format === 'zu' && dex.gen === 5 && table.gen5zuBans) {
-			tierSet = tierSet.filter(([type, id]) => {
-				if (id in table.gen5zuBans) return false;
-				return true;
-			});
-		}
-
-		// Filter out Gmax Pokemon from standard tier selection
-		if (!(/^(battlestadium|vgc|doublesubers)/g.test(format) || (format === 'doubles' && this.formatType === 'natdex'))) {
-			tierSet = tierSet.filter(([type, id]) => {
-				if (type === 'header' && id === 'DUber by technicality') return false;
-				if (type === 'header' && id === 'Uber by technicality') return false;
-				if (type === 'pokemon') return !id.endsWith('gmax');
-				return true;
-			});
-		}
-
-		return tierSet;
 	}
 	filter(row: SearchRow, filters: string[][]) {
 		if (!filters) return true;
