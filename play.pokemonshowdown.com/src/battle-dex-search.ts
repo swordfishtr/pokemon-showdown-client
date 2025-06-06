@@ -687,7 +687,6 @@ abstract class BattleTypedSearch<T extends SearchType> {
 			this.formatType = 'lc';
 			format = 'lc' as ID;
 		}
-		if (format.endsWith('draft')) format = format.slice(0, -5) as ID;
 		this.format = format;
 
 		this.species = '' as ID;
@@ -936,8 +935,8 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 	}
 	getBaseResults(): SearchRow[] {
 		const format = this.format;
-		const defaultResults = this.getDefaultResults();
-		if (!format) return defaultResults;
+		let results = this.getDefaultResults();
+		if (!format) return results;
 
 		// gen9nd35pokesjun2025 shortly 35pokesjun2025
 		console.log(`getBaseResults() for ${this.formatFull} shortly ${format}`);
@@ -965,15 +964,17 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 		else if(this.formatType === 'rs') {
 			table = table['gen3rs'];
 		}
-
 		if(!table) {
 			console.log(`Missing table for ${this.formatFull}`);
 			table = BattleTeambuilderTable;
 		}
 
-		let results = defaultResults;
-		if(table.whitelists?.[format]) results = results.filter(([type, id]) => table.whitelists[format].includes(id));
-		if(table.blacklists?.[format]) results = results.filter(([type, id]) => !table.blacklists[format].includes(id));
+		if(table[format]?.whitelist) {
+			results = results.filter(([type, id]) => (id in table[format].whitelist));
+		}
+		if(table[format]?.blacklist) {
+			results = results.filter(([type, id]) => !(id in table[format].blacklist));
+		}
 
 		return results;
 

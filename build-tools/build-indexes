@@ -249,11 +249,11 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 	let buf = '// DO NOT EDIT - automatically built with build-tools/build-indexes\n\n';
 
 	const GENS = [9, 8, 7, 6, 5, 4, 3, 2, 1];
-	const DOUBLES = GENS.filter(x => x > 2).map(num => -num);
 	const NATDEX = [9.1, 8.1];
 	const OTHER = [8.6, 7.1, 5.1, 3.1];
+	const DOUBLES = [...GENS, ...OTHER].filter(x => x > 2).map(num => -num);
 
-	for (const genIdent of [...GENS, ...DOUBLES, ...OTHER, ...NATDEX]) {
+	for (const genIdent of [...GENS, ...NATDEX, ...OTHER, ...DOUBLES]) {
 		const isLetsGo = (genIdent === 7.1);
 		const isBDSP = (genIdent === 8.6 || genIdent === -8.6);
 		const isNatDex = ('' + genIdent).endsWith('.1') && genIdent > 8;
@@ -271,7 +271,7 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 		})();
 		const pokemon = Object.keys(Dex.data.Pokedex);
 		pokemon.sort();
-		const thirtyfivePokes = {};
+
 		const nonstandardMoves = [
 			'aeroblast', 'alluringvoice', 'beakblast', 'blueflare', 'boltstrike', 'burningbulwark', 'conversion', 'conversion2',
 			'crushgrip', 'decorate', 'dragoncheer', 'dragonhammer', 'electroshot', 'ficklebeam', 'floralhealing', 'freezeshock',
@@ -280,35 +280,30 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 			'secretsword', 'sketch', 'sparklingaria', 'sunsteelstrike', 'supercellslam', 'tachyoncutter', 'terastarstorm', 'thunderclap',
 			'topsyturvy', 'triplekick', 'upperhand',
 		];
-		for (const id of pokemon) {
-			const species = Dex.mod(gen).species.get(id);
-			const baseSpecies = Dex.mod(gen).species.get(species.baseSpecies);
-			if (species.gen > genNum) continue;
 
-			// Skip this if draft or perfect35
-			// if (species.forme) {
-			// 	if (
-			// 		[
-			// 			'Aegislash', 'Castform', 'Cherrim', 'Cramorant', 'Eiscue', 'Meloetta', 'Mimikyu', 'Minior', 'Morpeko', 'Wishiwashi',
-			// 		].includes(species.baseSpecies) || species.forme.includes('Totem') || species.forme.includes('Zen') ||
-			// 		(species.baseSpecies === 'Ogerpon' && species.forme.includes('Tera'))
-			// 	) {
-			// 		continue;
-			// 	}
-			// }
-			
-			const nd35Pokes = Dex.formats.get(gen + 'nationaldex35pokes');
-			if (nd35Pokes.exists && !Dex.formats.getRuleTable(nd35Pokes).isBannedSpecies(species)) {
-				thirtyfivePokes[species.id] = 1;
-			}
-		}
+		// for (const id of pokemon) {
+		// 	const species = Dex.mod(gen).species.get(id);
+		// 	const baseSpecies = Dex.mod(gen).species.get(species.baseSpecies);
+		// 	if (species.gen > genNum) continue;
+
+		// 	// Skip this if draft or perfect35
+		// 	// if (species.forme) {
+		// 	// 	if (
+		// 	// 		[
+		// 	// 			'Aegislash', 'Castform', 'Cherrim', 'Cramorant', 'Eiscue', 'Meloetta', 'Mimikyu', 'Minior', 'Morpeko', 'Wishiwashi',
+		// 	// 		].includes(species.baseSpecies) || species.forme.includes('Totem') || species.forme.includes('Zen') ||
+		// 	// 		(species.baseSpecies === 'Ogerpon' && species.forme.includes('Tera'))
+		// 	// 	) {
+		// 	// 		continue;
+		// 	// 	}
+		// 	// }
+		// }
 
 		const items = [];
 
 		if (isNatDex) {
 			BattleTeambuilderTable['gen' + genNum + 'natdex'] = {};
 			BattleTeambuilderTable['gen' + genNum + 'natdex'].items = items;
-			BattleTeambuilderTable['gen' + genNum + 'natdex'].thirtyfivePokes = thirtyfivePokes;
 		} else if (isLetsGo) {
 			BattleTeambuilderTable['gen7letsgo'] = {};
 			BattleTeambuilderTable['gen7letsgo'].learnsets = {};
@@ -847,6 +842,112 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 				}
 			}
 		}
+	}
+
+	//
+	// Custom teambuilder features
+	//
+
+	// Whitelists
+	for(const x of Dex.formats.all()) {
+		if(
+			!['Generations Draft', '35 Pokes'].includes(x.name)
+		) {
+			continue;
+		}
+
+		const formatType = (() =>{
+			if(x.id.startsWith('gen8bdsp')) {
+				if(x.id.includes('doubles')) return 'gen8bdspdoubles';
+				return 'gen8bdsp';
+			}
+			if(x.id.startsWith('gen7letsgo')) {
+				if(x.id.includes('doubles')) return 'gen7letsgodoubles';
+				return 'gen7letsgo';
+			}
+			if(x.id.startsWith('gen5bw')) {
+				if(x.id.includes('doubles')) return 'gen5bwdoubles';
+				return 'gen5bw';
+			}
+			if(x.id.startsWith('gen3rs')) {
+				if(x.id.includes('doubles')) return 'gen3rsdoubles';
+				return 'gen3rs';
+			}
+			let buf = '';
+			let gen = /^(gen\d+)/.exec(x.id)?.[1];
+			if(gen) {
+				if(/^gen\d+pokes/.test(x.id)) gen = gen.slice(0, x.id.indexOf('35pokes'));
+				buf = gen;
+			}
+
+			if(
+				x.id.slice(buf.length).startsWith('nd') ||
+				x.id.slice(buf.length).startsWith('natdex') ||
+				x.id.slice(buf.length).startsWith('nationaldex')
+			) {
+				return buf + 'natdex';
+			}
+			if(
+				x.id.slice(buf.length).includes('doubles') ||
+				x.id.slice(buf.length).includes('vgc')
+			) {
+				return buf + 'doubles';
+			}
+			return buf;
+		})();
+
+		// Lifted from BattleTypedSearch constructor
+		const format = (() => {
+			let format = x.id;
+			if (format.startsWith('gen')) {
+				format = (format.slice(4) || 'customgame');
+			}
+			if (format.startsWith('dlc1') && x.gen === 8) {
+				format = format.slice(4);
+			}
+			if (format.startsWith('predlc')) {
+				format = format.slice(6);
+			}
+			if (format.startsWith('dlc1') && this.dex.gen === 9) {
+				format = format.slice(4);
+			}
+			if (format.startsWith('stadium')) {
+				format = format.slice(7);
+				if (!format) format = 'ou';
+			}
+			if (format.includes('bdsp')) {
+				format = format.slice(4);
+			}
+			if (format.includes('nationaldex') || format.startsWith('nd') || format.includes('natdex')) {
+				format = (format.startsWith('nd') ? format.slice(2) :
+					format.includes('natdex') ? format.slice(6) : format.slice(11));
+				if (!format) format = 'ou';
+			}
+			if (this.formatType === 'letsgo') format = format.slice(6);
+			if (format.endsWith('nfe')) {
+				format = format.slice(3);
+				if (!format) format = 'ou';
+			}
+			if ((format.endsWith('lc') || format.startsWith('lc')) && format !== 'caplc' && !this.formatType) {
+				format = 'lc';
+			}
+			return format;
+		})();
+
+		let table = BattleTeambuilderTable;
+		if(formatType) table = table[formatType] ??= {};
+
+		table.formats ??= {};
+		table.formats[format] = {};
+		table.formats[format].whitelist = {};
+
+		// Object.keys(Dex.data.Pokedex) -> Dex.species.get(key)
+		for(const y of Dex.species.all()) {
+			if(!Dex.formats.getRuleTable(x).isBannedSpecies(y)) {
+				table.formats[format].whitelist[y.id] = 1;
+			}
+		}
+		console.log(`whitelist: ${x.name} -> ${Object.keys(table.formats[format].whitelist).join(', ')}`);
 	}
 
 	buf += `exports.BattleTeambuilderTable = JSON.parse('${JSON.stringify(BattleTeambuilderTable).replace(/['\\]/g, "\\$&")}');\n\n`;
