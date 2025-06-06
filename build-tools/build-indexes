@@ -943,9 +943,22 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 		table.formats[format] = {};
 		table.formats[format].whitelist = {};
 
-		// Object.keys(Dex.data.Pokedex) -> Dex.species.get(key)
+		// Allow if not banned and not both of illegal and not unbanned
 		for(const y of Dex.species.all()) {
-			if(!Dex.formats.getRuleTable(x).isBannedSpecies(y)) {
+			const ruleTable = Dex.formats.getRuleTable(x);
+			if(
+				!ruleTable.isBannedSpecies(y) &&
+				!(
+					(
+						y.tier === 'Illegal' ||
+						y.tier.includes('CAP')
+					) &&
+					(
+						ruleTable.has(`+pokemon:${y.id}`) ||
+						ruleTable.has(`+basepokemon:${toID(y.baseSpecies)}`)
+					)
+				)
+			) {
 				table.formats[format].whitelist[y.id] = 1;
 			}
 		}
