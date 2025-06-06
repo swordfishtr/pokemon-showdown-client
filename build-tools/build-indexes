@@ -848,14 +848,12 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 	// Custom teambuilder features
 	//
 
-	const formats = Object.values(Dex.data.Rulesets);
-	formats.splice(0, formats.findIndex((x) => toID(x.name) === 'rulesetsbottom') + 1);
-
 	// Whitelists
-	for(const x of formats) {
+	for(const x of Dex.formats.all()) {
 		console.log(`Trying format ${x.name}`);
 		if(
-			!['Generations Draft', '35 Pokes'].includes(x.name)
+			!x.name.includes('Generations Draft') &&
+			!x.name.includes('35 Pokes')
 		) {
 			continue;
 		}
@@ -952,6 +950,8 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 			}
 		}
 	}
+
+	BattleTeambuilderTable.version = 0.1;
 
 	buf += `exports.BattleTeambuilderTable = JSON.parse('${JSON.stringify(BattleTeambuilderTable).replace(/['\\]/g, "\\$&")}');\n\n`;
 
