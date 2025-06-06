@@ -848,8 +848,12 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 	// Custom teambuilder features
 	//
 
+	const formats = Object.values(Dex.data.Rulesets);
+	formats.splice(0, formats.findIndex((x) => toID(x.name) === 'rulesetsbottom') + 1);
+
 	// Whitelists
-	for(const x of Dex.formats.all()) {
+	for(const x of formats) {
+		console.log(`Trying format ${x.name}`);
 		if(
 			!['Generations Draft', '35 Pokes'].includes(x.name)
 		) {
@@ -947,7 +951,6 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 				table.formats[format].whitelist[y.id] = 1;
 			}
 		}
-		console.log(`whitelist: ${x.name} -> ${Object.keys(table.formats[format].whitelist).join(', ')}`);
 	}
 
 	buf += `exports.BattleTeambuilderTable = JSON.parse('${JSON.stringify(BattleTeambuilderTable).replace(/['\\]/g, "\\$&")}');\n\n`;
