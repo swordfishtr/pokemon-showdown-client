@@ -953,7 +953,7 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 						y.tier === 'Illegal' ||
 						y.tier.includes('CAP')
 					) &&
-					(
+					!(
 						ruleTable.has(`+pokemon:${y.id}`) ||
 						ruleTable.has(`+basepokemon:${toID(y.baseSpecies)}`)
 					)
