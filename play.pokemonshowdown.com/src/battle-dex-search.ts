@@ -969,11 +969,11 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 			table = BattleTeambuilderTable;
 		}
 
-		if(table[format]?.whitelist) {
-			results = results.filter(([type, id]) => (id in table[format].whitelist));
+		if(table.formats?.[format]?.whitelist) {
+			results = results.filter(([type, id]) => (id in table.formats[format].whitelist));
 		}
-		if(table[format]?.blacklist) {
-			results = results.filter(([type, id]) => !(id in table[format].blacklist));
+		if(table.formats?.[format]?.blacklist) {
+			results = results.filter(([type, id]) => !(id in table.formats[format].blacklist));
 		}
 
 		return results;
