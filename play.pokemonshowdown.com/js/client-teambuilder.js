@@ -3605,14 +3605,14 @@
 			};
 			if (!set.evs) set.evs = {};
 
-			var isFlipped = this.curTeam.format.includes('flipped');
-			if(isFlipped) {
-				if(stat === 'hp') stat = 'spe';
-				else if(stat === 'atk') stat = 'spd';
-				else if(stat === 'def') stat = 'spa';
-				else if(stat === 'spa') stat = 'def';
-				else if(stat === 'spd') stat = 'atk';
-				else if(stat === 'spe') stat = 'hp';
+			var isFlipped = '';
+			if(this.curTeam.format.includes('flipped')) {
+				if(stat === 'hp') isFlipped = 'spe';
+				else if(stat === 'atk') isFlipped = 'spd';
+				else if(stat === 'def') isFlipped = 'spa';
+				else if(stat === 'spa') isFlipped = 'def';
+				else if(stat === 'spd') isFlipped = 'atk';
+				else if(stat === 'spe') isFlipped = 'hp';
 			}
 
 			// do this after setting set.evs because it's assumed to exist
@@ -3621,9 +3621,9 @@
 			if (!species.exists) return 0;
 
 			if (!set.level) set.level = 100;
-			if (typeof set.ivs[stat] === 'undefined') set.ivs[stat] = 31;
+			if (set.ivs[stat] === undefined) set.ivs[stat] = 31;
 
-			var baseStat = species.baseStats[stat];
+			var baseStat = species.baseStats[isFlipped || stat];
 			var iv = (set.ivs[stat] || 0);
 			if (this.curTeam.gen <= 2) iv &= 30;
 			var ev = set.evs[stat];
