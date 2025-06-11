@@ -1283,6 +1283,7 @@
 			var isLetsGo = this.curTeam.format.includes('letsgo');
 			var isBDSP = this.curTeam.format.includes('bdsp');
 			var isNatDex = this.curTeam.format.includes('nationaldex') || this.curTeam.format.includes('natdex');
+			var isFlipped = this.curTeam.format.includes('flipped');
 			var buf = '<li value="' + i + '">';
 			if (!set.species) {
 				if (this.deletedSet) {
@@ -2271,7 +2272,22 @@
 			var set = this.curSet;
 			var species = this.curTeam.dex.species.get(this.curSet.species);
 
-			var baseStats = species.baseStats;
+			var isFlipped = this.curTeam.format.includes('flipped');
+
+			var baseStats = { ...species.baseStats };
+
+			if(isFlipped) {
+				let tmpStat;
+				tmpStat = baseStats.hp;
+				baseStats.hp = baseStats.spe;
+				baseStats.spe = tmpStat;
+				tmpStat = baseStats.atk;
+				baseStats.atk = baseStats.spd;
+				baseStats.spd = tmpStat;
+				tmpStat = baseStats.def;
+				baseStats.def = baseStats.spa;
+				baseStats.spa = tmpStat;
+			}
 
 			buf += '<div class="resultheader"><h3>EVs</h3></div>';
 			buf += '<div class="statform">';
