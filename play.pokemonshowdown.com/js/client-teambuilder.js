@@ -2275,7 +2275,6 @@
 			var isFlipped = this.curTeam.format.includes('flipped');
 
 			var baseStats = { ...species.baseStats };
-			console.log(baseStats);
 
 			if(isFlipped) {
 				let tmpStat;
@@ -2288,7 +2287,6 @@
 				tmpStat = baseStats.def;
 				baseStats.def = baseStats.spa;
 				baseStats.spa = tmpStat;
-				console.log(baseStats);
 			}
 
 			buf += '<div class="resultheader"><h3>EVs</h3></div>';
@@ -3606,6 +3604,16 @@
 				spe: 31
 			};
 			if (!set.evs) set.evs = {};
+
+			var isFlipped = this.curTeam.format.includes('flipped');
+			if(isFlipped) {
+				if(stat === 'hp') stat = 'spe';
+				else if(stat === 'atk') stat = 'spd';
+				else if(stat === 'def') stat = 'spa';
+				else if(stat === 'spa') stat = 'def';
+				else if(stat === 'spd') stat = 'atk';
+				else if(stat === 'spe') stat = 'hp';
+			}
 
 			// do this after setting set.evs because it's assumed to exist
 			// after getStat is run
