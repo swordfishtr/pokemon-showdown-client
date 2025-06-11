@@ -2275,6 +2275,7 @@
 			var isFlipped = this.curTeam.format.includes('flipped');
 
 			var baseStats = { ...species.baseStats };
+			console.log(baseStats);
 
 			if(isFlipped) {
 				let tmpStat;
@@ -2287,6 +2288,7 @@
 				tmpStat = baseStats.def;
 				baseStats.def = baseStats.spa;
 				baseStats.spa = tmpStat;
+				console.log(baseStats);
 			}
 
 			buf += '<div class="resultheader"><h3>EVs</h3></div>';
