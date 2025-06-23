@@ -459,12 +459,7 @@ export const Dex = new class implements ModdedDex {
 				species = data;
 			} else {
 				if (!data) data = { exists: false };
-				if (!data.tier && id.endsWith('totem')) {
-					data.tier = this.species.get(id.slice(0, -5)).tier;
-				}
-				if (!data.tier && data.baseSpecies && toID(data.baseSpecies) !== id) {
-					data.tier = this.species.get(data.baseSpecies).tier;
-				}
+				data.tier ??= '?';
 				data.nfe = data.id === 'dipplin' || !!(data as Species).evos?.some(evo => {
 					const evoSpecies = this.species.get(evo);
 					return !evoSpecies.isNonstandard || evoSpecies.isNonstandard === data.isNonstandard ||
@@ -1080,14 +1075,7 @@ export class ModdedDex {
 				data.abilities = { 0: "No Ability" };
 			}
 
-			const table = window.BattleTeambuilderTable[this.modid];
-			if (id in table.overrideTier) data.tier = table.overrideTier[id];
-			if (!data.tier && id.endsWith('totem')) {
-				data.tier = this.species.get(id.slice(0, -5)).tier;
-			}
-			if (!data.tier && data.baseSpecies && toID(data.baseSpecies) !== id) {
-				data.tier = this.species.get(data.baseSpecies).tier;
-			}
+			data.tier ??= '?';
 			if (data.gen > this.gen) data.tier = 'Illegal';
 			data.nfe = data.id === 'dipplin' || !!data.evos?.some(evo => {
 				const evoSpecies = this.species.get(evo);
