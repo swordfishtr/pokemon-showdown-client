@@ -251,12 +251,12 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 	const GENS = [9, 8, 7, 6, 5, 4, 3, 2, 1];
 	const NATDEX = [9.1, 8.1];
 	const OTHER = [8.6, 7.1, 5.1, 3.1];
-	const DOUBLES = [...GENS, ...NATDEX, ...OTHER].filter(x => x > 2).map(num => -num);
+	const DOUBLES = [...GENS, ...NATDEX, ...OTHER].filter(x => x >= 3).map(num => -num);
 
 	for (const genIdent of [...GENS, ...NATDEX, ...OTHER, ...DOUBLES]) {
 		const isLetsGo = (genIdent === 7.1);
 		const isBDSP = (genIdent === 8.6 || genIdent === -8.6);
-		const isNatDex = ('' + genIdent).endsWith('.1') && genIdent > 8;
+		const isNatDex = ('' + genIdent).endsWith('.1') && Math.abs(genIdent) > 8;
 		const isDoubles = (genIdent < 0);
 		const genNum = Math.floor(isDoubles ? -genIdent : genIdent);
 		const isBW1 = genIdent === 5.1;
@@ -859,11 +859,12 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 
 	// Whitelists
 	for(const x of Dex.formats.all()) {
-		console.log(`Trying format ${x.name}`);
+		console.log(`Whitelists: Trying format ${x.name}`);
 		if(
 			!x.name.includes('Generations Draft') &&
 			!x.name.includes('35 Pokes')
 		) {
+			console.log('Skipped');
 			continue;
 		}
 
@@ -896,61 +897,25 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 				x.id.slice(buf.length).startsWith('natdex') ||
 				x.id.slice(buf.length).startsWith('nationaldex')
 			) {
-				return buf + 'natdex';
+				buf += 'natdex';
 			}
 			if(
 				x.id.slice(buf.length).includes('doubles') ||
 				x.id.slice(buf.length).includes('vgc')
 			) {
-				return buf + 'doubles';
+				buf += 'doubles';
 			}
-			return buf;
-		})();
 
-		// Lifted from BattleTypedSearch constructor
-		const format = (() => {
-			let format = x.id;
-			if (format.startsWith('gen')) {
-				format = (format.slice(4) || 'customgame');
-			}
-			if (format.startsWith('dlc1') && x.gen === 8) {
-				format = format.slice(4);
-			}
-			if (format.startsWith('predlc')) {
-				format = format.slice(6);
-			}
-			if (format.startsWith('dlc1') && this.dex.gen === 9) {
-				format = format.slice(4);
-			}
-			if (format.startsWith('stadium')) {
-				format = format.slice(7);
-				if (!format) format = 'ou';
-			}
-			if (format.includes('bdsp')) {
-				format = format.slice(4);
-			}
-			if (format.includes('nationaldex') || format.startsWith('nd') || format.includes('natdex')) {
-				format = (format.startsWith('nd') ? format.slice(2) :
-					format.includes('natdex') ? format.slice(6) : format.slice(11));
-				if (!format) format = 'ou';
-			}
-			if (this.formatType === 'letsgo') format = format.slice(6);
-			if (format.endsWith('nfe')) {
-				format = format.slice(3);
-				if (!format) format = 'ou';
-			}
-			if ((format.endsWith('lc') || format.startsWith('lc')) && format !== 'caplc' && !this.formatType) {
-				format = 'lc';
-			}
-			return format;
+			if(buf === 'gen9') return '';
+			return buf;
 		})();
 
 		let table = BattleTeambuilderTable;
 		if(formatType) table = table[formatType] ??= {};
 
 		table.formats ??= {};
-		table.formats[format] = {};
-		table.formats[format].whitelist = {};
+		table.formats[x.id] = {};
+		table.formats[x.id].whitelist = {};
 
 		// Allow if not banned and not both of illegal and not unbanned
 		for(const y of Dex.species.all()) {
@@ -968,12 +933,74 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 					)
 				)
 			) {
-				table.formats[format].whitelist[y.id] = 1;
+				table.formats[x.id].whitelist[y.id] = 1;
 			}
 		}
 	}
 
-	BattleTeambuilderTable.version = 0.1;
+	// 35 Moves
+	for(const x of Dex.formats.all()) {
+		if(!x.name.includes('Moves')) continue;
+		console.log(`Moves: Porcessing format ${x.name}`);
+
+		const formatType = (() =>{
+			if(x.id.startsWith('gen8bdsp')) {
+				if(x.id.includes('doubles')) return 'gen8bdspdoubles';
+				return 'gen8bdsp';
+			}
+			if(x.id.startsWith('gen7letsgo')) {
+				if(x.id.includes('doubles')) return 'gen7letsgodoubles';
+				return 'gen7letsgo';
+			}
+			if(x.id.startsWith('gen5bw')) {
+				if(x.id.includes('doubles')) return 'gen5bwdoubles';
+				return 'gen5bw';
+			}
+			if(x.id.startsWith('gen3rs')) {
+				if(x.id.includes('doubles')) return 'gen3rsdoubles';
+				return 'gen3rs';
+			}
+			let buf = '';
+			let gen = /^(gen\d+)/.exec(x.id)?.[1];
+			if(gen) {
+				if(/^gen\d+pokes/.test(x.id)) gen = gen.slice(0, x.id.indexOf('35pokes'));
+				buf = gen;
+			}
+
+			if(
+				x.id.slice(buf.length).startsWith('nd') ||
+				x.id.slice(buf.length).startsWith('natdex') ||
+				x.id.slice(buf.length).startsWith('nationaldex')
+			) {
+				buf += 'natdex';
+			}
+			if(
+				x.id.slice(buf.length).includes('doubles') ||
+				x.id.slice(buf.length).includes('vgc')
+			) {
+				buf += 'doubles';
+			}
+
+			if(buf === 'gen9') return '';
+			return buf;
+		})();
+
+		let table = BattleTeambuilderTable;
+		if(formatType) table = table[formatType] ??= {};
+
+		table.formats ??= {};
+		table.formats[x.id] = {};
+		table.formats[x.id].moves = {};
+
+		for(const y of Dex.moves.all()) {
+			const ruleTable = Dex.formats.getRuleTable(x);
+			if(ruleTable.has(`+move:${y.id}`)) {
+				table.formats[x.id].moves[y.id] = 1;
+			}
+		}
+	}
+
+	BattleTeambuilderTable.version = 0.2;
 
 	buf += `exports.BattleTeambuilderTable = JSON.parse('${JSON.stringify(BattleTeambuilderTable).replace(/['\\]/g, "\\$&")}');\n\n`;
 

@@ -1472,7 +1472,7 @@ export class Species implements Effect {
 	readonly num: number;
 	readonly types: readonly TypeName[];
 	readonly abilities: Readonly<{
-		0: string, 1?: string, H?: string, S?: string,
+		0: string, 1?: string, H?: string, S?: string, [key: `E${number}`]: string,
 	}>;
 	readonly baseStats: Readonly<{
 		hp: number, atk: number, def: number, spa: number, spd: number, spe: number,
