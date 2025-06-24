@@ -964,7 +964,7 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 			if(rules.blacklist) {
 				results = results.filter(([type, id]) => !(id in table.formats[formatFull].blacklist));
 			}
-			if(rules.blacklist) {
+			if(rules.moves) {
 				results = results
 				.filter(([type, id]) => type === 'pokemon' && this.dex.species.get(id).isNonstandard !== 'Custom')
 				.sort(([type1, id1], [type2, id2]) => Number(this.getNumCol(this.dex.species.get(id1))) - Number(this.getNumCol(this.dex.species.get(id2))))
@@ -1466,7 +1466,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 			}
 		}
 
-		if (this.formatType === 'letsgo') {
+		if (this.formatType?.includes('letsgo')) {
 			if (['megadrain', 'teleport'].includes(id)) return true;
 		}
 
@@ -1688,7 +1688,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 	static readonly GOOD_DOUBLES_MOVES = [
 		'allyswitch', 'bulldoze', 'coaching', 'electroweb', 'faketears', 'fling', 'followme', 'healpulse', 'helpinghand', 'junglehealing', 'lifedew', 'lunarblessing', 'muddywater', 'pollenpuff', 'psychup', 'ragepowder', 'safeguard', 'skillswap', 'snipeshot', 'wideguard',
 	] as ID[] as readonly ID[];
-	getBaseResults() {
+	getBaseResults(): SearchRow[] {
 		if (!this.species) return this.getDefaultResults();
 		const dex = this.dex;
 		let species = dex.species.get(this.species);
@@ -1732,7 +1732,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 					) {
 						continue;
 					}
-					if (this.formatType !== 'natdex' && move.isNonstandard === "Past") {
+					if (this.formatType?.includes('natdex') && move.isNonstandard === "Past") {
 						continue;
 					}
 					if (moves.includes(moveid)) continue;
@@ -1756,14 +1756,14 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 				if (sketch) {
 					if (move.flags['nosketch'] || move.isMax || move.isZ) continue;
 					if (move.isNonstandard && move.isNonstandard !== 'Past') continue;
-					if (move.isNonstandard === 'Past' && this.formatType !== 'natdex') continue;
+					if (move.isNonstandard === 'Past' && this.formatType?.includes('natdex')) continue;
 					sketchMoves.push(move.id);
 				} else {
-					if (!(dex.gen < 8 || this.formatType === 'natdex') && move.isZ) continue;
+					if (!(dex.gen < 8 || this.formatType?.includes('natdex')) && move.isZ) continue;
 					if (typeof move.isMax === 'string') continue;
 					if (move.isMax && dex.gen > 8) continue;
-					if (move.isNonstandard === 'Past' && this.formatType !== 'natdex') continue;
-					if (move.isNonstandard === 'LGPE' && this.formatType !== 'letsgo') continue;
+					if (move.isNonstandard === 'Past' && this.formatType?.includes('natdex')) continue;
+					if (move.isNonstandard === 'LGPE' && this.formatType?.includes('letsgo')) continue;
 					moves.push(move.id);
 				}
 			}
@@ -1813,6 +1813,16 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 					}
 				}
 				if (valid) moves.push(id);
+			}
+		}
+
+		{
+			let table = BattleTeambuilderTable;
+			if(this.formatType) table = table[this.formatType];
+			const movesRule = table.formats?.[this.formatFull]?.moves;
+			if(movesRule) {
+				moves = moves.filter((x) => x in movesRule);
+				sketchMoves = sketchMoves.filter((x) => x in movesRule);
 			}
 		}
 
