@@ -18,6 +18,7 @@ child_process.execSync('npm run build', { cwd: 'caches/pokemon-showdown' });
 console.log("DONE");
 
 const Dex = require('../caches/pokemon-showdown/dist/sim/dex').Dex;
+const TeamValidator = require('../caches/pokemon-showdown/dist/sim/team-validator').TeamValidator;
 const CompoundWordNames = require('../caches/pokemon-showdown/dist/data/aliases').CompoundWordNames;
 const toID = Dex.toID;
 process.stdout.write("Loading gen 6 data... ");
@@ -991,11 +992,18 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 		table.formats ??= {};
 		table.formats[x.id] = {};
 		table.formats[x.id].moves = {};
+		table.formats[x.id].customNumCol = {};
 
+		const validator = new TeamValidator(x);
 		for(const y of Dex.moves.all()) {
-			const ruleTable = Dex.formats.getRuleTable(x);
-			if(ruleTable.has(`+move:${y.id}`)) {
+			if(validator.ruleTable.has(`+move:${y.id}`)) {
 				table.formats[x.id].moves[y.id] = 1;
+				for(const z of Dex.species.all()) {
+					if(validator.checkCanLearn(y, z) === null) {
+						table.formats[x.id].customNumCol[z.id] ??= 0;
+						table.formats[x.id].customNumCol[z.id]++;
+					}
+				}
 			}
 		}
 	}

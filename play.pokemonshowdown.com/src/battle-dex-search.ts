@@ -863,14 +863,11 @@ abstract class BattleTypedSearch<T extends SearchType> {
 	}
 	getNumCol(pokemon: Dex.Species): string {
 		const formatFull = this.formatFull;
-		if(formatFull.includes('moves')) {
-			const formatType = this.formatType;
-			let table = BattleTeambuilderTable;
-			if(formatType && table[formatType]) table = table[formatType];
-			if(table.formats?.[formatFull]?.moves) {
-				const pokemonMoves = Object.keys(table.formats[formatFull].moves).filter((x) => this.canLearn(pokemon.id, x as ID));
-				return String(pokemonMoves.length);
-			}
+		const formatType = this.formatType;
+		let table = BattleTeambuilderTable;
+		if(formatType && table[formatType]) table = table[formatType];
+		if(table.formats?.[formatFull]?.customNumCol?.[pokemon.id] !== undefined) {
+			return String(table.formats[formatFull].customNumCol[pokemon.id]);
 		}
 		return String(pokemon.num);
 	}
@@ -1732,7 +1729,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 					) {
 						continue;
 					}
-					if (this.formatType?.includes('natdex') && move.isNonstandard === "Past") {
+					if (!this.formatType?.includes('natdex') && move.isNonstandard === "Past") {
 						continue;
 					}
 					if (moves.includes(moveid)) continue;
@@ -1756,14 +1753,14 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 				if (sketch) {
 					if (move.flags['nosketch'] || move.isMax || move.isZ) continue;
 					if (move.isNonstandard && move.isNonstandard !== 'Past') continue;
-					if (move.isNonstandard === 'Past' && this.formatType?.includes('natdex')) continue;
+					if (move.isNonstandard === 'Past' && !this.formatType?.includes('natdex')) continue;
 					sketchMoves.push(move.id);
 				} else {
 					if (!(dex.gen < 8 || this.formatType?.includes('natdex')) && move.isZ) continue;
 					if (typeof move.isMax === 'string') continue;
 					if (move.isMax && dex.gen > 8) continue;
-					if (move.isNonstandard === 'Past' && this.formatType?.includes('natdex')) continue;
-					if (move.isNonstandard === 'LGPE' && this.formatType?.includes('letsgo')) continue;
+					if (move.isNonstandard === 'Past' && !this.formatType?.includes('natdex')) continue;
+					if (move.isNonstandard === 'LGPE' && !this.formatType?.includes('letsgo')) continue;
 					moves.push(move.id);
 				}
 			}
