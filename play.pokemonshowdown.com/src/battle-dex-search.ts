@@ -866,8 +866,8 @@ abstract class BattleTypedSearch<T extends SearchType> {
 		const formatType = this.formatType;
 		let table = BattleTeambuilderTable;
 		if(formatType && table[formatType]) table = table[formatType];
-		if(table.formats?.[formatFull]?.customNumCol?.[pokemon.id] !== undefined) {
-			return String(table.formats[formatFull].customNumCol[pokemon.id]);
+		if(table.formats?.[formatFull]?.customNumCol) {
+			return String(table.formats[formatFull].customNumCol[pokemon.id] ?? 0);
 		}
 		return String(pokemon.num);
 	}
