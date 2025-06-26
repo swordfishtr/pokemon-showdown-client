@@ -1010,8 +1010,10 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 
 	// learnsetDiff (`formatType`s hardcoded for now)
 	{
+		console.log('learnsetDiff');
 		// Current gen mod
 		{
+			console.log('B1');
 			const b1 = Dex.getLearnsetDiff(Dex.mod('perfectb1'), Dex);
 			for(const x of ['additions', 'removals']) {
 				for(const mon in b1[x]) {
@@ -1020,12 +1022,13 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 					}
 				}
 			}
-			BattleTeambuilderTable.gen3.formats.gen335pokesperfectb1.learnsetDiff = b1;
+			BattleTeambuilderTable.gen3.formats.gen535pokesperfectb1.learnsetDiff = b1;
 
+			console.log('B2');
 			const b2 = Dex.getLearnsetDiff(Dex.mod('perfectb2'), Dex);
 			for(const x of ['additions', 'removals']) {
 				for(const mon in b2[x]) {
-					if(!(mon in BattleTeambuilderTable.gen5.formats.gen335pokesperfectb2.whitelist)) {
+					if(!(mon in BattleTeambuilderTable.gen5.formats.gen535pokesperfectb2.whitelist)) {
 						delete b2[x][mon];
 					}
 				}
@@ -1035,6 +1038,7 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 
 		// Parent mod
 		{
+			console.log('C1');
 			const c1 = Dex.getLearnsetDiff(Dex.mod('perfectc1'));
 			for(const x of ['additions', 'removals']) {
 				for(const mon in c1[x]) {
@@ -1043,8 +1047,9 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 					}
 				}
 			}
-			BattleTeambuilderTable.gen9natdex.formats.gen335pokesperfectc1.learnsetDiff = c1;
+			BattleTeambuilderTable.gen9natdex.formats.gen935pokesperfectc1.learnsetDiff = c1;
 
+			console.log('C2');
 			const c2 = Dex.getLearnsetDiff(Dex.mod('perfectc2'));
 			for(const x of ['additions', 'removals']) {
 				for(const mon in c2[x]) {
@@ -1053,7 +1058,7 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 					}
 				}
 			}
-			BattleTeambuilderTable.gen9natdex.formats.gen335pokesperfectc2.learnsetDiff = c2;
+			BattleTeambuilderTable.gen9natdex.formats.gen935pokesperfectc2.learnsetDiff = c2;
 		}
 	}
 
