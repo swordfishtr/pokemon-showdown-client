@@ -1008,7 +1008,56 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 		}
 	}
 
-	BattleTeambuilderTable.version = 0.2;
+	// learnsetDiff (`formatType`s hardcoded for now)
+	{
+		// Current gen mod
+		{
+			const b1 = Dex.getLearnsetDiff(Dex.mod('perfectb1'), Dex);
+			for(const x of ['additions', 'removals']) {
+				for(const mon in b1[x]) {
+					if(!(mon in BattleTeambuilderTable.gen3.formats.gen335pokesperfectb1.whitelist)) {
+						delete b1[x][mon];
+					}
+				}
+			}
+			BattleTeambuilderTable.gen3.formats.gen335pokesperfectb1.learnsetDiff = b1;
+
+			const b2 = Dex.getLearnsetDiff(Dex.mod('perfectb2'), Dex);
+			for(const x of ['additions', 'removals']) {
+				for(const mon in b2[x]) {
+					if(!(mon in BattleTeambuilderTable.gen5.formats.gen335pokesperfectb2.whitelist)) {
+						delete b2[x][mon];
+					}
+				}
+			}
+			BattleTeambuilderTable.gen5.formats.gen335pokesperfectb2.learnsetDiff = b2;
+		}
+
+		// Parent mod
+		{
+			const c1 = Dex.getLearnsetDiff(Dex.mod('perfectc1'));
+			for(const x of ['additions', 'removals']) {
+				for(const mon in c1[x]) {
+					if(!(mon in BattleTeambuilderTable.gen9natdex.formats.gen335pokesperfectc1.whitelist)) {
+						delete c1[x][mon];
+					}
+				}
+			}
+			BattleTeambuilderTable.gen9natdex.formats.gen335pokesperfectc1.learnsetDiff = c1;
+
+			const c2 = Dex.getLearnsetDiff(Dex.mod('perfectc2'));
+			for(const x of ['additions', 'removals']) {
+				for(const mon in c2[x]) {
+					if(!(mon in BattleTeambuilderTable.gen9natdex.formats.gen335pokesperfectc2.whitelist)) {
+						delete c2[x][mon];
+					}
+				}
+			}
+			BattleTeambuilderTable.gen9natdex.formats.gen335pokesperfectc2.learnsetDiff = c2;
+		}
+	}
+
+	BattleTeambuilderTable.version = 0.3;
 
 	buf += `exports.BattleTeambuilderTable = JSON.parse('${JSON.stringify(BattleTeambuilderTable).replace(/['\\]/g, "\\$&")}');\n\n`;
 
