@@ -1022,7 +1022,7 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 					}
 				}
 			}
-			BattleTeambuilderTable.gen3.formats.gen535pokesperfectb1.learnsetDiff = b1;
+			BattleTeambuilderTable.gen3.formats.gen335pokesperfectb1.learnsetDiff = b1;
 
 			console.log('B2');
 			const b2 = Dex.getLearnsetDiff(Dex.mod('perfectb2'), Dex);
