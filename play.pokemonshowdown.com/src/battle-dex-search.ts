@@ -1147,7 +1147,9 @@ class BattleAbilitySearch extends BattleTypedSearch<'ability'> {
 }
 
 class BattleItemSearch extends BattleTypedSearch<'item'> {
-	overrideFormatType = null;
+	overrideFormatType = [
+		'gen335pokesperfectb1', 'gen535pokesperfectb2',
+	].includes(this.formatFull) ? 'gen9natdex' : null;
 
 	getTable() {
 		return BattleItems;
