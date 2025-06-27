@@ -1011,26 +1011,38 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 	// learnsetDiff (`formatType`s hardcoded for now)
 	{
 		console.log('learnsetDiff');
+		function processDiffMon(mon) {
+			const learnset = {};
+			for(const x in mon.learnset) {
+				learnset[x] = 1;
+			}
+			return learnset;
+		}
+
 		// Current gen mod
 		{
 			console.log('B1');
 			const b1 = Dex.getLearnsetDiff(Dex.mod('perfectb1'), Dex);
-			for(const x of ['additions', 'removals']) {
+			for(const x in b1) {
 				for(const mon in b1[x]) {
 					if(!(mon in BattleTeambuilderTable.gen3.formats.gen335pokesperfectb1.whitelist)) {
 						delete b1[x][mon];
+						continue;
 					}
+					b1[x][mon] = processDiffMon(b1[x][mon]);
 				}
 			}
 			BattleTeambuilderTable.gen3.formats.gen335pokesperfectb1.learnsetDiff = b1;
 
 			console.log('B2');
 			const b2 = Dex.getLearnsetDiff(Dex.mod('perfectb2'), Dex);
-			for(const x of ['additions', 'removals']) {
+			for(const x in b2) {
 				for(const mon in b2[x]) {
 					if(!(mon in BattleTeambuilderTable.gen5.formats.gen535pokesperfectb2.whitelist)) {
 						delete b2[x][mon];
+						continue;
 					}
+					b2[x][mon] = processDiffMon(b2[x][mon]);
 				}
 			}
 			BattleTeambuilderTable.gen5.formats.gen535pokesperfectb2.learnsetDiff = b2;
@@ -1040,22 +1052,26 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 		{
 			console.log('C1');
 			const c1 = Dex.getLearnsetDiff(Dex.mod('perfectc1'));
-			for(const x of ['additions', 'removals']) {
+			for(const x in c1) {
 				for(const mon in c1[x]) {
 					if(!(mon in BattleTeambuilderTable.gen9natdex.formats.gen9nd35pokesperfectc1.whitelist)) {
 						delete c1[x][mon];
+						continue;
 					}
+					c1[x][mon] = processDiffMon(c1[x][mon]);
 				}
 			}
 			BattleTeambuilderTable.gen9natdex.formats.gen9nd35pokesperfectc1.learnsetDiff = c1;
 
 			console.log('C2');
 			const c2 = Dex.getLearnsetDiff(Dex.mod('perfectc2'));
-			for(const x of ['additions', 'removals']) {
+			for(const x in c2) {
 				for(const mon in c2[x]) {
 					if(!(mon in BattleTeambuilderTable.gen9natdex.formats.gen9nd35pokesperfectc2.whitelist)) {
 						delete c2[x][mon];
+						continue;
 					}
+					c2[x][mon] = processDiffMon(c2[x][mon]);
 				}
 			}
 			BattleTeambuilderTable.gen9natdex.formats.gen9nd35pokesperfectc2.learnsetDiff = c2;
