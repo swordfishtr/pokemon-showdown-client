@@ -1648,15 +1648,11 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 			const formatType = this.formatType;
 			const overrideFormatType = this.overrideFormatType;
 			let table = null;
-			if(overrideFormatType) {
-				if(BattleTeambuilderTable[overrideFormatType]?.formats?.[formatFull]) {
-					table = BattleTeambuilderTable[overrideFormatType];
-				}
+			if(overrideFormatType && BattleTeambuilderTable[overrideFormatType]?.formats?.[formatFull]) {
+				table = BattleTeambuilderTable[overrideFormatType];
 			}
-			else if(formatType) {
-				if(BattleTeambuilderTable[formatType]?.formats?.[formatFull]) {
-					table = BattleTeambuilderTable[formatType];
-				}
+			else if(formatType && BattleTeambuilderTable[formatType]?.formats?.[formatFull]) {
+				table = BattleTeambuilderTable[formatType];
 			}
 			else if(BattleTeambuilderTable.formats?.[formatFull]) {
 				table = BattleTeambuilderTable;
