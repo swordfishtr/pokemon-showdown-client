@@ -1668,11 +1668,11 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 				// 35 Perfect custom learnsets
 				const learnsetDiff = table.formats[formatFull].learnsetDiff;
 				if(learnsetDiff) {
-					for(const x of learnsetDiff.removals[species.id]) {
+					for(const x in learnsetDiff.removals[species.id]) {
 						const i = moves.indexOf(x);
 						if(i >= 0) moves.splice(i, 1);
 					}
-					for(const x of learnsetDiff.additions[species.id]) {
+					for(const x in learnsetDiff.additions[species.id]) {
 						if(!moves.includes(x)) moves.push(x);
 					}
 				}
