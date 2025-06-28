@@ -951,7 +951,7 @@ export class ModdedDex {
 	};
 	pokeballs: string[] | null = null;
 	constructor(modid: ID, format?: string) {
-		console.log(`Creating ModdedDex: ${modid}, ${format}`);
+		console.trace(`Creating ModdedDex: ${modid}, ${format}`);
 		this.modid = modid;
 		this.format = format;
 		const gen = parseInt(modid.charAt(3), 10);
