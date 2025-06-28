@@ -951,6 +951,7 @@ export class ModdedDex {
 	};
 	pokeballs: string[] | null = null;
 	constructor(modid: ID, format?: string) {
+		console.log(`Creating ModdedDex: ${modid}, ${format}`);
 		this.modid = modid;
 		this.format = format;
 		const gen = parseInt(modid.charAt(3), 10);
@@ -1082,6 +1083,7 @@ export class ModdedDex {
 
 			// TODO: redesign BTT please i beg you
 			if(this.format) {
+				console.log(this.format);
 				const table = window.BattleTeambuilderTable[this.modid];
 				if(table && table.formats?.[this.format]?.overrideSpeciesData) {
 					console.log(table);
