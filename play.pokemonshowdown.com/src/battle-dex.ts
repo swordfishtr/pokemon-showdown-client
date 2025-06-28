@@ -244,18 +244,18 @@ export const Dex = new class implements ModdedDex {
 	 */
 	afdMode?: boolean | 'sprites';
 
-	mod(modid: ID): ModdedDex {
+	mod(modid: ID, format?: string): ModdedDex {
 		if (modid === 'gen9') return this;
 		if (!window.BattleTeambuilderTable) return this;
 		if (modid in this.moddedDexes) {
 			return this.moddedDexes[modid];
 		}
-		this.moddedDexes[modid] = new ModdedDex(modid);
+		this.moddedDexes[modid] = new ModdedDex(modid, format);
 		return this.moddedDexes[modid];
 	}
-	forGen(gen: number) {
+	forGen(gen: number, format?: string) {
 		if (!gen) return this;
-		return this.mod(`gen${gen}` as ID);
+		return this.mod(`gen${gen}` as ID, format);
 	}
 	formatGen(format: string) {
 		const formatid = toID(format);
@@ -264,14 +264,14 @@ export const Dex = new class implements ModdedDex {
 		return parseInt(formatid.charAt(3)) || Dex.gen;
 	}
 	forFormat(format: string) {
-		let dex = Dex.forGen(Dex.formatGen(format));
+		let dex = Dex.forGen(Dex.formatGen(format), format);
 
 		const formatid = toID(format).slice(4);
 		if (dex.gen === 7 && formatid.includes('letsgo')) {
-			dex = Dex.mod('gen7letsgo' as ID);
+			dex = Dex.mod('gen7letsgo' as ID, format);
 		}
 		if (dex.gen === 8 && formatid.includes('bdsp')) {
-			dex = Dex.mod('gen8bdsp' as ID);
+			dex = Dex.mod('gen8bdsp' as ID, format);
 		}
 		return dex;
 	}
@@ -941,6 +941,7 @@ export const Dex = new class implements ModdedDex {
 export class ModdedDex {
 	readonly gen: number;
 	readonly modid: ID;
+	readonly format?: string;
 	readonly cache = {
 		Moves: {} as { [k: string]: Move },
 		Items: {} as { [k: string]: Item },
@@ -949,8 +950,9 @@ export class ModdedDex {
 		Types: {} as { [k: string]: Dex.Effect },
 	};
 	pokeballs: string[] | null = null;
-	constructor(modid: ID) {
+	constructor(modid: ID, format?: string) {
 		this.modid = modid;
+		this.format = format;
 		const gen = parseInt(modid.charAt(3), 10);
 		if (!modid.startsWith('gen') || !gen) throw new Error("Unsupported modid");
 		this.gen = gen;
@@ -1065,14 +1067,25 @@ export class ModdedDex {
 					Object.assign(data, table.overrideSpeciesData[id]);
 				}
 			}
+
+			// TODO: fix bdsp, lgpe, bw1, rs
 			if (this.modid !== `gen${this.gen}`) {
 				const table = window.BattleTeambuilderTable[this.modid];
-				if (id in table.overrideSpeciesData) {
+				if (table && (id in table.overrideSpeciesData)) {
 					Object.assign(data, table.overrideSpeciesData[id]);
 				}
 			}
+
 			if (this.gen < 3 || this.modid === 'gen7letsgo') {
 				data.abilities = { 0: "No Ability" };
+			}
+
+			// TODO: redesign BTT please i beg you
+			if(this.format) {
+				const table = window.BattleTeambuilderTable[this.modid];
+				if(table && table.formats?.[this.format]?.overrideSpeciesData) {
+					Object.assign(data, table.formats[this.format].overrideSpeciesData[id]);
+				}
 			}
 
 			data.tier ??= '?';

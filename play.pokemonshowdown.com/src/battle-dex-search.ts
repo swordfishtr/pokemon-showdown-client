@@ -648,7 +648,7 @@ abstract class BattleTypedSearch<T extends SearchType> {
 		if (format.startsWith('gen')) {
 			const gen = (Number(format.charAt(3)) || 6);
 			format = (format.slice(4) || 'customgame') as ID;
-			this.dex = Dex.forGen(gen);
+			this.dex = Dex.forGen(gen, formatFull);
 		} else if (!format) {
 			this.dex = Dex;
 		}
@@ -668,16 +668,16 @@ abstract class BattleTypedSearch<T extends SearchType> {
 		}
 		if (format.includes('bdsp')) {
 			format = format.slice(4) as ID;
-			this.dex = Dex.mod('gen8bdsp' as ID);
+			this.dex = Dex.mod('gen8bdsp' as ID, formatFull);
 		}
 		if (format.includes('bw1')) {
-			this.dex = Dex.mod('gen5bw1' as ID);
+			this.dex = Dex.mod('gen5bw1' as ID, formatFull);
 		}
 		if (format.includes('adv200')) {
-			this.dex = Dex.mod('gen3rs' as ID);
+			this.dex = Dex.mod('gen3rs' as ID, formatFull);
 		}
 		if (format.includes('letsgo')) {
-			this.dex = Dex.mod('gen7letsgo' as ID);
+			this.dex = Dex.mod('gen7letsgo' as ID, formatFull);
 		}
 		if (format.includes('nationaldex') || format.startsWith('nd') || format.includes('natdex')) {
 			format = (format.startsWith('nd') ? format.slice(2) :

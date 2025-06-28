@@ -1078,7 +1078,98 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 		}
 	}
 
-	BattleTeambuilderTable.version = 0.3;
+	// Format specific overrideSpeciesData
+	{
+		// A3
+		{
+			BattleTeambuilderTable.gen9natdex.formats.gen9nd35pokesperfecta3.overrideSpeciesData = {};
+			BattleTeambuilderTable.gen9natdex.formats.gen9nd35pokesperfecta3.overrideSpeciesData.terapagos = {};
+			BattleTeambuilderTable.gen9natdex.formats.gen9nd35pokesperfecta3.overrideSpeciesData.terapagos.abilities = {};
+			BattleTeambuilderTable.gen9natdex.formats.gen9nd35pokesperfecta3.overrideSpeciesData.terapagos.abilities['0'] = 'Scrappy';
+		}
+
+		// B1
+		{
+			const modDex = Dex.mod('perfectb1');
+			const modData = modDex.data;
+			const parentDex = Dex.forGen(9);
+
+			const overrideSpeciesData = {};
+			BattleTeambuilderTable.gen3.formats.gen335pokesperfectb1.overrideSpeciesData = overrideSpeciesData;
+			for (const id in modData.Pokedex) {
+				const modEntry = modDex.species.get(id);
+				const parentEntry = parentDex.species.get(id);
+				for (const key of overrideSpeciesKeys) {
+					if (JSON.stringify(modEntry[key]) !== JSON.stringify(parentEntry[key])) {
+						overrideSpeciesData[id] ??= {};
+						overrideSpeciesData[id][key] = modEntry[key];
+					}
+				}
+			}
+		}
+
+		// B2
+		{
+			const modDex = Dex.mod('perfectb2');
+			const modData = modDex.data;
+			const parentDex = Dex.forGen(9);
+
+			const overrideSpeciesData = {};
+			BattleTeambuilderTable.gen5.formats.gen535pokesperfectb2.overrideSpeciesData = overrideSpeciesData;
+			for (const id in modData.Pokedex) {
+				const modEntry = modDex.species.get(id);
+				const parentEntry = parentDex.species.get(id);
+				for (const key of overrideSpeciesKeys) {
+					if (JSON.stringify(modEntry[key]) !== JSON.stringify(parentEntry[key])) {
+						overrideSpeciesData[id] ??= {};
+						overrideSpeciesData[id][key] = modEntry[key];
+					}
+				}
+			}
+		}
+
+		// C1
+		{
+			const modDex = Dex.mod('perfectc1');
+			const modData = modDex.data;
+			const parentDex = Dex.forGen(9);
+
+			const overrideSpeciesData = {};
+			BattleTeambuilderTable.gen9natdex.formats.gen9nd35pokesperfectc1.overrideSpeciesData = overrideSpeciesData;
+			for (const id in modData.Pokedex) {
+				const modEntry = modDex.species.get(id);
+				const parentEntry = parentDex.species.get(id);
+				for (const key of overrideSpeciesKeys) {
+					if (JSON.stringify(modEntry[key]) !== JSON.stringify(parentEntry[key])) {
+						overrideSpeciesData[id] ??= {};
+						overrideSpeciesData[id][key] = modEntry[key];
+					}
+				}
+			}
+		}
+
+		// C2
+		{
+			const modDex = Dex.mod('perfectc2');
+			const modData = modDex.data;
+			const parentDex = Dex.forGen(9);
+
+			const overrideSpeciesData = {};
+			BattleTeambuilderTable.gen9natdex.formats.gen9nd35pokesperfectc2.overrideSpeciesData = overrideSpeciesData;
+			for (const id in modData.Pokedex) {
+				const modEntry = modDex.species.get(id);
+				const parentEntry = parentDex.species.get(id);
+				for (const key of overrideSpeciesKeys) {
+					if (JSON.stringify(modEntry[key]) !== JSON.stringify(parentEntry[key])) {
+						overrideSpeciesData[id] ??= {};
+						overrideSpeciesData[id][key] = modEntry[key];
+					}
+				}
+			}
+		}
+	}
+
+	BattleTeambuilderTable.version = 0.4;
 
 	buf += `exports.BattleTeambuilderTable = JSON.parse('${JSON.stringify(BattleTeambuilderTable).replace(/['\\]/g, "\\$&")}');\n\n`;
 
