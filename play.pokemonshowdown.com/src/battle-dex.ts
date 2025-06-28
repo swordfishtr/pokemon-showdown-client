@@ -1084,6 +1084,7 @@ export class ModdedDex {
 			if(this.format) {
 				const table = window.BattleTeambuilderTable[this.modid];
 				if(table && table.formats?.[this.format]?.overrideSpeciesData) {
+					console.log(table);
 					Object.assign(data, table.formats[this.format].overrideSpeciesData[id]);
 				}
 			}
