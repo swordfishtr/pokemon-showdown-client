@@ -1097,7 +1097,49 @@ export class ModdedDex {
 
 			// TODO: redesign BTT please i beg you
 			if(this.format) {
-				const table = window.BattleTeambuilderTable[this.modid];
+				// stupid hardcode
+				const formatType = (() =>{
+					if(this.format.startsWith('gen8bdsp')) {
+						if(this.format.includes('doubles')) return 'gen8bdspdoubles';
+						return 'gen8bdsp';
+					}
+					if(this.format.startsWith('gen7letsgo')) {
+						if(this.format.includes('doubles')) return 'gen7letsgodoubles';
+						return 'gen7letsgo';
+					}
+					if(this.format.startsWith('gen5bw')) {
+						if(this.format.includes('doubles')) return 'gen5bwdoubles';
+						return 'gen5bw';
+					}
+					if(this.format.startsWith('gen3rs')) {
+						if(this.format.includes('doubles')) return 'gen3rsdoubles';
+						return 'gen3rs';
+					}
+					let buf = '';
+					let gen = /^(gen\d+)/.exec(this.format)?.[1];
+					if(gen) {
+						if(/^gen\d+pokes/.test(this.format)) gen = gen.slice(0, this.format.indexOf('35pokes'));
+						buf = gen;
+					}
+		
+					if(
+						this.format.slice(buf.length).startsWith('nd') ||
+						this.format.slice(buf.length).startsWith('natdex') ||
+						this.format.slice(buf.length).startsWith('nationaldex')
+					) {
+						buf += 'natdex';
+					}
+					if(
+						this.format.slice(buf.length).includes('doubles') ||
+						this.format.slice(buf.length).includes('vgc')
+					) {
+						buf += 'doubles';
+					}
+		
+					if(buf === 'gen9') return '';
+					return buf;
+				})();
+				const table = formatType ? window.BattleTeambuilderTable[formatType] : window.BattleTeambuilderTable;
 				if(table && table.formats?.[this.format]?.overrideSpeciesData) {
 					Object.assign(data, table.formats[this.format].overrideSpeciesData[id]);
 				}
