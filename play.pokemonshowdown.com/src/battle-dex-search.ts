@@ -1660,7 +1660,6 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 				table = BattleTeambuilderTable;
 			}
 			if(table) {
-				console.log(table);
 				// 35 Moves
 				const movesRule = table.formats[formatFull]?.moves;
 				if(movesRule) {

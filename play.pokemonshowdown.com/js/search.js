@@ -343,35 +343,41 @@
 		buf += '</span> ';
 
 		// abilities
-		if (gen >= 3 && !(this.engine && this.engine.dex.modid === 'gen7letsgo')) {
-			var abilities = pokemon.abilities;
-			if (gen >= 5) {
-				if (abilities['1']) {
-					buf += '<span class="col twoabilitycol">' + abilities['0'] + '<br />' +
-						abilities['1'] + '</span>';
-				} else {
-					buf += '<span class="col abilitycol">' + abilities['0'] + '</span>';
-				}
-				var unreleasedHidden = pokemon.unreleasedHidden;
-				if (unreleasedHidden === 'Past' && (this.mod === 'natdex' || gen < 8)) unreleasedHidden = false;
-				if (abilities['S']) {
-					if (abilities['H']) {
-						buf += '<span class="col twoabilitycol' + (unreleasedHidden ? ' unreleasedhacol' : '') + '">' + (abilities['H'] || '') + '<br />(' + abilities['S'] + ')</span>';
-					} else {
-						buf += '<span class="col abilitycol">(' + abilities['S'] + ')</span>';
-					}
-				} else if (abilities['H']) {
-					buf += '<span class="col abilitycol' + (unreleasedHidden ? ' unreleasedhacol' : '') + '">' + abilities['H'] + '</span>';
-				} else {
-					buf += '<span class="col abilitycol"></span>';
-				}
-			} else {
-				buf += '<span class="col abilitycol">' + abilities['0'] + '</span>';
-				buf += '<span class="col abilitycol">' + (abilities['1'] ? abilities['1'] : '') + '</span>';
+		const allAbilitiesFormats = ['gen335pokesperfectb1', 'gen535pokesperfectb2'];
+		// 0 columns
+		if(gen < 3 || this.engine?.dex?.modid?.includes('letsgo')) {
+			buf += '<span class="col abilitycol"></span>';
+			buf += '<span class="col abilitycol"></span>';
+		}
+		else {
+			const abilitiesData = { ...pokemon.abilities };
+			if(gen < 5 && !allAbilitiesFormats.includes(this.engine?.dex?.format)) {
+				delete abilitiesData['H'];
+				delete abilitiesData['S'];
 			}
-		} else {
-			buf += '<span class="col abilitycol"></span>';
-			buf += '<span class="col abilitycol"></span>';
+			const abilities = Object.values(pokemon.abilities);
+			// 2 columns, each can hold 1 ability
+			if(abilities.length <= 2) {
+				buf += '<span class="col abilitycol">' + (abilities[0] ?? '') + '</span>';
+				buf += '<span class="col abilitycol">' + (abilities[1] ?? '') + '</span>';
+			}
+			else {
+				const maybeExtraAbilities = abilities.length >= 5 ? ' extraabilities' : '';
+				if(abilities.length > 6) abilities.length = 6;
+				// 2 or 3 columns, each can hold 2 abilities
+				for(let i = 0; i < abilities.length; i += 2) {
+					const top = abilities[i];
+					const bottom = abilities[i + 1];
+					const abilityCol = bottom === undefined ? ' abilitycol' : ' twoabilitycol';
+					// TODO: BTT format property for unreleasedHidden
+
+					buf += `<span class="col${abilityCol}${maybeExtraAbilities}">${top}`;
+					if(bottom !== undefined) {
+						buf += `<br />${bottom}`;
+					}
+					buf += '</span>';
+				}
+			}
 		}
 
 		// base stats

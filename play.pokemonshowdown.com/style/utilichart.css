@@ -237,6 +237,9 @@
 	text-align: center;
 	white-space: nowrap;
 }
+.utilichart .extraabilities {
+	width: 58px;
+}
 .utilichart .hacol {
 	font-style: italic;
 }
