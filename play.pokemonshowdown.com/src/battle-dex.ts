@@ -245,9 +245,13 @@ export const Dex = new class implements ModdedDex {
 	afdMode?: boolean | 'sprites';
 
 	mod(modid: ID, format?: string): ModdedDex {
-		if (modid === 'gen9') return this;
+		if(modid === 'gen9') {
+			// gen 9 "mod" formats ...
+			if(format && !['gen9nd35pokesperfectc1', 'gen9nd35pokesperfectc2'].includes(format)) format = undefined;
+			if(!format) return this;
+		}
 		if (!window.BattleTeambuilderTable) return this;
-		if (modid in this.moddedDexes) {
+		if (modid in this.moddedDexes && this.moddedDexes[modid].format === format) {
 			return this.moddedDexes[modid];
 		}
 		this.moddedDexes[modid] = new ModdedDex(modid, format);
