@@ -248,7 +248,9 @@ export const Dex = new class implements ModdedDex {
 
 	mod(modid: ID, format?: string): ModdedDex {
 		if (!window.BattleTeambuilderTable) return this;
-		if(modid === 'gen9' && !(format && ['gen9nd35pokesperfectc1', 'gen9nd35pokesperfectc2'].includes(format))) return this;
+		if(modid === 'gen9' && !(format && [
+			'gen9nd35pokesperfecta3', 'gen9nd35pokesperfectc1', 'gen9nd35pokesperfectc2',
+		].includes(format))) return this;
 		if(format) {
 			if(format in this.formatModdedDexes) {
 				return this.formatModdedDexes[format];
