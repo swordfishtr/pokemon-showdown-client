@@ -207,7 +207,6 @@ export interface TeambuilderSpriteData {
 	spriteDir: string;
 	spriteid: string;
 	shiny?: boolean;
-	size?: number;
 }
 
 export const Dex = new class implements ModdedDex {
@@ -861,7 +860,7 @@ export const Dex = new class implements ModdedDex {
 		if (pokemon.shiny) spriteData.shiny = true;
 
 		if(id === 'evisempra') {
-			spriteData.size = 96;
+			spriteData.h = 96;
 		}
 
 		if (Dex.prefs('nopastgens')) gen = 9;
@@ -912,7 +911,7 @@ export const Dex = new class implements ModdedDex {
 		const data = this.getTeambuilderSpriteData(pokemon, dex);
 		const shiny = (data.shiny ? '-shiny' : '');
 		let buf = `background-image:url(${Dex.resourcePrefix}${data.spriteDir}${shiny}/${data.spriteid}.png);background-position:${data.x + xOffset}px ${data.y + yOffset}px;background-repeat:no-repeat;`;
-		if(data.size) buf += `background-size:${data.size}px;`;
+		if(data.h) buf += `background-size:${data.h}px;`;
 		return buf;
 	}
 
