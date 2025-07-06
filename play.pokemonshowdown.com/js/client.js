@@ -399,7 +399,7 @@ function toId() {
 	});
 
 	this.App = Backbone.Router.extend({
-		root: '/#',
+		root: '/',
 		routes: {
 			'*path': 'dispatchFragment'
 		},
