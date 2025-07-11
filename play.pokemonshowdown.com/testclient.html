@@ -35,14 +35,14 @@
 				}
 			})();
 			function generations_loadShowdex() {
-				localStorage.generations_showdexLoaded = '1';
+				window.generations_showdexLoaded = '1';
 				var scriptEl = document.createElement('script');
 				scriptEl.src = 'showdex/main.js';
 				document.body.appendChild(scriptEl);
 			}
 			function generations_enableShowdex() {
 				// if it is loaded, it must also be allowed
-				if(localStorage.generations_showdexLoaded) {
+				if(window.generations_showdexLoaded) {
 					return;
 				}
 				localStorage.generations_showdexAllowed = '1';
@@ -52,7 +52,7 @@
 			}
 			function generations_disableShowdex() {
 				// if it is not loaded, it must also not be allowed
-				if(!localStorage.generations_showdexLoaded) {
+				if(!window.generations_showdexLoaded) {
 					return;
 				}
 				delete localStorage.generations_showdexAllowed;
