@@ -164,16 +164,12 @@
 		<script>
 			window.onload = () => {
 				window.app = new App();
+				if(localStorage.generations_showdexAllowed) {
+					document.getElementById('btnEnableShowdex').classList.add('disabled');
+					document.getElementById('btnDisableShowdex').classList.remove('disabled');
+					generations_loadShowdex();
+				}
 			}
 		</script>
-
-		<script>
-			if(localStorage.generations_showdexAllowed) {
-				document.getElementById('btnEnableShowdex').classList.add('disabled');
-				document.getElementById('btnDisableShowdex').classList.remove('disabled');
-				generations_loadShowdex();
-			}
-		</script>
-
 	</body>
 </html>
