@@ -862,8 +862,8 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 	for(const x of Dex.formats.all()) {
 		console.log(`Whitelists: Trying format ${x.name}`);
 		if(
-			!x.name.includes('Generations Draft') &&
-			!x.name.includes('35 Pokes')
+			(!x.name.includes('Generations Draft') && !x.name.includes('35 Pokes')) ||
+			x.name === '[Gen 9] ND 35 Pokes Perfect [Z1]'
 		) {
 			console.log('Skipped');
 			continue;
@@ -941,7 +941,7 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 
 	// 35 Moves
 	for(const x of Dex.formats.all()) {
-		if(!x.name.includes('Moves')) continue;
+		if(!x.name.includes('Moves') && x.name !== '[Gen 9] ND 35 Pokes Perfect [Z1]') continue;
 		console.log(`Moves: Porcessing format ${x.name}`);
 
 		const formatType = (() =>{
@@ -990,7 +990,7 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 		if(formatType) table = table[formatType] ??= {};
 
 		table.formats ??= {};
-		table.formats[x.id] = {};
+		table.formats[x.id] ??= {};
 		table.formats[x.id].moves = {};
 		table.formats[x.id].customNumCol = {};
 
