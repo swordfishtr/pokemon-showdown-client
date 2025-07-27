@@ -995,7 +995,7 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 		table.formats[x.id].customNumCol = {};
 
 		const validator = new TeamValidator(x);
-		for(const y of Dex.moves.all()) {
+		for(const y of Dex.moves.all().filter(x => !x.realMove)) {
 			if(validator.ruleTable.has(`+move:${y.id}`)) {
 				table.formats[x.id].moves[y.id] = 1;
 				for(const z of Dex.species.all()) {
