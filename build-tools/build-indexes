@@ -995,14 +995,14 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 		table.formats[x.id].customNumCol = {};
 
 		const validator = new TeamValidator(x);
-		for(const y of Dex.moves.all().filter(x => !x.realMove)) {
-			if(validator.ruleTable.has(`+move:${y.id}`)) {
-				table.formats[x.id].moves[y.id] = 1;
-				for(const z of Dex.species.all()) {
-					if(validator.checkCanLearn(y, z) === null) {
-						table.formats[x.id].customNumCol[z.id] ??= 0;
-						table.formats[x.id].customNumCol[z.id]++;
-					}
+		for(const y of Dex.moves.all()) {
+			if(!validator.ruleTable.has(`+move:${y.id}`)) continue;
+			table.formats[x.id].moves[y.id] = 1;
+			if(y.realMove) continue;
+			for(const z of Dex.species.all()) {
+				if(validator.checkCanLearn(y, z) === null) {
+					table.formats[x.id].customNumCol[z.id] ??= 0;
+					table.formats[x.id].customNumCol[z.id]++;
 				}
 			}
 		}
