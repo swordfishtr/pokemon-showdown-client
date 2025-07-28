@@ -971,6 +971,8 @@ function toId() {
 			// dispatch system.
 			var target = e.currentTarget;
 			var dataSend = target.getAttribute('data-submitsend');
+			var stayInRoom = target.getAttribute('data-stayinroom');
+			console.log(e);
 			if (dataSend) {
 				var toSend = dataSend;
 				var entries = this.serializeForm(target, true);
