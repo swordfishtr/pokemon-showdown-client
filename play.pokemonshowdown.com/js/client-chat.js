@@ -130,8 +130,7 @@
 			e.preventDefault();
 			e.stopPropagation();
 			if (e.currentTarget.getAttribute('data-submitsend')) {
-				console.log(this);
-				return app.submitSend(e);
+				return app.submitSend(e, this.id);
 			}
 			var text = this.$chatbox.val();
 			if (!text) return;

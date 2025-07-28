@@ -16,7 +16,7 @@
 			app.send(data);
 		},
 		submitSend: function (e) {
-			return app.submitSend(e);
+			return app.submitSend(e, this.id);
 		},
 		receive: function (data) {
 			this.add(data);

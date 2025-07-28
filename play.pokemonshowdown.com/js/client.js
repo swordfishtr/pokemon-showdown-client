@@ -964,7 +964,7 @@ function toId() {
 			}
 			return out;
 		},
-		submitSend: function (e) {
+		submitSend: function (e, roomid) {
 			// Most of the code relating to this is nightmarish because of some dumb choices
 			// made when writing the original Backbone code. At least in the client rewrite, event
 			// handling is a lot more straightforward because it doesn't rely on Backbone's event
@@ -972,7 +972,6 @@ function toId() {
 			var target = e.currentTarget;
 			var dataSend = target.getAttribute('data-submitsend');
 			var stayInRoom = target.getAttribute('data-stayinroom');
-			console.log(e);
 			if (dataSend) {
 				var toSend = dataSend;
 				var entries = this.serializeForm(target, true);
@@ -980,7 +979,7 @@ function toId() {
 					toSend = toSend.replace('{' + entries[i][0] + '}', entries[i][1]);
 				}
 				toSend = toSend.replace(/\{[a-z]+\}/g, '');
-				this.send(toSend);
+				this.send(toSend, stayInRoom ? roomid : undefined);
 				e.currentTarget.innerText = 'Submitted!';
 				e.preventDefault();
 				e.stopPropagation();
