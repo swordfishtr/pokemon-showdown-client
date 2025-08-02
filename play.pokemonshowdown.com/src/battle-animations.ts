@@ -701,23 +701,15 @@ export class BattleScene implements BattleSceneStub {
 		let badgehtml = '';
 		if (side.badges.length) {
 			badgehtml = '<span class="badges">';
-			// hard limiting it to only ever 3 allowed at a time
-			// that's what the server limit is anyway but there should be a client limit too
-			// just in case
-			for (const badgeData of side.badges.slice(0, 3)) {
-				// ${badge.type}|${badge.format}|${BADGE_THRESHOLDS[badge.type]}-${badge.season}
-				const [type, format, details] = badgeData.split('|');
-				// todo, maybe make this more easily configured if we ever add badges for other stuff?
-				// but idk that we're planning that for now so
-				const [threshold] = details.split('-');
-				const hover = `User is Top ${threshold} on the ${format} Ladder`;
-				// ou and randbats get diff badges from everyone else, find it
-				// (regex futureproofs for double digit gens)
-				let formatType = format.split(/gen\d+/)[1] || 'none';
-				if (!['ou', 'randombattle'].includes(formatType)) {
-					formatType = 'rotating';
-				}
-				badgehtml += `<img src="${Dex.resourcePrefix}/sprites/misc/${formatType}_${type}.png" style="padding: 0px 1px 0px 1px" width="16px" height="16px" title="${hover}" />`;
+			for (const badgeData of side.badges) {
+				// GENERATIONS
+				// Our badges are prizes; more prestigious than prize winner status, but less than a custom avatar.
+				// current protocol: |badge|slot|sprite|timestamp|description
+
+				const [sprite, timestamp, description] = badgeData.split('|', 3);
+				let hover = description || 'Nondescript Badge';
+				if(timestamp) hover += `\nAcquired at ${new Date(Number(timestamp) * 1000)}`;
+				badgehtml += `<img src="${Dex.resourcePrefix}/sprites/misc/badge-${sprite}.png" style="padding: 0px 1px 0px 1px" width="16px" height="16px" title="${hover}" />`;
 			}
 			badgehtml += '</span>';
 		}
