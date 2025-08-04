@@ -4,7 +4,6 @@ Thumbs.db
 npm-debug.log
 /config/
 /vendor/
-/caches/
 *.old
 
 /play.pokemonshowdown.com/dirindex/webfonts/

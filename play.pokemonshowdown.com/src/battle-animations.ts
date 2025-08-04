@@ -709,7 +709,7 @@ export class BattleScene implements BattleSceneStub {
 				const [sprite, timestamp, description] = badgeData.split('|', 3);
 				let hover = description || 'Nondescript Badge';
 				if(timestamp) hover += `\nAcquired at ${new Date(Number(timestamp) * 1000)}`;
-				badgehtml += `<img src="${Dex.resourcePrefix}/sprites/misc/badge-${sprite}.png" style="padding: 0px 1px 0px 1px" width="16px" height="16px" title="${hover}" />`;
+				badgehtml += `<img src="${Dex.resourcePrefix}/sprites/misc/badge-${sprite}.png" style="padding: 0px 1px 0px 1px" width="20px" height="20px" title="${hover}" />`;
 			}
 			badgehtml += '</span>';
 		}
