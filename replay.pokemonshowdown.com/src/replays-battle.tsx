@@ -517,9 +517,6 @@ export class BattlePanel extends preact.Component<{ id: string }> {
 				{this.result.rating ? [` | `, <em>Rating:</em>, ` ${this.result.rating}`] : ''}
 				{/* {} <code>{this.keyCode}</code> */}
 			</p> : <p>&nbsp;</p>}
-			{!PSRouter.showingLeft() && <p>
-				<a href={PSRouter.href(PSRouter.leftLoc)} class="button"><i class="fa fa-caret-left" aria-hidden></i> More replays</a>
-			</p>}
 		</div>;
 	}
 	override render() {
