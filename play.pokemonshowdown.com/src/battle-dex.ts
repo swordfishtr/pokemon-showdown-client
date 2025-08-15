@@ -298,7 +298,7 @@ export const Dex = new class implements ModdedDex {
 			avatar = BattleAvatarNumbers[avatar];
 		}
 		if (avatar.startsWith('#')) {
-			return Dex.resourcePrefix + 'sprites/trainers-custom/' + toID(avatar.substr(1)) + '.png';
+			return Dex.resourcePrefix + 'sprites/trainers-custom/' + avatar.slice(1).toLowerCase() + '.png';
 		}
 		if (avatar.includes('.') && window.Config?.server?.registered) {
 			// custom avatar served by the server
