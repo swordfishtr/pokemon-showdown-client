@@ -360,7 +360,7 @@ PSBackground.subscribe(bgUrl => {
 		let background;
 		if (bgUrl.startsWith('#')) {
 			background = bgUrl;
-		} else if (PSBackground.curId !== 'custom') {
+		} else if (PSBackground.curId !== 'custom' && PSBackground.curId !== 'mascotmedley') {
 			background = `#546bac url(${bgUrl}) no-repeat left center fixed`;
 		} else {
 			background = `#546bac url(${bgUrl}) no-repeat center center fixed`;

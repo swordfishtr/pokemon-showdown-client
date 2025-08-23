@@ -66,7 +66,7 @@ Storage.bg = {
 		var background;
 		if (bgUrl.charAt(0) === '#') {
 			background = bgUrl;
-		} else if (bgid !== 'custom') {
+		} else if (bgid !== 'custom' && bgid !== 'mascotmedley') {
 			background = '#546bac url(' + bgUrl + ') no-repeat left center fixed';
 		} else {
 			background = '#546bac url(' + bgUrl + ') no-repeat center center fixed';
