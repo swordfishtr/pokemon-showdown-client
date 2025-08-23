@@ -54,7 +54,7 @@ Storage.bg = {
 		this.id = bgid;
 		if (!bgid) {
 			//bgid = ['horizon', 'ocean', 'waterfall', 'shaymin', 'charizards', 'psday'][Math.floor(Math.random() * 6)];
-			const pngbg = ['generations'];
+			const pngbg = ['mascotmedley'];
 			bgid = pngbg[0];
 			bgUrl = Dex.resourcePrefix + 'fx/client-bg-' + bgid + (pngbg.includes(bgid) ? '.png' : '.jpg');
 		}
@@ -80,8 +80,8 @@ Storage.bg = {
 
 		if (!hues) {
 			switch (bgid) {
-			case 'generations':
-				attrib = '<a href="ARTSOURCE" target="_blank" class="subtle">"Generations" <small>background by ARTISTNAME</small></a>';
+			case 'mascotmedley':
+				attrib = '<a href="https://vgen.co/merionstudio" target="_blank" class="subtle">"Generations Mascot Medley" <small>background by MerionStudio</small></a>';
 				break;
 			case 'horizon':
 				hues = ["318.87640449438203,35.177865612648226%", "216,46.2962962962963%", "221.25,32.25806451612904%", "197.8021978021978,52.60115606936417%", "232.00000000000003,19.480519480519483%", "228.38709677419354,60.7843137254902%"];
