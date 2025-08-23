@@ -81,6 +81,7 @@ Storage.bg = {
 		if (!hues) {
 			switch (bgid) {
 			case 'mascotmedley':
+				hues = ["348.89, 72.19%", "348.93, 77.78%", "350.07, 62.33%", "211.07, 77.78%", "208.4, 82.42%", "209.06, 52.46%"];
 				attrib = '<a href="https://vgen.co/merionstudio" target="_blank" class="subtle">"Generations Mascot Medley" <small>background by MerionStudio</small></a>';
 				break;
 			case 'horizon':
