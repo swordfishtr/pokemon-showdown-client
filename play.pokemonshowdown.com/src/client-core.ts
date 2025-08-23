@@ -179,6 +179,14 @@ export const PSBackground = new class extends PSStreamModel<string | null> {
 		let attrib = null;
 		switch (bgid) {
 		case 'mascotmedley':
+			menuColors = [
+				"339.4285714285714,13.944223107569718%",
+				"208.74999999999997,28.571428571428566%",
+				"44.16,73.09941520467835%",
+				"33.33333333333323,15.254237288135583%",
+				"26.34146341463415,65.07936507936508%",
+				"170.9090909090909,37.07865168539327%",
+			];
 			attrib = {
 				url: 'https://vgen.co/merionstudio',
 				title: 'Generations Mascot Medley',
@@ -187,12 +195,12 @@ export const PSBackground = new class extends PSStreamModel<string | null> {
 			break;
 		case 'horizon':
 			menuColors = [
-				"348.89, 72.19%",
-				"348.93, 77.78%",
-				"350.07, 62.33%",
-				"211.07, 77.78%",
-				"208.4, 82.42%",
-				"209.06, 52.46%",
+				"318.87640449438203,35.177865612648226%",
+				"216,46.2962962962963%",
+				"221.25,32.25806451612904%",
+				"197.8021978021978,52.60115606936417%",
+				"232.00000000000003,19.480519480519483%",
+				"228.38709677419354,60.7843137254902%",
 			];
 			attrib = {
 				url: 'https://vtas.deviantart.com/art/Pokemon-Horizon-312267168',
