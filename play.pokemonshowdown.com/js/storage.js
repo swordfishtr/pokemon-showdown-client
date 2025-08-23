@@ -54,7 +54,7 @@ Storage.bg = {
 		this.id = bgid;
 		if (!bgid) {
 			//bgid = ['horizon', 'ocean', 'waterfall', 'shaymin', 'charizards', 'psday'][Math.floor(Math.random() * 6)];
-			const pngbg = ['generations'];
+			const pngbg = ['mascotmedley'];
 			bgid = pngbg[0];
 			bgUrl = Dex.resourcePrefix + 'fx/client-bg-' + bgid + (pngbg.includes(bgid) ? '.png' : '.jpg');
 		}
