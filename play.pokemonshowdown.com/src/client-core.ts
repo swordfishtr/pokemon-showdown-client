@@ -155,25 +155,19 @@ export const PSBackground = new class extends PSStreamModel<string | null> {
 	}
 
 	load(bgUrl: string, bgid: string, menuColors: string[] | null = null) {
+		const pngbg = ['generations'];
+
 		// id
 		this.id = bgid;
 
 		// curid
-		if (!bgid) {
-			if (location.host === 'smogtours.psim.us') {
-				bgid = 'shaymin';
-			} else {
-				const bgs = ['horizon', 'ocean', 'waterfall', 'shaymin', 'charizards'];
-				bgid = bgs[Math.floor(Math.random() * 5)];
-				// if someone clicked the random button, try to roll a different bg than before
-				if (bgid === this.curId) bgid = bgs[Math.floor(Math.random() * 5)];
-			}
-		}
+		//const bgs = ['horizon', 'ocean', 'waterfall', 'shaymin', 'charizards'];
+		//bgid = bgs[Math.floor(Math.random() * 5)];
+
+		bgid ||= pngbg[0];
 		this.curId = bgid;
 
-		if (!bgUrl) {
-			bgUrl = (bgid === 'solidblue' ? '#344b6c' : PSURL + 'fx/client-bg-' + bgid + '.jpg');
-		}
+		bgUrl ||= (bgid === 'solidblue' ? '#344b6c' : PSURL + 'fx/client-bg-' + bgid + (pngbg.includes(bgid) ? '.png' : '.jpg'));
 
 		// April Fool's 2016 - Digimon theme
 		// bgid = 'digimon';
@@ -184,6 +178,13 @@ export const PSBackground = new class extends PSStreamModel<string | null> {
 		// menuColors, attrib
 		let attrib = null;
 		switch (bgid) {
+		case 'generations':
+			attrib = {
+				url: 'https://vgen.co/merionstudio',
+				title: 'Generations Mascot Medley',
+				artist: 'MerionStudio',
+			};
+			break;
 		case 'horizon':
 			menuColors = [
 				"318.87640449438203,35.177865612648226%",
