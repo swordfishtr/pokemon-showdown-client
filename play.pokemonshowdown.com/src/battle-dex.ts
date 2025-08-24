@@ -236,8 +236,6 @@ export const Dex = new class implements ModdedDex {
 	loadedSpriteData = { xy: 1, bw: 0 };
 	moddedDexes: { [mod: string]: ModdedDex } = {};
 
-	formatModdedDexes: { [mod: string]: ModdedDex } = {};
-
 	/**
 	 * April Fools' Day setting:
 	 * * `true` = FULL, all jokes on
@@ -246,33 +244,18 @@ export const Dex = new class implements ModdedDex {
 	 */
 	afdMode?: boolean | 'sprites';
 
-	mod(modid: ID, format?: string): ModdedDex {
-		if (!window.BattleTeambuilderTable) return this;
-		if(modid === 'gen9' && !(format && [
-			'gen9nd35pokesperfecta3', 'gen9nd35pokesperfectc1', 'gen9nd35pokesperfectc2',
-		].includes(format))) return this;
-		if(format) {
-			if(format in this.formatModdedDexes) {
-				return this.formatModdedDexes[format];
-			}
+	mod(modid: ID): ModdedDex {
+		if (modid === 'gen9') return this;
+		if (!window.GensTeambuilderTable) return this;
+		if (modid in this.moddedDexes) {
+			return this.moddedDexes[modid];
 		}
-		else {
-			if (modid in this.moddedDexes) {
-				return this.moddedDexes[modid];
-			}
-		}
-		const dex = new ModdedDex(modid, format);
-		if(format) {
-			this.formatModdedDexes[format] = dex;
-		}
-		else {
-			this.moddedDexes[modid] = dex;
-		}
-		return dex;
+		this.moddedDexes[modid] = new ModdedDex(modid);
+		return this.moddedDexes[modid];
 	}
-	forGen(gen: number, format?: string) {
+	forGen(gen: number) {
 		if (!gen) return this;
-		return this.mod(`gen${gen}` as ID, format);
+		return this.mod(`gen${gen}` as ID);
 	}
 	formatGen(format: string) {
 		const formatid = toID(format);
@@ -281,14 +264,14 @@ export const Dex = new class implements ModdedDex {
 		return parseInt(formatid.charAt(3)) || Dex.gen;
 	}
 	forFormat(format: string) {
-		let dex = Dex.forGen(Dex.formatGen(format), format);
+		let dex = Dex.forGen(Dex.formatGen(format));
 
 		const formatid = toID(format).slice(4);
 		if (dex.gen === 7 && formatid.includes('letsgo')) {
-			dex = Dex.mod('gen7letsgo' as ID, format);
+			dex = Dex.mod('gen7letsgo' as ID);
 		}
 		if (dex.gen === 8 && formatid.includes('bdsp')) {
-			dex = Dex.mod('gen8bdsp' as ID, format);
+			dex = Dex.mod('gen8bdsp' as ID);
 		}
 		return dex;
 	}
@@ -861,6 +844,7 @@ export const Dex = new class implements ModdedDex {
 		};
 		if (pokemon.shiny) spriteData.shiny = true;
 
+		// Generations off-size fakemon sprites.
 		if(id === 'evisempra') {
 			spriteData.h = 96;
 		}
@@ -965,7 +949,6 @@ export const Dex = new class implements ModdedDex {
 export class ModdedDex {
 	readonly gen: number;
 	readonly modid: ID;
-	readonly format?: string;
 	readonly cache = {
 		Moves: {} as { [k: string]: Move },
 		Items: {} as { [k: string]: Item },
@@ -974,9 +957,8 @@ export class ModdedDex {
 		Types: {} as { [k: string]: Dex.Effect },
 	};
 	pokeballs: string[] | null = null;
-	constructor(modid: ID, format?: string) {
+	constructor(modid: ID) {
 		this.modid = modid;
-		this.format = format;
 		const gen = parseInt(modid.charAt(3), 10);
 		if (!modid.startsWith('gen') || !gen) throw new Error("Unsupported modid");
 		this.gen = gen;
@@ -993,13 +975,13 @@ export class ModdedDex {
 			let data = { ...Dex.moves.get(name) };
 
 			for (let i = Dex.gen - 1; i >= this.gen; i--) {
-				const table = window.BattleTeambuilderTable[`gen${i}`];
+				const table = window.GensTeambuilderTable.mods[`gen${i}`];
 				if (id in table.overrideMoveData) {
 					Object.assign(data, table.overrideMoveData[id]);
 				}
 			}
 			if (this.modid !== `gen${this.gen}`) {
-				const table = window.BattleTeambuilderTable[this.modid];
+				const table = window.GensTeambuilderTable.mods[this.modid];
 				if (id in table.overrideMoveData) {
 					Object.assign(data, table.overrideMoveData[id]);
 				}
@@ -1026,13 +1008,13 @@ export class ModdedDex {
 			let data = { ...Dex.items.get(name) };
 
 			for (let i = Dex.gen - 1; i >= this.gen; i--) {
-				const table = window.BattleTeambuilderTable[`gen${i}`];
+				const table = window.GensTeambuilderTable.mods[`gen${i}`];
 				if (id in table.overrideItemData) {
 					Object.assign(data, table.overrideItemData[id]);
 				}
 			}
 			if (this.modid !== `gen${this.gen}`) {
-				const table = window.BattleTeambuilderTable[this.modid];
+				const table = window.GensTeambuilderTable.mods[this.modid];
 				if (id in table.overrideItemData) {
 					Object.assign(data, table.overrideItemData[id]);
 				}
@@ -1056,13 +1038,13 @@ export class ModdedDex {
 			let data = { ...Dex.abilities.get(name) };
 
 			for (let i = Dex.gen - 1; i >= this.gen; i--) {
-				const table = window.BattleTeambuilderTable[`gen${i}`];
+				const table = window.GensTeambuilderTable.mods[`gen${i}`];
 				if (id in table.overrideAbilityData) {
 					Object.assign(data, table.overrideAbilityData[id]);
 				}
 			}
 			if (this.modid !== `gen${this.gen}`) {
-				const table = window.BattleTeambuilderTable[this.modid];
+				const table = window.GensTeambuilderTable.mods[this.modid];
 				if (id in table.overrideAbilityData) {
 					Object.assign(data, table.overrideAbilityData[id]);
 				}
@@ -1086,16 +1068,15 @@ export class ModdedDex {
 			let data = { ...Dex.species.get(name) };
 
 			for (let i = Dex.gen - 1; i >= this.gen; i--) {
-				const table = window.BattleTeambuilderTable[`gen${i}`];
+				const table = window.GensTeambuilderTable.mods[`gen${i}`];
 				if (id in table.overrideSpeciesData) {
 					Object.assign(data, table.overrideSpeciesData[id]);
 				}
 			}
 
-			// TODO: fix bdsp, lgpe, bw1, rs
 			if (this.modid !== `gen${this.gen}`) {
-				const table = window.BattleTeambuilderTable[this.modid];
-				if (table && (id in table.overrideSpeciesData)) {
+				const table = window.GensTeambuilderTable.mods[this.modid];
+				if (id in table.overrideSpeciesData) {
 					Object.assign(data, table.overrideSpeciesData[id]);
 				}
 			}
@@ -1104,54 +1085,13 @@ export class ModdedDex {
 				data.abilities = { 0: "No Ability" };
 			}
 
-			// TODO: redesign BTT please i beg you
-			if(this.format) {
-				// stupid hardcode
-				const formatType = (() =>{
-					if(this.format.startsWith('gen8bdsp')) {
-						if(this.format.includes('doubles')) return 'gen8bdspdoubles';
-						return 'gen8bdsp';
-					}
-					if(this.format.startsWith('gen7letsgo')) {
-						if(this.format.includes('doubles')) return 'gen7letsgodoubles';
-						return 'gen7letsgo';
-					}
-					if(this.format.startsWith('gen5bw')) {
-						if(this.format.includes('doubles')) return 'gen5bwdoubles';
-						return 'gen5bw';
-					}
-					if(this.format.startsWith('gen3rs')) {
-						if(this.format.includes('doubles')) return 'gen3rsdoubles';
-						return 'gen3rs';
-					}
-					let buf = '';
-					let gen = /^(gen\d+)/.exec(this.format)?.[1];
-					if(gen) {
-						if(/^gen\d+pokes/.test(this.format)) gen = gen.slice(0, this.format.indexOf('35pokes'));
-						buf = gen;
-					}
-		
-					if(
-						this.format.slice(buf.length).startsWith('nd') ||
-						this.format.slice(buf.length).startsWith('natdex') ||
-						this.format.slice(buf.length).startsWith('nationaldex')
-					) {
-						buf += 'natdex';
-					}
-					if(
-						this.format.slice(buf.length).includes('doubles') ||
-						this.format.slice(buf.length).includes('vgc')
-					) {
-						buf += 'doubles';
-					}
-		
-					if(buf === 'gen9') return '';
-					return buf;
-				})();
-				const table = formatType ? window.BattleTeambuilderTable[formatType] : window.BattleTeambuilderTable;
-				if(table && table.formats?.[this.format]?.overrideSpeciesData) {
-					Object.assign(data, table.formats[this.format].overrideSpeciesData[id]);
-				}
+			const table = window.GensTeambuilderTable.mods[this.modid];
+			if (id in table.overrideTier) data.tier = table.overrideTier[id];
+			if (!data.tier && id.endsWith('totem')) {
+				data.tier = this.species.get(id.slice(0, -5)).tier;
+			}
+			if (!data.tier && data.baseSpecies && toID(data.baseSpecies) !== id) {
+				data.tier = this.species.get(data.baseSpecies).tier;
 			}
 
 			data.tier ??= '?';
@@ -1192,7 +1132,7 @@ export class ModdedDex {
 			let data = { ...Dex.types.get(name) };
 
 			for (let i = 7; i >= this.gen; i--) {
-				const table = window.BattleTeambuilderTable[`gen${i}`];
+				const table = window.GensTeambuilderTable.mods[`gen${i}`];
 				if (id in table.removeType) {
 					data.exists = false;
 					// don't bother correcting its attributes given it doesn't exist

@@ -23,10 +23,62 @@ export type SearchRow = (
 
 type SearchFilter = [string, string];
 
+interface GTTMod {
+	items: any, // not undefined
+	itemSet?: any,
+	// TODO
+	// itemsnatdex, itemSetnatdex
+	// itemsdoubles, itemSetdoubles
+	overrideSpeciesData?: any,
+	overrideMoveData?: any,
+	overrideAbilityData?: any,
+	overrideItemData?: any,
+	overrideTypeChart?: any,
+	removeType?: any,
+	learnsets?: typeof GensTeambuilderTable.learnsets,
+}
+
+interface GTTFormat {
+	mod: ID, // keyof GTT.mods
+	natdex: ID | null, // keyof GTT.mods
+	level: 5 | 50 | 100,
+
+	doubles?: true,
+	cap?: true // not in use yet
+	tradebacks?: true, // not in use yet
+	flipped?: true,
+	aaa?: true, // not in use yet
+	hackmons?: true, // not in use yet
+	stabmons?: true, // not in use yet
+	scalemons?: true,
+
+	whitelist?: { [species: ID]: true },
+	blacklist?: { [species: ID]: true },
+	moves?: { [move: ID]: true },
+	customNumCol?: { [species: ID]: number },
+
+	items?: GTTMod['items'], // not in use yet
+	itemSet?: GTTMod['itemSet'],
+	overrideSpeciesData?: GTTMod['overrideSpeciesData'],
+	overrideMoveData?: GTTMod['overrideMoveData'],
+	overrideAbilityData?: GTTMod['overrideAbilityData'],
+	overrideItemData?: GTTMod['overrideItemData'],
+	learnsets?: GTTMod['learnsets'], // not in use yet
+	learnsetDiff?: {
+		additions: { [species: ID]: { [move: ID]: true } },
+		removals: { [species: ID]: { [move: ID]: true } },
+	},
+}
+
 /** ID, SearchType, index (if alias), offset (if offset alias) */
 declare const BattleSearchIndex: [ID, SearchType, number?, number?][];
 declare const BattleSearchIndexOffset: any;
-declare const BattleTeambuilderTable: any;
+declare const GensTeambuilderTable: {
+	mods: { [mod: ID]: GTTMod },
+	formats: { [format: ID]: GTTFormat },
+	learnsets: any, // TODO
+	build: string,
+};
 
 /**
  * Backend for search UIs.
@@ -557,11 +609,14 @@ abstract class BattleTypedSearch<T extends SearchType> {
 	 * Format is the first of two base filters. It constrains results to things
 	 * legal in the format, and affects the default sort.
 	 *
-	 * This string specifically normalizes out generation number and the words
-	 * "Doubles" and "Let's Go" from the name.
+	 * In Generations this string is the full format id.
 	 */
 	format = '' as ID;
-	formatFull = '' as ID;
+
+	// Shorthands
+	gttmod: GTTMod;
+	gttformat: GTTFormat;
+
 	/**
 	 * `species` is the second of two base filters. It constrains results to
 	 * things that species can use, and affects the default sort.
@@ -572,13 +627,6 @@ abstract class BattleTypedSearch<T extends SearchType> {
 	 * (Abilities/items can affect what moves are sorted as usable.)
 	 */
 	set: Dex.PokemonSet | null = null;
-
-	/**
-	 * Name of subtable in BattleTeambuilderTable. Empty if no subtable needed.
-	 * 
-	 * Also used for checking for natdex, doubles, bdsp etc.
-	 */
-	protected formatType: string | null = null;
 
 	/**
 	 * Cached copy of what the results list would be with only base filters
@@ -597,101 +645,14 @@ abstract class BattleTypedSearch<T extends SearchType> {
 
 	constructor(searchType: T, format = '' as ID, speciesOrSet: ID | Dex.PokemonSet = '' as ID) {
 		this.searchType = searchType;
-		this.formatFull = format;
 
 		this.baseResults = null;
 		this.baseIllegalResults = null;
 
-		const formatFull = this.formatFull;
-		this.formatType = (() =>{
-			if(formatFull.startsWith('gen8bdsp')) {
-				if(formatFull.includes('doubles')) return 'gen8bdspdoubles';
-				return 'gen8bdsp';
-			}
-			if(formatFull.startsWith('gen7letsgo')) {
-				if(formatFull.includes('doubles')) return 'gen7letsgodoubles';
-				return 'gen7letsgo';
-			}
-			if(formatFull.startsWith('gen5bw')) {
-				if(formatFull.includes('doubles')) return 'gen5bwdoubles';
-				return 'gen5bw';
-			}
-			if(formatFull.startsWith('gen3rs')) {
-				if(formatFull.includes('doubles')) return 'gen3rsdoubles';
-				return 'gen3rs';
-			}
-			let buf = '';
-			let gen = /^(gen\d+)/.exec(formatFull)?.[1];
-			if(gen) {
-				if(/^gen\d+pokes/.test(formatFull)) gen = gen.slice(0, formatFull.indexOf('35pokes'));
-				buf = gen;
-			}
-
-			if(
-				formatFull.slice(buf.length).startsWith('nd') ||
-				formatFull.slice(buf.length).startsWith('natdex') ||
-				formatFull.slice(buf.length).startsWith('nationaldex')
-			) {
-				buf += 'natdex';
-			}
-			if(
-				formatFull.slice(buf.length).includes('doubles') ||
-				formatFull.slice(buf.length).includes('vgc')
-			) {
-				buf += 'doubles';
-			}
-
-			if(buf === 'gen9') return '';
-			return buf;
-		})();
-
-		if (format.startsWith('gen')) {
-			const gen = (Number(format.charAt(3)) || 6);
-			format = (format.slice(4) || 'customgame') as ID;
-			this.dex = Dex.forGen(gen, formatFull);
-		} else if (!format) {
-			this.dex = Dex;
-		}
-
-		if (format.startsWith('dlc1') && this.dex.gen === 8) {
-			format = format.slice(4) as ID;
-		}
-		if (format.startsWith('predlc')) {
-			format = format.slice(6) as ID;
-		}
-		if (format.startsWith('dlc1') && this.dex.gen === 9) {
-			format = format.slice(4) as ID;
-		}
-		if (format.startsWith('stadium')) {
-			format = format.slice(7) as ID;
-			if (!format) format = 'ou' as ID;
-		}
-		if (format.includes('bdsp')) {
-			format = format.slice(4) as ID;
-			this.dex = Dex.mod('gen8bdsp' as ID, formatFull);
-		}
-		if (format.includes('bw1')) {
-			this.dex = Dex.mod('gen5bw1' as ID, formatFull);
-		}
-		if (format.includes('adv200')) {
-			this.dex = Dex.mod('gen3rs' as ID, formatFull);
-		}
-		if (format.includes('letsgo')) {
-			this.dex = Dex.mod('gen7letsgo' as ID, formatFull);
-		}
-		if (format.includes('nationaldex') || format.startsWith('nd') || format.includes('natdex')) {
-			format = (format.startsWith('nd') ? format.slice(2) :
-				format.includes('natdex') ? format.slice(6) : format.slice(11)) as ID;
-			if (!format) format = 'ou' as ID;
-		}
-		if (this.formatType?.includes('letsgo')) format = format.slice(6) as ID;
-		if (format.endsWith('nfe')) {
-			format = (format.slice(3) || 'ou') as ID;
-		}
-		if ((format.endsWith('lc') || format.startsWith('lc')) && format !== 'caplc') {
-			format = 'lc' as ID;
-		}
 		this.format = format;
+		this.gttformat = GensTeambuilderTable.formats[format];
+		this.gttmod = GensTeambuilderTable.mods[this.gttformat.mod];
+		this.dex = Dex.mod(this.gttformat.mod);
 
 		this.species = '' as ID;
 		this.set = null;
@@ -780,12 +741,8 @@ abstract class BattleTypedSearch<T extends SearchType> {
 		return results;
 	}
 	protected firstLearnsetid(speciesid: ID) {
-		let table = BattleTeambuilderTable;
-		if (this.formatFull?.startsWith('gen8bdsp')) table = table['gen8bdsp'];
-		else if (this.formatFull?.startsWith('gen7letsgo')) table = table['gen7letsgo'];
-		else if (this.formatFull?.startsWith('gen5bw1')) table = table['gen5bw1'];
-		else if (this.formatFull?.startsWith('gen3rs')) table = table['gen3rs'];
-		if (speciesid in table.learnsets) return speciesid;
+		const learnsets = this.gttformat.learnsets ?? this.gttmod.learnsets ?? GensTeambuilderTable.learnsets;
+
 		const species = this.dex.species.get(speciesid);
 		if (!species.exists) return '' as ID;
 
@@ -793,7 +750,7 @@ abstract class BattleTypedSearch<T extends SearchType> {
 		if (typeof species.battleOnly === 'string' && species.battleOnly !== species.baseSpecies) {
 			baseLearnsetid = toID(species.battleOnly);
 		}
-		if (baseLearnsetid in table.learnsets) return baseLearnsetid;
+		if (baseLearnsetid in learnsets) return baseLearnsetid;
 		return '' as ID;
 	}
 	protected nextLearnsetid(learnsetid: ID, speciesid: ID, checkingMoves = false) {
@@ -823,20 +780,19 @@ abstract class BattleTypedSearch<T extends SearchType> {
 		return '' as ID;
 	}
 	protected canLearn(speciesid: ID, moveid: ID): boolean {
+		// GENERATIONS
+		// Heavy rewrite; merge carefully.
+		// TODO: check that the results match the original
+
 		const move = this.dex.moves.get(moveid);
-		if (this.formatType?.includes('natdex') && move.isNonstandard && move.isNonstandard !== 'Past') {
+		if(this.gttformat.natdex && move.isNonstandard && move.isNonstandard !== 'Past') {
 			return false;
 		}
+
 		const gen = this.dex.gen;
 		let genChar = `${gen}`;
-		if (
-			this.formatFull.includes('vgc') ||
-			this.formatFull.includes('bss') ||
-			this.formatFull.includes('battlespot') ||
-			this.formatFull.includes('battlestadium') ||
-			this.formatFull.includes('battlefestival') ||
-			(this.dex.gen === 9 && !(this.overrideFormatType ?? this.formatType)?.includes('natdex'))
-		) {
+		// vgc and bss logic was here (regionBornLegality)
+		if(gen > 8 && !this.gttformat.natdex) {
 			if (gen === 9) {
 				genChar = 'a';
 			} else if (gen === 8) {
@@ -847,34 +803,34 @@ abstract class BattleTypedSearch<T extends SearchType> {
 				genChar = 'p';
 			}
 		}
+
+		const learnsets = this.gttformat.learnsets ?? this.gttmod.learnsets ?? GensTeambuilderTable.learnsets;
 		let learnsetid = this.firstLearnsetid(speciesid);
+
 		while (learnsetid) {
-			let table = BattleTeambuilderTable;
-			if (this.formatFull?.startsWith('gen8bdsp')) table = table['gen8bdsp'];
-			else if (this.formatFull?.startsWith('gen7letsgo')) table = table['gen7letsgo'];
-			else if (this.formatFull?.startsWith('gen5bw1')) table = table['gen5bw1'];
-			else if (this.formatFull?.startsWith('gen3rs')) table = table['gen3rs'];
-			let learnset = table.learnsets[learnsetid];
+			const learnset = learnsets[learnsetid];
 			const eggMovesOnly = this.eggMovesOnly(learnsetid, speciesid);
-			if (learnset && (moveid in learnset) && (!this.format.startsWith('tradebacks') ? learnset[moveid].includes(genChar) :
-				learnset[moveid].includes(genChar) || (learnset[moveid].includes(`${gen + 1}`) && move.gen === gen)) &&
+
+			if(
+				learnset &&
+				(moveid in learnset) &&
+				(
+					!this.gttformat.tradebacks ?
+					learnset[moveid].includes(genChar) :
+					learnset[moveid].includes(genChar) || (learnset[moveid].includes(`${gen + 1}`) && move.gen === gen)
+				) &&
 				(!eggMovesOnly || (learnset[moveid].includes('e') && this.dex.gen === 9))
 			) {
 				return true;
 			}
 			learnsetid = this.nextLearnsetid(learnsetid, speciesid, true);
 		}
+
 		return false;
 	}
 	getNumCol(pokemon: Dex.Species): string {
-		const formatFull = this.formatFull;
-		const formatType = this.formatType;
-		let table = BattleTeambuilderTable;
-		if(formatType && table[formatType]) table = table[formatType];
-		if(table.formats?.[formatFull]?.customNumCol) {
-			return String(table.formats[formatFull].customNumCol[pokemon.id] ?? 0);
-		}
-		return String(pokemon.num);
+		if(this.gttformat.customNumCol) return `${this.gttformat.customNumCol[pokemon.id] ?? ''}`;
+		return `${pokemon.num}`;
 	}
 	eggMovesOnly(child: ID, father: ID) {
 		if (this.dex.species.get(child).baseSpecies === this.dex.species.get(father).baseSpecies) return false;
@@ -891,20 +847,9 @@ abstract class BattleTypedSearch<T extends SearchType> {
 	abstract filter(input: SearchRow, filters: string[][]): boolean;
 	defaultFilter?(input: SearchRow[]): SearchRow[];
 	abstract sort(input: SearchRow[], sortCol: string, reverseSort?: boolean): SearchRow[];
-
-	/**
-	 * Used when the results of a different formatType are required by specific formats.
-	 * Example: 'gen3' type format 'gen335pokesperfectb1' uses 'gen9natdex' results for learnsets, items, abilities;
-	 * but species properties and move properties must remain 'gen3'.
-	 */
-	abstract overrideFormatType: typeof this.formatType;
 }
 
 class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
-	overrideFormatType = [
-		'gen335pokesperfectb1', 'gen535pokesperfectb2',
-	].includes(this.formatFull) ? 'natdex' : null; // Intentionally not 'gen9natdex'
-
 	override sortRow: SearchRow = ['sortpokemon', ''];
 	getTable() {
 		return BattlePokedex;
@@ -954,38 +899,25 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 		return results;
 	}
 	getBaseResults(): SearchRow[] {
-		const formatFull = this.formatFull;
+		// GENERATIONS
+		// Heavy rewrite; merge carefully.
+
 		let results = this.getDefaultResults();
-		if (!formatFull) return results;
-		const formatType = this.formatType;
-		const overrideFormatType = this.overrideFormatType;
 
-		// gen9nd35pokesjun2025 shortly 35pokesjun2025
-		console.log(`getBaseResults() for ${formatFull} shortly ${this.format} as ${formatType} override ${overrideFormatType}`);
-
-		let table = BattleTeambuilderTable;
-
-		if(overrideFormatType && table[overrideFormatType]) {
-			table = table[overrideFormatType];
-		}
-		else if(formatType && table[formatType]) {
-			table = table[formatType];
+		if(this.gttformat.whitelist) {
+			results = results.filter(([type, id]) => (id in this.gttformat.whitelist!));
 		}
 
-		const rules = table.formats?.[formatFull];
-		if(rules) {
-			if(rules.whitelist) {
-				results = results.filter(([type, id]) => (id in table.formats[formatFull].whitelist));
-			}
-			if(rules.blacklist) {
-				results = results.filter(([type, id]) => !(id in table.formats[formatFull].blacklist));
-			}
-			if(rules.moves) {
-				results = results
-				.filter(([type, id]) => type === 'pokemon' && !['CAP', 'Custom'].includes(this.dex.species.get(id).isNonstandard as any))
-				.sort(([type1, id1], [type2, id2]) => Number(this.getNumCol(this.dex.species.get(id1))) - Number(this.getNumCol(this.dex.species.get(id2))))
-				.reverse();
-			}
+		if(this.gttformat.blacklist) {
+			results = results.filter(([type, id]) => !(id in this.gttformat.blacklist!));
+		}
+
+		// 35 Moves formats should come with customNumCol.
+		if(this.gttformat.moves) {
+			results = results
+			.filter(([type, id]) => type === 'pokemon' && !['CAP', 'Custom'].includes(this.dex.species.get(id).isNonstandard as any))
+			.sort(([type1, id1], [type2, id2]) => (this.gttformat.customNumCol![id1 as ID] ?? 0) - (this.gttformat.customNumCol![id2 as ID] ?? 0))
+			.reverse();
 		}
 
 		return results;
@@ -1046,8 +978,6 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 }
 
 class BattleAbilitySearch extends BattleTypedSearch<'ability'> {
-	overrideFormatType = null;
-
 	getTable() {
 		return BattleAbilities;
 	}
@@ -1061,9 +991,8 @@ class BattleAbilitySearch extends BattleTypedSearch<'ability'> {
 	}
 	getBaseResults(): SearchRow[] {
 		if (!this.species) return this.getDefaultResults();
-		const format = this.format;
-		const isHackmons = (format.includes('hackmons') || format.endsWith('bh'));
-		const isAAA = (format === 'almostanyability' || format.includes('aaa'));
+		const isHackmons = !!this.gttformat.hackmons;
+		const isAAA = !!this.gttformat.aaa;
 		const dex = this.dex;
 		let species = dex.species.get(this.species);
 		let abilitySet: SearchRow[] = [['header', "Abilities"]];
@@ -1095,7 +1024,7 @@ class BattleAbilitySearch extends BattleTypedSearch<'ability'> {
 			abilitySet.push(...extra.map((e) => ['ability', toID(e)]) as any);
 		}
 
-		if (isAAA || format.includes('metronomebattle') || isHackmons) {
+		if (isAAA || isHackmons) {
 			let abilities: ID[] = [];
 			for (let i in this.getTable()) {
 				const ability = dex.abilities.get(i);
@@ -1147,35 +1076,25 @@ class BattleAbilitySearch extends BattleTypedSearch<'ability'> {
 }
 
 class BattleItemSearch extends BattleTypedSearch<'item'> {
-	overrideFormatType = [
-		'gen335pokesperfectb1', 'gen535pokesperfectb2',
-	].includes(this.formatFull) ? 'gen9natdex' : null;
-
 	getTable() {
 		return BattleItems;
 	}
 	getDefaultResults(): SearchRow[] {
-		const formatType = this.formatType;
-		const overrideFormatType = this.overrideFormatType;
-		let table = BattleTeambuilderTable;
+		let parent: any = GensTeambuilderTable.mods[`gen${Dex.gen}` as ID];
+		if(this.gttmod.items) parent = this.gttmod;
+		if(this.gttformat.items) parent = this.gttformat;
 
-		if(overrideFormatType && table[overrideFormatType]) {
-			table = table[overrideFormatType];
-		}
-		else if(formatType && table[formatType]) {
-			table = table[formatType];
-		}
-
-		if (!table.itemSet) {
-			table.itemSet = table.items.map((r: any) => {
+		if(!parent.itemSet) {
+			parent.itemSet = parent.items.map((r: any) => {
 				if (typeof r === 'string') {
 					return ['item', r];
 				}
 				return [r[0], r[1]];
 			});
-			table.items = null;
+			parent.items = null;
 		}
-		return table.itemSet;
+
+		return parent.itemSet;
 	}
 	getBaseResults(): SearchRow[] {
 		if (!this.species) return this.getDefaultResults();
@@ -1228,10 +1147,6 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 }
 
 class BattleMoveSearch extends BattleTypedSearch<'move'> {
-	overrideFormatType = [
-		'gen335pokesperfectb1', 'gen535pokesperfectb2',
-	].includes(this.formatFull) ? 'natdex' : null; // Intentionally not 'gen9natdex'
-
 	override sortRow: SearchRow = ['sortmove', ''];
 	getTable() {
 		return BattleMovedex;
@@ -1251,7 +1166,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 		}
 		return results;
 	}
-	private moveIsNotUseless(id: ID, species: Dex.Species, moves: string[], set: Dex.PokemonSet | null) {
+	private moveIsNotUseless(id: ID, species: Dex.Species, moves: string[], set: Dex.PokemonSet | null): boolean {
 		const dex = this.dex;
 
 		let abilityid: ID = set ? toID(set.ability) : '' as ID;
@@ -1286,23 +1201,10 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 			case 'thunderpunch': return !moves.includes('thunderbolt');
 			case 'triattack': return !moves.includes('bodyslam');
 			}
-			// Useful and Useless moves for Stadium OU, which changes many game mechanics.
-			if (this.formatType === 'stadium') {
-				if (['doubleedge', 'focusenergy', 'haze'].includes(id)) return true;
-				if (['hyperbeam', 'sing', 'hypnosis'].includes(id)) return false;
-				switch (id) {
-				case 'fly': return !moves.includes('drillpeck');
-				case 'dig': return !moves.includes('earthquake');
-				}
-			}
 		}
 
-		if (this.formatType?.includes('letsgo')) {
+		if (this.gttmod === GensTeambuilderTable.mods['gen7letsgo' as ID]) {
 			if (['megadrain', 'teleport'].includes(id)) return true;
-		}
-
-		if (this.formatType === 'metronome') {
-			if (id === 'metronome') return true;
 		}
 
 		if (itemid === 'pidgeotite') abilityid = 'noguard' as ID;
@@ -1339,7 +1241,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 		case 'counter':
 			return species.baseStats.hp >= 65;
 		case 'dazzlinggleam':
-			return !moves.includes('alluringvoice') || this.formatType?.includes('doubles');
+			return !moves.includes('alluringvoice') || !!this.gttformat.doubles;
 		case 'darkvoid':
 			return dex.gen < 7;
 		case 'dualwingbeat':
@@ -1389,7 +1291,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 			return dex.gen > 3;
 		case 'icywind':
 			// Keldeo needs Hidden Power for Electric/Ghost
-			return species.baseSpecies === 'Keldeo' || this.formatType?.includes('doubles');
+			return species.baseSpecies === 'Keldeo' || !!this.gttformat.doubles;
 		case 'infestation':
 			return moves.includes('stickyweb');
 		case 'irondefense':
@@ -1399,7 +1301,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 		case 'jumpkick':
 			return !moves.includes('highjumpkick') && !moves.includes('axekick');
 		case 'lastresort':
-			return set && set.moves.length < 3;
+			return (set && set.moves.length < 3) ?? false;
 		case 'leafblade':
 			return dex.gen < 4;
 		case 'leechlife':
@@ -1421,7 +1323,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 		case 'petaldance':
 			return abilityid === 'owntempo';
 		case 'phantomforce':
-			return (!moves.includes('poltergeist') && !moves.includes('shadowclaw')) || this.formatType?.includes('doubles');
+			return (!moves.includes('poltergeist') && !moves.includes('shadowclaw')) || !!this.gttformat.doubles;
 		case 'poisonfang':
 			return species.types.includes('Poison') && !moves.includes('gunkshot') && !moves.includes('poisonjab');
 		case 'raindance':
@@ -1451,7 +1353,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 		case 'steelwing':
 			return !moves.includes('ironhead');
 		case 'stompingtantrum':
-			return (!moves.includes('earthquake') && !moves.includes('drillrun')) || this.formatType?.includes('doubles');
+			return (!moves.includes('earthquake') && !moves.includes('drillrun')) || !!this.gttformat.doubles;
 		case 'stunspore':
 			return !moves.includes('thunderwave');
 		case 'sunnyday':
@@ -1462,7 +1364,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 			return dex.gen > 7;
 		case 'temperflare':
 			return (!moves.includes('flareblitz') && !moves.includes('pyroball') && !moves.includes('sacredfire') &&
-				!moves.includes('bitterblade') && !moves.includes('firepunch')) || this.formatType?.includes('doubles');
+				!moves.includes('bitterblade') && !moves.includes('firepunch')) || !!this.gttformat.doubles;
 		case 'terrainpulse': case 'waterpulse':
 			return ['megalauncher', 'technician'].includes(abilityid) && !moves.includes('originpulse');
 		case 'thief':
@@ -1479,12 +1381,18 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 			return abilityid === 'noguard' || (dex.gen < 4 && !moves.includes('thunderwave'));
 		}
 
-		if (this.formatType === 'doubles' && BattleMoveSearch.GOOD_DOUBLES_MOVES.includes(id)) {
+		if (this.gttformat.doubles && BattleMoveSearch.GOOD_DOUBLES_MOVES.includes(id)) {
 			return true;
 		}
 
 		const move = dex.moves.get(id);
 		if (!move.exists) return true;
+
+		// Sleep Moves Clause (add gttformat prop for it if ever needed)
+		// if ((move.status === 'slp' || id === 'yawn') && dex.gen === 9 && !this.formatType) {
+		// 	return false;
+		// }
+
 		if (move.category === 'Status') {
 			return BattleMoveSearch.GOOD_STATUS_MOVES.includes(id);
 		}
@@ -1516,36 +1424,35 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 	static readonly GOOD_DOUBLES_MOVES = [
 		'allyswitch', 'bulldoze', 'coaching', 'electroweb', 'faketears', 'fling', 'followme', 'healpulse', 'helpinghand', 'junglehealing', 'lifedew', 'lunarblessing', 'muddywater', 'pollenpuff', 'psychup', 'ragepowder', 'safeguard', 'skillswap', 'snipeshot', 'wideguard',
 	] as ID[] as readonly ID[];
-	getBaseResults(): SearchRow[] {
+	getBaseResults() {
 		if (!this.species) return this.getDefaultResults();
 		const dex = this.dex;
 		let species = dex.species.get(this.species);
-		const format = this.format;
-		const isHackmons = (format.includes('hackmons') || format.endsWith('bh'));
-		const isSTABmons = (format.includes('stabmons') || format === 'staaabmons');
-		const isTradebacks = format.includes('tradebacks');
-		const regionBornLegality = !(this.overrideFormatType ?? this.formatType)?.includes('natdex') && dex.gen >= 6 &&
-			(/^battle(spot|stadium|festival)/.test(format) || format.startsWith('bss') ||
-				format.startsWith('vgc') || (dex.gen === 9));
+		//const format = this.format;
+		const isHackmons = !!this.gttformat.hackmons;
+		const isSTABmons = !!this.gttformat.stabmons;
+		const isTradebacks = !!this.gttformat.tradebacks;
+		// vgc and bss logic was here (regionBornLegality)
+		const regionBornLegality = dex.gen > 8 && !this.gttformat.natdex;
 
 		let learnsetid = this.firstLearnsetid(species.id);
 		let moves: string[] = [];
 		let sketchMoves: string[] = [];
 		let sketch = false;
 		let gen = `${dex.gen}`;
-		let lsetTable = BattleTeambuilderTable;
-		if (this.formatType?.includes('bdsp')) lsetTable = lsetTable['gen8bdsp'];
-		else if (this.formatType?.includes('letsgo')) lsetTable = lsetTable['gen7letsgo'];
-		else if (this.formatType?.includes('bw1')) lsetTable = lsetTable['gen5bw1'];
-		else if (this.formatType?.includes('rs')) lsetTable = lsetTable['gen3rs'];
+		const minGenCode: { [gen: number]: string } = { 6: 'p', 7: 'q', 8: 'g', 9: 'a' };
 
+		let parent: any = GensTeambuilderTable;
+		if(this.gttmod.learnsets) parent = this.gttmod;
+		if(this.gttformat.learnsets) parent = this.gttformat;
+		
 		while (learnsetid) {
-			let learnset = lsetTable.learnsets[learnsetid];
+			let learnset = parent.learnsets[learnsetid];
 			if (learnset) {
 				for (let moveid in learnset) {
+					if (moves.includes(moveid)) continue;
 					let learnsetEntry = learnset[moveid];
 					const move = dex.moves.get(moveid);
-					const minGenCode: { [gen: number]: string } = { 6: 'p', 7: 'q', 8: 'g', 9: 'a' };
 					if (regionBornLegality && !learnsetEntry.includes(minGenCode[dex.gen])) {
 						continue;
 					}
@@ -1561,10 +1468,9 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 					) {
 						continue;
 					}
-					if (!this.formatType?.includes('natdex') && move.isNonstandard === "Past") {
+					if (this.gttformat.natdex && move.isNonstandard === "Past") {
 						continue;
 					}
-					if (moves.includes(moveid)) continue;
 					moves.push(moveid);
 					if (moveid === 'sketch') sketch = true;
 					if (moveid === 'hiddenpower') {
@@ -1576,28 +1482,29 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 			}
 			learnsetid = this.nextLearnsetid(learnsetid, species.id, true);
 		}
+
 		if (sketch || isHackmons) {
 			if (isHackmons) moves = [];
 			for (let id in BattleMovedex) {
-				if (!format.startsWith('cap') && (id === 'paleowave' || id === 'shadowstrike')) continue;
+				if (!this.gttformat.cap && (['paleowave', 'shadowstrike'].includes(id))) continue;
 				const move = dex.moves.get(id);
 				if (move.gen > dex.gen) continue;
 				if (sketch) {
 					if (move.flags['nosketch'] || move.isMax || move.isZ) continue;
 					if (move.isNonstandard && move.isNonstandard !== 'Past') continue;
-					if (move.isNonstandard === 'Past' && !this.formatType?.includes('natdex')) continue;
+					if (move.isNonstandard === 'Past' && this.gttformat.natdex) continue;
 					sketchMoves.push(move.id);
 				} else {
-					if (!(dex.gen < 8 || this.formatType?.includes('natdex')) && move.isZ) continue;
+					if (!(dex.gen < 8 || this.gttformat.natdex) && move.isZ) continue;
 					if (typeof move.isMax === 'string') continue;
 					if (move.isMax && dex.gen > 8) continue;
-					if (move.isNonstandard === 'Past' && !this.formatType?.includes('natdex')) continue;
-					if (move.isNonstandard === 'LGPE' && !this.formatType?.includes('letsgo')) continue;
+					if (move.isNonstandard === 'Past' && this.gttformat.natdex) continue;
+					if (move.isNonstandard === 'LGPE' && this.gttmod !== GensTeambuilderTable.mods['gen7letsgo' as ID]) continue;
 					moves.push(move.id);
 				}
 			}
 		}
-		if (this.formatType === 'metronome') moves = ['metronome'];
+
 		if (isSTABmons) {
 			for (let id in this.getTable()) {
 				const move = dex.moves.get(id);
@@ -1645,41 +1552,6 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 			}
 		}
 
-		{
-			const formatFull = this.formatFull;
-			const formatType = this.formatType;
-			const overrideFormatType = this.overrideFormatType;
-			let table = null;
-			if(overrideFormatType && BattleTeambuilderTable[overrideFormatType]?.formats?.[formatFull]) {
-				table = BattleTeambuilderTable[overrideFormatType];
-			}
-			else if(formatType && BattleTeambuilderTable[formatType]?.formats?.[formatFull]) {
-				table = BattleTeambuilderTable[formatType];
-			}
-			else if(BattleTeambuilderTable.formats?.[formatFull]) {
-				table = BattleTeambuilderTable;
-			}
-			if(table) {
-				// 35 Moves
-				const movesRule = table.formats[formatFull]?.moves;
-				if(movesRule) {
-					moves = moves.filter((x) => x in movesRule);
-					sketchMoves = sketchMoves.filter((x) => x in movesRule);
-				}
-				// 35 Perfect custom learnsets
-				const learnsetDiff = table.formats[formatFull].learnsetDiff;
-				if(learnsetDiff) {
-					for(const x in learnsetDiff.removals[species.id]) {
-						const i = moves.indexOf(x);
-						if(i >= 0) moves.splice(i, 1);
-					}
-					for(const x in learnsetDiff.additions[species.id]) {
-						if(!moves.includes(x)) moves.push(x);
-					}
-				}
-			}
-		}
-
 		moves.sort();
 		sketchMoves.sort();
 
@@ -1707,6 +1579,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 				uselessMoves.push(['move', id as ID]);
 			}
 		}
+
 		return [...usableMoves, ...uselessMoves];
 	}
 	filter(row: SearchRow, filters: string[][]) {
@@ -1773,8 +1646,6 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 }
 
 class BattleCategorySearch extends BattleTypedSearch<'category'> {
-	overrideFormatType = null;
-
 	getTable() {
 		return { physical: 1, special: 1, status: 1 };
 	}
@@ -1799,8 +1670,6 @@ class BattleCategorySearch extends BattleTypedSearch<'category'> {
 }
 
 class BattleTypeSearch extends BattleTypedSearch<'type'> {
-	overrideFormatType = null;
-
 	getTable() {
 		return window.BattleTypeChart;
 	}

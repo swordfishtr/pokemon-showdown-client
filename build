@@ -35,6 +35,7 @@ var full = '';
 switch (process.argv[2] || '') {
 case 'full':
 	execSync(`node ./build-tools/build-indexes`, options);
+	execSync(`node ./build-tools/build-teambuilder`, options);
 	execSync(`node ./build-tools/build-learnsets`, options);
 	execSync(`node ./build-tools/build-minidex`, options);
 	full = ' full';
