@@ -107,48 +107,54 @@
 		<script>
 			document.getElementById('loading-message').innerHTML += ' DONE<br />Loading libraries...';
 		</script>
-		<script nomodule src="js/lib/ps-polyfill.js"></script>
-		<script src="js/lib/jquery-2.2.4.min.js"></script>
-		<script src="js/lib/jquery-cookie.js"></script>
-		<script src="js/lib/autoresize.jquery.min.js"></script>
-		<script src="js/battle-sound.js"></script>
+		<script nomodule src="js-gens/lib/ps-polyfill.js"></script>
+		<script src="js-gens/lib/jquery-2.2.4.min.js"></script>
+		<script src="js-gens/lib/jquery-cookie.js"></script>
+		<script src="js-gens/lib/autoresize.jquery.min.js"></script>
+		<script src="js-gens/battle-sound.js"></script>
 		<script src="config/testclient-key.js"></script>
-		<script src="js/lib/html-css-sanitizer-minified.js"></script>
-		<script src="js/lib/lodash.core.js"></script>
-		<script src="js/lib/backbone.js"></script>
-		<script src="js/lib/d3.v3.min.js"></script>
+		<script src="js-gens/lib/html-css-sanitizer-minified.js"></script>
+		<script src="js-gens/lib/lodash.core.js"></script>
+		<script src="js-gens/lib/backbone.js"></script>
+		<script src="js-gens/lib/d3.v3.min.js"></script>
 
 		<script>
 			document.getElementById('loading-message').innerHTML += ' DONE<br />Loading data...';
 			window.exports = window;
+			Object.defineProperty(window, 'BattleTeambuilderTable', {
+				get() {
+					console.trace('Warning: Attempted to access BattleTeambuilderTable ...');
+					return {};
+				}
+			});
 		</script>
 
 		<!-- fallback for if you've never done a full build -->
-		<script src="js/server/chat-formatter.js" onerror="loadRemoteData(this.src)"></script>
-		<script src="js/battledata.js" onerror="loadRemoteData(this.src)"></script>
+		<script src="js-gens/server/chat-formatter.js" onerror="loadRemoteData(this.src)"></script>
+		<script src="js-gens/battledata.js" onerror="loadRemoteData(this.src)"></script>
 		<script src="data/text.js" onerror="loadRemoteData(this.src)"></script>
 		<script src="data/pokedex-mini.js" onerror="loadRemoteData(this.src)"></script>
 		<script src="data/pokedex-mini-bw.js" onerror="loadRemoteData(this.src)"></script>
 		<script src="data/typechart.js" onerror="loadRemoteData(this.src)"></script>
-		<script src="js/battle.js" onerror="alert('You must build the client with `node build` before using testclient.html')"></script>
-		<script src="js/lib/sockjs-1.4.0-nwjsfix.min.js"></script>
-		<script src="js/lib/color-thief.min.js"></script>
+		<script src="js-gens/battle.js" onerror="alert('You must build the client with `node build` before using testclient.html')"></script>
+		<script src="js-gens/lib/sockjs-1.4.0-nwjsfix.min.js"></script>
+		<script src="js-gens/lib/color-thief.min.js"></script>
 
 		<script>
 			document.getElementById('loading-message').innerHTML += ' DONE<br />Loading client...';
 		</script>
 
-		<script src="js/client.js"></script>
-		<script src="js/client-topbar.js"></script>
-		<script src="js/client-mainmenu.js"></script>
-		<script src="js/client-teambuilder.js"></script>
-		<script src="js/client-ladder.js"></script>
-		<script src="js/client-chat.js"></script>
-		<script src="js/client-chat-tournament.js"></script>
-		<script src="js/battle-tooltips.js"></script>
-		<script src="js/client-battle.js"></script>
-		<script src="js/client-rooms.js"></script>
-		<script src="js/storage.js"></script>
+		<script src="js-gens/client.js"></script>
+		<script src="js-gens/client-topbar.js"></script>
+		<script src="js-gens/client-mainmenu.js"></script>
+		<script src="js-gens/client-teambuilder.js"></script>
+		<script src="js-gens/client-ladder.js"></script>
+		<script src="js-gens/client-chat.js"></script>
+		<script src="js-gens/client-chat-tournament.js"></script>
+		<script src="js-gens/battle-tooltips.js"></script>
+		<script src="js-gens/client-battle.js"></script>
+		<script src="js-gens/client-rooms.js"></script>
+		<script src="js-gens/storage.js"></script>
 		<script src="data/graphics.js" onerror="loadRemoteData(this.src)"></script>
 
 		<script src="data/pokedex.js" onerror="loadRemoteData(this.src)"></script>
@@ -157,9 +163,9 @@
 		<script src="data/abilities.js" onerror="loadRemoteData(this.src)"></script>
 
 		<script src="data/search-index.js" onerror="loadRemoteData(this.src)"></script>
-		<script src="data/teambuilder-tables.js" onerror="loadRemoteData(this.src)"></script>
-		<script src="js/battle-dex-search.js"></script>
-		<script src="js/search.js"></script>
+		<script src="data/teambuilder-tables-gens.js" onerror="console.error('Generations custom BattleTeambuilderTable is missing.')"></script>
+		<script src="js-gens/battle-dex-search.js"></script>
+		<script src="js-gens/search.js"></script>
 
 		<script src="data/aliases.js" async="async" onerror="loadRemoteData(this.src)"></script>
 

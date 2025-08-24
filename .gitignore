@@ -3,6 +3,7 @@ node_modules/
 Thumbs.db
 npm-debug.log
 /config/
+/caches/
 /vendor/
 *.old
 
@@ -11,6 +12,7 @@ npm-debug.log
 
 /play.pokemonshowdown.com/sprites
 /play.pokemonshowdown.com/audio
+/play.pokemonshowdown.com/ads.txt
 
 # built from other sources
 /play.pokemonshowdown.com/index.php
@@ -31,7 +33,18 @@ npm-debug.log
 /play.pokemonshowdown.com/js/client-connection.js
 /play.pokemonshowdown.com/js/client-connection-worker.js
 /play.pokemonshowdown.com/js/miniedit.js
-/play.pokemonshowdown.com/ads.txt
+
+/play.pokemonshowdown.com/js-gens/server/
+/play.pokemonshowdown.com/js-gens/*.js.map
+/play.pokemonshowdown.com/js-gens/battle*.js
+/play.pokemonshowdown.com/js-gens/panel*.js
+/play.pokemonshowdown.com/js-gens/replay-embed.js
+/play.pokemonshowdown.com/js-gens/client-endload.js
+/play.pokemonshowdown.com/js-gens/client-main.js
+/play.pokemonshowdown.com/js-gens/client-core.js
+/play.pokemonshowdown.com/js-gens/client-connection.js
+/play.pokemonshowdown.com/js-gens/client-connection-worker.js
+/play.pokemonshowdown.com/js-gens/miniedit.js
 
 /pokemonshowdown.com/.well-known/
 /pokemonshowdown.com/.pages-cached/

@@ -84,13 +84,21 @@ let compiledFiles = 0;
 const compileOpts = Object.assign(eval('(' + fs.readFileSync('.babelrc') + ')'), {
 	babelrc: false,
 	incremental: true,
-	ignore: ['play.pokemonshowdown.com/src/battle-animations.js', 'play.pokemonshowdown.com/src/battle-animations-moves.js'],
+	ignore: [
+		'play.pokemonshowdown.com/src/battle-animations.js', 'play.pokemonshowdown.com/src/battle-animations-moves.js',
+		'play.pokemonshowdown.com/src-gens/battle-animations.js', 'play.pokemonshowdown.com/src-gens/battle-animations-moves.js',
+	],
 });
 if (process.argv[2] === 'full') {
 	delete compileOpts.ignore;
 	compiler.compileToDir(
 		['caches/pokemon-showdown/server/chat-formatter.ts', 'caches/pokemon-showdown/sim/teams.ts'],
 		'play.pokemonshowdown.com/js/server/',
+		compileOpts
+	);
+	compiler.compileToDir(
+		['caches/pokemon-showdown/server/chat-formatter.ts', 'caches/pokemon-showdown/sim/teams.ts'],
+		'play.pokemonshowdown.com/js-gens/server/',
 		compileOpts
 	);
 } else {
@@ -102,6 +110,8 @@ if (process.argv[2] === 'full') {
 }
 
 compiledFiles += compiler.compileToDir(`play.pokemonshowdown.com/src`, `play.pokemonshowdown.com/js`, compileOpts);
+
+compiledFiles += compiler.compileToDir(`play.pokemonshowdown.com/src-gens`, `play.pokemonshowdown.com/js-gens`, compileOpts);
 
 compiledFiles += compiler.compileToDir(`replay.pokemonshowdown.com/src`, `replay.pokemonshowdown.com/js`, compileOpts);
 
@@ -123,6 +133,26 @@ try {
 			'play.pokemonshowdown.com/src/battle-text-parser.ts',
 		],
 		'play.pokemonshowdown.com/js/battledata.js',
+		compileOpts
+	);
+} catch {}
+
+try {
+	fs.statSync('play.pokemonshowdown.com/data/text.js');
+	// text.js exists, we can compile battledata
+	compiledFiles += compiler.compileToFile(
+		[
+			'play.pokemonshowdown.com/src-gens/battle-dex.ts',
+			'play.pokemonshowdown.com/src-gens/battle-teams.ts',
+			'play.pokemonshowdown.com/src-gens/battle-dex-data.ts',
+			'play.pokemonshowdown.com/src-gens/battle-log.ts',
+			'play.pokemonshowdown.com/src-gens/battle-log-misc.js',
+			'caches/pokemon-showdown/server/chat-formatter.ts',
+			'play.pokemonshowdown.com/data/text.js',
+			'play.pokemonshowdown.com/data/text-afd.js',
+			'play.pokemonshowdown.com/src-gens/battle-text-parser.ts',
+		],
+		'play.pokemonshowdown.com/js-gens/battledata.js',
 		compileOpts
 	);
 } catch {}
@@ -233,6 +263,7 @@ if (indexContents2) {
 fs.writeFileSync('play.pokemonshowdown.com/preactalpha.html', preactIndexContents);
 fs.writeFileSync('play.pokemonshowdown.com/crossprotocol.html', crossprotocolContents);
 fs.writeFileSync('play.pokemonshowdown.com/js/replay-embed.js', replayEmbedContents);
+fs.writeFileSync('play.pokemonshowdown.com/js-gens/replay-embed.js', replayEmbedContents);
 
 let replaysContents = fs.readFileSync('replay.pokemonshowdown.com/index.template.php', UTF8);
 replaysContents = replaysContents.replace(URL_REGEX, addCachebuster);
