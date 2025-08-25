@@ -171,8 +171,8 @@ export class PSRouter {
 			if (typeof e.state === 'string') {
 				const [leftRoomid, rightRoomid] = e.state.split('..') as RoomID[];
 				if (rightRoomid) {
-					PS.addRoom({ id: leftRoomid, location: 'left' }, true);
-					PS.addRoom({ id: rightRoomid, location: 'right' }, true);
+					PS.addRoom({ id: leftRoomid, location: 'left', autofocus: false });
+					PS.addRoom({ id: rightRoomid, location: 'right', autofocus: false });
 					PS.leftPanel = PS.rooms[leftRoomid] || PS.leftPanel;
 					PS.rightPanel = PS.rooms[rightRoomid] || PS.rightPanel;
 				}
@@ -505,6 +505,7 @@ export class PSView extends preact.Component {
 			}
 			if (PS.room !== clickedRoom) {
 				if (clickedRoom) PS.room = clickedRoom;
+				PS.room.autoDismissNotifications();
 				PS.closePopupsAbove(clickedRoom);
 				PS.update();
 			}
@@ -583,6 +584,43 @@ export class PSView extends preact.Component {
 		window.addEventListener('dragend', ev => {
 			PS.dragging = null;
 			ev.preventDefault();
+		});
+
+		window.addEventListener('drop', ev => {
+			console.log(`drop: ${ev.dataTransfer?.dropEffect as any}`);
+			const target = ev.target as HTMLElement;
+			if (PS.dragging?.type === 'room') {
+				if ((target as HTMLInputElement).type?.startsWith("text")) {
+					PS.dragging = null;
+					return; // Rooms dragged into text fields become URLs
+				}
+				PS.updateAutojoin();
+				ev.preventDefault();
+				PS.dragging = null;
+				return;
+			}
+			if (!PS.dragging || PS.dragging.type === '?') {
+				// dragging text
+				if (!ev.dataTransfer?.files.length) return;
+			}
+
+			// The default file drop action for Firefox is to open the file as a
+			// URL, which needs to be prevented.
+			// The default file drop action for most browsers is to open the file
+			// in the tab, which is generally undesirable anyway.
+			ev.preventDefault();
+
+			for (const Panel of Object.values(PS.roomTypes)) {
+				if (Panel!.handleDrop?.(ev)) {
+					PS.dragging = null;
+					return;
+				}
+			}
+			PS.alert(
+				`Sorry, we don't know what to do with that file.\n\nSupported file types:\n` +
+				`- images (to set your background)\n- downloaded replay files\n- team files`
+			);
+			PS.dragging = null;
 		});
 
 		const colorSchemeQuery = window.matchMedia?.('(prefers-color-scheme: dark)');
@@ -878,7 +916,7 @@ export class PSView extends preact.Component {
 
 export function PSIcon(
 	props: { pokemon: string | Pokemon | ServerPokemon | Dex.PokemonSet | null } |
-		{ item: string } | { type: string, b?: boolean } | { category: string }
+		{ item: string | null } | { type: string, b?: boolean } | { category: string }
 ) {
 	if ('pokemon' in props) {
 		return <span class="picon" style={Dex.getPokemonIcon(props.pokemon)} />;
@@ -892,7 +930,7 @@ export function PSIcon(
 		let sanitizedType = type.replace(/\?/g, '%3f');
 		return <img
 			src={`${Dex.resourcePrefix}sprites/types/${sanitizedType}.png`} alt={type}
-			height="14" width="32" class={`pixelated${props.b ? ' b' : ''}`}
+			height="14" width="32" class={`pixelated${props.b ? ' b' : ''}`} style="vertical-align:middle"
 		/>;
 	}
 	if ('category' in props) {
@@ -910,7 +948,7 @@ export function PSIcon(
 		}
 		return <img
 			src={`${Dex.resourcePrefix}sprites/categories/${sanitizedCategory}.png`} alt={sanitizedCategory}
-			height="14" width="32" class="pixelated"
+			height="14" width="32" class="pixelated" style="vertical-align:middle"
 		/>;
 	}
 	return null!;

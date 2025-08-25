@@ -1,7 +1,7 @@
 /** @jsx preact.h */
 /** @jsxFrag preact.Fragment */
 import preact from '../../play.pokemonshowdown.com/js/lib/preact';
-import { Net, PSIcon, getShowdownUsername, unpackTeam } from './utils';
+import { PSIcon, getShowdownUsername, unpackTeam, query } from './utils';
 import { BattleLog } from '../../play.pokemonshowdown.com/src/battle-log';
 import type { PageProps } from './teams';
 import { Dex } from '../../play.pokemonshowdown.com/src/battle-dex';
@@ -10,6 +10,12 @@ import { Config } from '../../play.pokemonshowdown.com/src/client-main';
 
 declare const toID: (str: any) => string;
 declare const BattleAliases: Record<string, string>;
+
+const MODES: Record<string, { width: number, colGap: string }> = {
+	'1col': { width: 100, colGap: '' },
+	'2col': { width: 50, colGap: '2rem' },
+	'3col': { width: 33, colGap: '2rem' },
+};
 
 interface Team {
 	team: string;
@@ -113,9 +119,26 @@ function exportSet(set: Dex.PokemonSet) {
 	return out;
 }
 
+function isOMNickname(nickname?: string) {
+	if (!nickname) return;
+	// allow nicknames named after other mons/types/abilities/items - to support those OMs
+	if (Dex.species.get(nickname).exists) {
+		// I have a Forretress named Cathy and having it renamed to Trevenant (Forretress) is annoying
+		if (toID(nickname) === 'cathy') return 'cathy';
+		return Dex.species.get(nickname).name;
+	} else if (Dex.items.get(nickname).exists) {
+		return Dex.items.get(nickname).name;
+	} else if (Dex.abilities.get(nickname).exists) {
+		return Dex.abilities.get(nickname).name;
+	} else if (Dex.types.get(nickname).exists) {
+		return Dex.types.get(nickname).name;
+	}
+}
+
 function PokemonSet({ set }: { set: Dex.PokemonSet }) {
+	const omName = isOMNickname(set.name);
 	return <article class="psset">
-		{set.name && set.name !== set.species ? <>{set.name} ({set.species})</> : <>{set.species}</>}
+		{omName && omName !== set.species ? <>{omName} ({set.species})</> : <>{set.species}</>}
 		{set.gender ? <> ({set.gender})</> : <></>}
 		{set.item ? <> @ {set.item} </> : <></>}
 		<br />
@@ -213,12 +236,18 @@ export class TeamViewer extends preact.Component<PageProps> {
 		changesMade: false,
 		teamEdits: null as { format?: string, private?: number } | null,
 		editError: null as null | string,
+		copied: null as null | string,
+		copyError: null as null | string,
 	};
 	constructor(props: PageProps) {
 		super(props);
 		this.id = props.args.id;
 
 		this.checkTeamID();
+		if (this.state.displayMode === 'default') {
+			this.state.displayMode = '1col';
+			localStorage.setItem('teamdisplaymode', this.state.displayMode);
+		}
 	}
 	render() {
 		if (this.state.error) {
@@ -236,9 +265,13 @@ export class TeamViewer extends preact.Component<PageProps> {
 		}
 		const { team, title, ownerid, format, views } = this.state.team;
 		const teamData = unpackTeam(team);
-		const is2Col = this.state.displayMode === '2col';
+		const modeName = (this.state.displayMode?.charAt(0) || '1') + '-column';
+		const mode = MODES[this.state.displayMode || '1col'];
+
 		const isDark = document.querySelector('html')?.classList[0] === 'dark';
 		const link = this.id + (this.state.team.private ? `-${this.state.team.private}` : '');
+		const loggedin = toID(getShowdownUsername());
+		const manageClass = this.state.manageOpen ? `button notifying` : `button`;
 
 		return <div class="section" style={{ wordWrap: 'break-word' }}>
 			<div name="header" className="noselect">
@@ -250,16 +283,15 @@ export class TeamViewer extends preact.Component<PageProps> {
 				<label>Shortlink: </label><a href={`https://psim.us/t/${link}`}>https://psim.us/t/{link}</a><br />
 				<hr />
 				<div name="manage" style={{ display: 'flex', gap: '5px' }}>
-					{toID(getShowdownUsername()) === this.state.team.ownerid && <button
-						class={this.state.manageOpen ? `button notifying` : `button`}
-						onClick={() => this.changeManage()}
-					>Manage</button>}
+					{loggedin === this.state.team.ownerid ?
+						<button class={manageClass} onClick={() => this.changeManage()}>Manage</button> :
+						loggedin && <button class="button" onClick={() => this.copyToBuilder()}>Copy to builder</button>}
 					<button
 						class="button"
 						disabled={!this.state.team || this.state.copyButtonMsg}
 						onClick={() => this.copyTeam()}
 					>{this.state.copyButtonMsg ? 'Copied!' : 'Copy team'}</button>
-					<button class="button" onClick={() => this.changeDisplayMode()}>Display: {is2Col ? '2-column' : '1-column'}</button>
+					<button class="button" onClick={() => this.changeDisplayMode()}>Display: {modeName}</button>
 					<button class="button" onClick={() => this.changeColorMode()}>Use {isDark ? 'light' : 'dark'} mode</button>
 					<select
 						onChange={ev => this.changeSpriteGen(ev)}
@@ -274,6 +306,12 @@ export class TeamViewer extends preact.Component<PageProps> {
 					<div class="message-error">{this.state.editError}</div>
 					<hr />
 				</>}
+				{this.state.copied && <>
+					<br />Copied to your teambuilder! <a href={`/view/${this.state.copied}`}>View</a><hr />
+				</>}
+				{this.state.copyError && <>
+					<br /><div className="message-error">Error copying team: {this.state.copyError}</div><hr />
+				</>}
 				{this.state.manageOpen && <>
 					<label>Team visibility: </label>
 					<select
@@ -287,16 +325,24 @@ export class TeamViewer extends preact.Component<PageProps> {
 					{this.state.changesMade && <>
 						<br /><button class="button notifying" onClick={() => this.commitEdit()}>Save changes</button>
 					</>}
+					<br />
+					<button class="button" onClick={() => this.runDelete()}>Delete team</button>
 					<hr />
 				</>}
 			</div>
 			<div
 				name="sets"
-				style={{ display: 'flex', alignItems: 'stretch', flexWrap: 'wrap', rowGap: '1rem', colGap: is2Col ? '2rem' : '' }}
+				style={{
+					display: 'flex',
+					alignItems: 'stretch',
+					flexWrap: 'wrap',
+					rowGap: '1rem',
+					colGap: mode.colGap,
+				}}
 			>
 				{teamData.map(
 					set => (
-						<div style={{ flex: `0 0 ${is2Col ? 50 : 100}%` }}>
+						<div style={{ flex: `0 0 ${mode.width}%` }}>
 							<span style={{ display: 'flex' }}>
 								<SetBlock set={set} gen={this.state.spriteGen} mode={this.state.displayMode} />
 							</span>
@@ -327,11 +373,12 @@ export class TeamViewer extends preact.Component<PageProps> {
 	}
 
 	changeDisplayMode() {
-		if (this.state.displayMode === '2col') {
-			this.state.displayMode = 'default';
-		} else {
-			this.state.displayMode = '2col';
+		const keys = Object.keys(MODES);
+		let next = keys.indexOf(this.state.displayMode || '1col') + 1;
+		if (!keys[next]) {
+			next = 0;
 		}
+		this.state.displayMode = keys[next];
 		localStorage.setItem('teamdisplaymode', this.state.displayMode);
 		this.setState({ displayMode: this.state.displayMode });
 	}
@@ -351,14 +398,7 @@ export class TeamViewer extends preact.Component<PageProps> {
 	}
 
 	loadTeamData() {
-		void Net('/api/getteam').get({ query: { teamid: this.id, password: this.pw, full: 1 } }).then(resultText => {
-			if (resultText.startsWith(']')) resultText = resultText.slice(1);
-			let result;
-			try {
-				result = JSON.parse(resultText);
-			} catch {
-				result = { actionerror: "Malformed response received. Try again later." };
-			}
+		void query('getteam', { query: { teamid: this.id, password: this.pw, full: 1 } }).then(result => {
 			if (result.actionerror) {
 				this.setState({ error: result.actionerror });
 			} else {
@@ -366,6 +406,27 @@ export class TeamViewer extends preact.Component<PageProps> {
 			}
 		}).catch(e => {
 			this.setState({ error: `HTTP${e.code}: ${e.message}` });
+		});
+	}
+
+	runDelete() {
+		const conf = toID(prompt("Do you really want to delete this team? Type 'yes' to confirm."));
+		if (conf !== 'yes') {
+			return;
+		}
+		void query('deleteteam', { query: { teamid: this.id } }).then(result => {
+			if (result.actionerror) {
+				alert(`Error deleting team: ${result.actionerror}`);
+			} else {
+				alert(
+					result.success ?
+						`Team successfully deleted.` :
+						`Error while deleting team. Please try again later.`
+				);
+				if (result.success) {
+					location.replace('../');
+				}
+			}
 		});
 	}
 
@@ -377,6 +438,16 @@ export class TeamViewer extends preact.Component<PageProps> {
 		setTimeout(() => {
 			this.setState({ copyButtonMsg: false });
 		}, 1000);
+	}
+
+	copyToBuilder() {
+		void query('copyteam', { query: { teamid: this.id, pw: this.pw } }).then(result => {
+			if (result.actionerror) {
+				this.setState({ copyError: result.actionerror, copied: null });
+			} else {
+				this.setState({ copied: result.teamid, copyError: null });
+			}
+		});
 	}
 
 	editTeamValue(val: 'format' | 'private', { currentTarget }: any) {
@@ -400,7 +471,7 @@ export class TeamViewer extends preact.Component<PageProps> {
 
 	commitEdit() {
 		if (!this.state.changesMade || !this.state.team) return;
-		void Net('/api/editteam').get({
+		void query('editteam', {
 			query: { teamid: this.id, ...this.state.teamEdits },
 		}).then(resultText => {
 			if (resultText.startsWith(']')) resultText = resultText.slice(1);

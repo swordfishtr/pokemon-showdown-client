@@ -153,18 +153,20 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 
 		if (pixels === 0) return [0, 0];
 		if (pixels === 1) return [0 + epsilon, 2 / 48 - epsilon];
-		if (pixels === 9) {
-			if (color === 'y') { // ratio is > 0.2
-				return [0.2 + epsilon, 10 / 48 - epsilon];
-			} else { // ratio is <= 0.2
-				return [9 / 48, 0.2];
+		if (color) {
+			if (pixels === 9) {
+				if (color === 'y') { // ratio is > 0.2
+					return [0.2 + epsilon, 10 / 48 - epsilon];
+				} else if (color === 'r') { // ratio is <= 0.2
+					return [9 / 48, 0.2];
+				}
 			}
-		}
-		if (pixels === 24) {
-			if (color === 'g') { // ratio is > 0.5
-				return [0.5 + epsilon, 25 / 48 - epsilon];
-			} else { // ratio is exactly 0.5
-				return [0.5, 0.5];
+			if (pixels === 24) {
+				if (color === 'g') { // ratio is > 0.5
+					return [0.5 + epsilon, 25 / 48 - epsilon];
+				} else if (color === 'y') { // ratio is exactly 0.5
+					return [0.5, 0.5];
+				}
 			}
 		}
 		if (pixels === 48) return [1, 1];
@@ -996,6 +998,7 @@ export interface ServerPokemon extends PokemonDetails, PokemonHealth {
 	details: string;
 	condition: string;
 	active: boolean;
+	reviving: boolean;
 	/** unboosted stats */
 	stats: {
 		atk: number,
@@ -1435,7 +1438,27 @@ export class Battle {
 			'mist', 'lightscreen', 'reflect', 'spikes', 'safeguard', 'tailwind', 'toxicspikes', 'stealthrock', 'waterpledge', 'firepledge', 'grasspledge', 'stickyweb', 'auroraveil', 'gmaxsteelsurge', 'gmaxcannonade', 'gmaxvinelash', 'gmaxwildfire',
 		];
 		if (this.gameType === 'freeforall') {
-			// TODO: Add FFA support
+			// Court Change rotates side conditions clockwise in a free-for-all
+
+			// the list of all sides in clockwise order
+			const sides = [this.sides[0], this.sides[3], this.sides[1], this.sides[2]];
+			const temp: { [k: number]: Side["sideConditions"] } = { 0: {}, 1: {}, 2: {}, 3: {} };
+			for (const side of sides) {
+				for (const id in side.sideConditions) {
+					if (!sideConditions.includes(id)) continue;
+					temp[side.n][id] = side.sideConditions[id];
+					side.removeSideCondition(id);
+				}
+			}
+			for (let i = 0; i < 4; i++) {
+				const sourceSide = sides[i]; // the current side in rotation
+				const sourceSideConditions = temp[sourceSide.n];
+				const targetSide = sides[(i + 1) % 4]; // the next side in rotation
+				for (const id in sourceSideConditions) {
+					targetSide.sideConditions[id] = sourceSideConditions[id];
+					this.scene.addSideCondition(targetSide.n, id as ID);
+				}
+			}
 			return;
 		}
 		let side1 = this.sides[0];
@@ -1668,7 +1691,7 @@ export class Battle {
 			if (args[0] === '-heal' && nextArgs[0] === '-heal' && kwArgs.from && kwArgs.from === nextKwargs.from) {
 				kwArgs.then = '.';
 			}
-			if (args[0] === '-ability' && (args[2] === 'Intimidate' || args[3] === 'boost')) {
+			if (args[0] === '-ability' && (args[2] === 'Intimidate' || args[4] === 'boost')) {
 				kwArgs.then = '.';
 			}
 			if (args[0] === '-unboost' && nextArgs[0] === '-unboost') {
@@ -2387,31 +2410,20 @@ export class Battle {
 		case '-ability': {
 			let poke = this.getPokemon(args[1])!;
 			let ability = Dex.abilities.get(args[2]);
+			let oldAbility = Dex.abilities.get(args[3]);
 			let effect = Dex.getEffect(kwArgs.from);
 			let ofpoke = this.getPokemon(kwArgs.of);
 			poke.rememberAbility(ability.name, effect.id && !kwArgs.fail);
 
 			if (kwArgs.silent) {
 				// do nothing
+			} else if (oldAbility.id) {
+				this.activateAbility(poke, oldAbility.name);
+				this.scene.wait(500);
+				this.activateAbility(poke, ability.name, true);
+				ofpoke?.rememberAbility(ability.name);
 			} else if (effect.id) {
 				switch (effect.id) {
-				case 'trace':
-					this.activateAbility(poke, "Trace");
-					this.scene.wait(500);
-					this.activateAbility(poke, ability.name, true);
-					ofpoke!.rememberAbility(ability.name);
-					break;
-				case 'powerofalchemy':
-				case 'receiver':
-					this.activateAbility(poke, effect.name);
-					this.scene.wait(500);
-					this.activateAbility(poke, ability.name, true);
-					ofpoke!.rememberAbility(ability.name);
-					break;
-				case 'roleplay':
-					this.activateAbility(poke, ability.name, true);
-					ofpoke!.rememberAbility(ability.name);
-					break;
 				case 'desolateland':
 				case 'primordialsea':
 				case 'deltastream':
@@ -3240,7 +3252,7 @@ export class Battle {
 			output.maxhp = parseFloat(maxhp);
 			if (output.hp > output.maxhp) output.hp = output.maxhp;
 			const colorchar = maxhp.slice(-1);
-			if (colorchar === 'y' || colorchar === 'g') {
+			if (colorchar === 'r' || colorchar === 'y' || colorchar === 'g') {
 				output.hpcolor = colorchar;
 			}
 		} else if (!isNaN(parseFloat(hp))) {

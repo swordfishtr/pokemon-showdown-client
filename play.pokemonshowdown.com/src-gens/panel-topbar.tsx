@@ -15,22 +15,6 @@ import { NARROW_MODE_HEADER_WIDTH, PSView, VERTICAL_HEADER_WIDTH } from "./panel
 import type { Battle } from "./battle";
 import { BattleLog } from "./battle-log"; // optional
 
-window.addEventListener('drop', e => {
-	console.log('drop ' + e.dataTransfer!.dropEffect);
-	const target = e.target as HTMLElement;
-	if ((target as HTMLInputElement).type?.startsWith("text")) {
-		PS.dragging = null;
-		return; // Ignore text fields
-	}
-
-	// The default team drop action for Firefox is to open the team as a
-	// URL, which needs to be prevented.
-	// The default file drop action for most browsers is to open the file
-	// in the tab, which is generally undesirable anyway.
-	e.preventDefault();
-	PS.dragging = null;
-	PS.updateAutojoin();
-});
 window.addEventListener('dragover', e => {
 	// this prevents the bounce-back animation
 	e.preventDefault();
@@ -217,7 +201,7 @@ export class PSHeader extends preact.Component {
 		this.handleResize();
 	}
 	renderUser() {
-		if (!PS.connected) {
+		if (!PS.connection?.connected) {
 			return <button class="button" disabled><em>Offline</em></button>;
 		}
 		if (PS.user.initializing) {
@@ -324,6 +308,12 @@ export class PSMiniHeader extends preact.Component {
 	override render() {
 		if (PS.leftPanelWidth !== null) return null;
 
+		let notificationsCount = 0;
+		const notificationRooms = [...PS.leftRoomList, ...PS.rightRoomList];
+		for (const roomid of notificationRooms) {
+			const miniNotifications = PS.rooms[roomid]?.notifications;
+			if (miniNotifications?.length) notificationsCount++;
+		}
 		const { icon, title } = PSHeader.roomInfo(PS.panel);
 		const userColor = window.BattleLog && `color:${BattleLog.usernameColor(PS.user.userid)}`;
 		const showMenuButton = PSView.narrowMode;
@@ -334,6 +324,7 @@ export class PSMiniHeader extends preact.Component {
 			null
 		) : window.scrollX ? (
 			<button onClick={PSView.scrollToHeader} class={`mini-header-left ${notifying}`} aria-label="Menu">
+				{!!notificationsCount && <div class="notification-badge">{notificationsCount}</div>}
 				<i class="fa fa-bars" aria-hidden></i>
 			</button>
 		) : (

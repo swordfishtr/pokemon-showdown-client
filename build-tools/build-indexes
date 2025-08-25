@@ -355,7 +355,7 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 				if (isNatDex) {
 					let curItem = item;
 					let curGen = genNum;
-					while (item.isNonstandard && curGen >= 7) {
+					while (curItem.isNonstandard && curGen >= 7) {
 						curItem = Dex.forGen(curGen).items.get(item.id);
 						curGen--;
 					}
@@ -448,6 +448,7 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 			case 'souldew':
 			// falls through
 			// Other
+			case 'leek':
 			case 'stick':
 			case 'thickclub':
 			case 'lightball':
@@ -558,8 +559,6 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 				} else if (item.name.endsWith(" Gem") && item.name !== "Normal Gem") {
 					if (genNum >= 6) {
 						unreleasedItems.push(id);
-					} else if (item.name === "Flying Gem") {
-						greatItems.push(id);
 					} else {
 						goodItems.push(id);
 					}

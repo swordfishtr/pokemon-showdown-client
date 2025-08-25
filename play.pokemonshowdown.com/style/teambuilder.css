@@ -37,6 +37,7 @@
 	height: 100%;
 	width: 154px;
 	display: table;
+	table-layout: fixed;
 	margin: 0;
 	padding: 0;
 	border: 0;
@@ -536,6 +537,9 @@ you can't delete it by pressing Backspace */
 	position: relative;
 	max-width: 660px;
 }
+.set-button.cur {
+	opacity: 0.5;
+}
 .set-button table {
 	border: 0;
 	border-spacing: 0;
@@ -628,6 +632,9 @@ you can't delete it by pressing Backspace */
 }
 .set-button .set-ability .button, .set-button .set-item .button {
 	height: 40px;
+}
+.set-item .itemicon {
+	float: right;
 }
 .set-button .set-moves .button {
 	line-height: 18px;
@@ -725,4 +732,14 @@ you can't delete it by pressing Backspace */
 }
 .wizardsearchresults .dexlist, .searchresults .dexlist {
 	min-width: 624px;
+}
+
+.sample-sets {
+	border: 1px solid #888;
+	border-radius: 6px;
+	margin: 5px 15px 12px 15px;
+	padding: 12px;
+}
+.sample-sets h3 {
+	margin: 0 0 10px;
 }

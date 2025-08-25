@@ -67,7 +67,7 @@ export class ChatRoom extends PSRoom {
 		this.connect();
 	}
 	override connect() {
-		if (!this.connected) {
+		if (!this.connected || this.connected === 'autoreconnect') {
 			if (this.pmTarget === null) PS.send(`/join ${this.id}`);
 			this.connected = true;
 			this.connectWhenLoggedIn = false;
@@ -117,6 +117,16 @@ export class ChatRoom extends PSRoom {
 			if (`${args[2]} `.startsWith('/challenge ')) {
 				this.updateChallenge(args[1], args[2].slice(11));
 				return;
+			} else if (args[2].startsWith('/warn ')) {
+				const reason = args[2].replace('/warn ', '');
+				PS.join(`rules-warn` as RoomID, {
+					args: {
+						type: 'warn',
+						message: reason?.trim() || undefined,
+					},
+					parentElem: null,
+				});
+				return;
 			}
 			// falls through
 		case 'c:':
@@ -125,7 +135,17 @@ export class ChatRoom extends PSRoom {
 			this.joinLeave = null;
 			this.markUserActive(args[args[0] === 'c:' ? 2 : 1]);
 			if (this.tour) this.tour.joinLeave = null;
-			this.subtleNotify();
+			if (this.id.startsWith("dm-")) {
+				const fromUser = args[args[0] === 'c:' ? 2 : 1];
+				if (toID(fromUser) === PS.user.userid) break;
+				const message = args[args[0] === 'c:' ? 3 : 2];
+				this.notify({
+					title: `${this.title}`,
+					body: message,
+				});
+			} else {
+				this.subtleNotify();
+			}
 			break;
 		case ':':
 			this.timeOffset = Math.trunc(Date.now() / 1000) - (parseInt(args[1], 10) || 0);
@@ -240,31 +260,36 @@ export class ChatRoom extends PSRoom {
 	handleHighlight = (args: Args) => {
 		let name;
 		let message;
-		let msgTime = 0;
+		let serverTime = 0;
 		if (args[0] === 'c:') {
-			msgTime = parseInt(args[1]);
+			serverTime = parseInt(args[1]);
 			name = args[2];
 			message = args[3];
 		} else {
 			name = args[1];
 			message = args[2];
 		}
-		let lastMessageDates = Dex.prefs('logtimes') || (PS.prefs.set('logtimes', {}), Dex.prefs('logtimes'));
+		if (toID(name) === PS.user.userid) return false;
+		if (message.startsWith(`/raw `) || message.startsWith(`/uhtml`) || message.startsWith(`/uhtmlchange`)) {
+			return false;
+		}
+
+		const lastMessageDates = Dex.prefs('logtimes') || (PS.prefs.set('logtimes', {}), Dex.prefs('logtimes'));
 		if (!lastMessageDates[PS.server.id]) lastMessageDates[PS.server.id] = {};
-		let lastMessageDate = lastMessageDates[PS.server.id][this.id] || 0;
+		const lastMessageDate = lastMessageDates[PS.server.id][this.id] || 0;
 		// because the time offset to the server can vary slightly, subtract it to not have it affect comparisons between dates
-		let serverMsgTime = msgTime - (this.timeOffset || 0);
-		let mayNotify = serverMsgTime > lastMessageDate && name !== PS.user.userid;
+		const time = serverTime - (this.timeOffset || 0);
 		if (PS.isVisible(this)) {
 			this.lastMessageTime = null;
-			lastMessageDates[PS.server.id][this.id] = serverMsgTime;
+			lastMessageDates[PS.server.id][this.id] = time;
 			PS.prefs.set('logtimes', lastMessageDates);
 		} else {
 			// To be saved on focus
-			let lastMessageTime = this.lastMessageTime || 0;
-			if (lastMessageTime < serverMsgTime) this.lastMessageTime = serverMsgTime;
+			const lastMessageTime = this.lastMessageTime || 0;
+			if (lastMessageTime < time) this.lastMessageTime = time;
 		}
 		if (ChatRoom.getHighlight(message, this.id)) {
+			const mayNotify = time > lastMessageDate;
 			if (mayNotify) this.notify({
 				title: `Mentioned by ${name} in ${this.id}`,
 				body: `"${message}"`,
@@ -289,6 +314,7 @@ export class ChatRoom extends PSRoom {
 		'reject'(target) {
 			this.challenged = null;
 			this.update(null);
+			this.sendDirect(`/reject ${target}`);
 		},
 		'clear'() {
 			this.log?.reset();
@@ -413,6 +439,7 @@ export class ChatRoom extends PSRoom {
 		'play'() {
 			if (!this.battle) return this.add('|error|You are not in a battle');
 			if (this.battle.atQueueEnd) {
+				if (this.battle.ended) this.battle.isReplay = true;
 				this.battle.reset();
 			}
 			this.battle.play();
@@ -629,12 +656,14 @@ export class ChatRoom extends PSRoom {
 			leave: [],
 			messageId: `joinleave-${Date.now()}`,
 		};
-		if (action === 'join' && this.joinLeave['leave'].includes(name)) {
-			this.joinLeave['leave'].splice(this.joinLeave['leave'].indexOf(name), 1);
-		} else if (action === 'leave' && this.joinLeave['join'].includes(name)) {
-			this.joinLeave['join'].splice(this.joinLeave['join'].indexOf(name), 1);
+		const user = BattleTextParser.parseNameParts(name);
+		const formattedName = user.group + user.name;
+		if (action === 'join' && this.joinLeave['leave'].includes(formattedName)) {
+			this.joinLeave['leave'].splice(this.joinLeave['leave'].indexOf(formattedName), 1);
+		} else if (action === 'leave' && this.joinLeave['join'].includes(formattedName)) {
+			this.joinLeave['join'].splice(this.joinLeave['join'].indexOf(formattedName), 1);
 		} else {
-			this.joinLeave[action].push(name);
+			this.joinLeave[action].push(formattedName);
 		}
 
 		let message = this.formatJoinLeave(this.joinLeave['join'], 'joined');
@@ -1110,6 +1139,17 @@ class ChatPanel extends PSRoomPanel<ChatRoom> {
 		return false;
 	};
 	makeChallenge = (e: Event, format: string, team?: Team) => {
+		const elem = e.target as HTMLElement;
+		const now = Date.now();
+		const lastChallenged = PS.mainmenu.lastChallenged || 0;
+		if (now - lastChallenged < 5_000) {
+			PS.alert(`Please wait 5 seconds before challenging again.`, {
+				parentElem: elem,
+			});
+			return;
+		}
+
+		PS.requestNotifications();
 		const room = this.props.room;
 		const packedTeam = team ? team.packedTeam : '';
 		const privacy = PS.mainmenu.adjustPrivacy();
@@ -1121,6 +1161,7 @@ class ChatPanel extends PSRoomPanel<ChatRoom> {
 			formatName: format,
 			teamFormat: format,
 		};
+		PS.mainmenu.lastChallenged = now;
 		room.update(null);
 	};
 	acceptChallenge = (e: Event, format: string, team?: Team) => {

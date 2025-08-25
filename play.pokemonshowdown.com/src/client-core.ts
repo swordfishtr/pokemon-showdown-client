@@ -155,7 +155,7 @@ export const PSBackground = new class extends PSStreamModel<string | null> {
 	}
 
 	load(bgUrl: string, bgid: string, menuColors: string[] | null = null) {
-		const pngbg = ['generations'];
+		const pngbg = ['mascotmedley'];
 
 		// id
 		this.id = bgid;

@@ -50,9 +50,15 @@ export class PSConnection {
 
 	tryConnectInWorker(): boolean {
 		if (this.socket) return false; // must be one or the other
+		if (this.connected) return true;
+
+		if (this.worker) {
+			this.worker.postMessage({ type: 'connect', server: PS.server });
+			return true;
+		}
 
 		try {
-			const worker = new Worker('/js/reconnect-worker.js');
+			const worker = new Worker('/js/client-connection-worker.js');
 			this.worker = worker;
 
 			worker.postMessage({ type: 'connect', server: PS.server });
@@ -63,7 +69,6 @@ export class PSConnection {
 				case 'connected':
 					console.log('\u2705 (CONNECTED via worker)');
 					this.connected = true;
-					PS.connected = true;
 					this.queue.forEach(msg => worker.postMessage({ type: 'send', data: msg }));
 					this.queue = [];
 					PS.update();
@@ -75,15 +80,17 @@ export class PSConnection {
 					this.handleDisconnect();
 					break;
 				case 'error':
-					console.warn('Worker connection error');
+					console.warn(`Worker connection error: ${data}`);
 					this.worker = null;
-					this.directConnect(); // fallback
+					// onerror can occur on abrupt disconnects or fatal errors.
+					// handleDisconnect ensures proper cleanup and also attemps to reconnect.
+					this.handleDisconnect(); // fallback
 					break;
 				}
 			};
 
-			worker.onerror = (e: ErrorEvent) => {
-				console.warn('Worker connection error:', e);
+			worker.onerror = (ev: ErrorEvent) => {
+				console.warn('Worker connection error:', ev);
 				this.worker = null;
 				this.directConnect(); // fallback
 			};
@@ -114,7 +121,6 @@ export class PSConnection {
 		socket.onopen = () => {
 			console.log('\u2705 (CONNECTED)');
 			this.connected = true;
-			PS.connected = true;
 			this.reconnectDelay = 1000;
 			this.queue.forEach(msg => socket.send(msg));
 			this.queue = [];
@@ -130,7 +136,6 @@ export class PSConnection {
 			this.handleDisconnect();
 			console.log('\u2705 (DISCONNECTED)');
 			this.connected = false;
-			PS.connected = false;
 			PS.isOffline = true;
 			for (const roomid in PS.rooms) {
 				const room = PS.rooms[roomid]!;
@@ -141,9 +146,8 @@ export class PSConnection {
 		};
 
 		socket.onerror = (ev: Event) => {
-			PS.connected = false;
 			PS.isOffline = true;
-			PS.alert(`Connection error: ${ev as any}`);
+			// no useful info to print from the event
 			this.retryConnection();
 			PS.update();
 		};
@@ -151,7 +155,6 @@ export class PSConnection {
 
 	private handleDisconnect() {
 		this.connected = false;
-		PS.connected = false;
 		PS.isOffline = true;
 		this.socket = null;
 		for (const roomid in PS.rooms) {
@@ -164,12 +167,15 @@ export class PSConnection {
 
 	private retryConnection() {
 		if (!this.canReconnect()) return;
+		if (this.reconnectTimer) return;
+
 		this.reconnectTimer = setTimeout(() => {
 			this.reconnectTimer = null;
 			if (!this.connected && this.canReconnect()) {
-				PS.send('/reconnect');
+				PS.mainmenu.send('/reconnect');
 				this.reconnectDelay = Math.min(this.reconnectDelay * 2, this.reconnectCap);
 			}
+			PS.update();
 		}, this.reconnectDelay);
 	}
 
@@ -178,17 +184,13 @@ export class PSConnection {
 		this.socket?.close();
 		this.worker?.terminate();
 		this.worker = null;
-		PS.connection = null;
-		PS.connected = false;
-		PS.isOffline = true;
+		this.handleDisconnect();
+		PS.update();
 	}
-
-	reconnectTest() {
-		this.socket?.close();
-		this.worker?.postMessage({ type: 'disconnect' });
-		this.worker = null;
-		PS.connected = false;
-		PS.isOffline = true;
+	reconnect() {
+		if (this.connected) return;
+		if (this.worker && this.tryConnectInWorker()) return;
+		this.directConnect();
 	}
 
 	send(msg: string) {
@@ -209,7 +211,7 @@ export class PSConnection {
 		if (!PS.connection) {
 			PS.connection = new PSConnection();
 		} else {
-			PS.connection.directConnect();
+			PS.connection.reconnect();
 		}
 		PS.prefs.doAutojoin();
 	}

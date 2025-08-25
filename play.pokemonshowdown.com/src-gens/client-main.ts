@@ -159,7 +159,7 @@ class PSPrefs extends PSStreamModel<string | null> {
 	afd: boolean | 'sprites' = false;
 
 	highlights: Record<string, string[]> | null = null;
-	logtimes: Record<string, { [roomid: RoomID]: number }> | null = null;
+	logtimes: { [serverid: ID]: { [roomid: RoomID]: number } } | null = null;
 
 	// PREFS END HERE
 
@@ -293,10 +293,23 @@ class PSPrefs extends PSStreamModel<string | null> {
 			}
 			let rooms = autojoin[PS.server.id] || '';
 			for (let title of rooms.split(",")) {
-				PS.addRoom({ id: toID(title) as string as RoomID, title, connected: true }, true);
+				PS.addRoom({ id: toID(title) as string as RoomID, title, connected: true, autofocus: false });
 			};
+			const cmd = `/autojoin ${rooms}`;
+			if (PS.connection?.queue.includes(cmd)) {
+				// don't jam up the queue with autojoin requests
+				// sending autojoin again after a prior autojoin successfully resolves likely returns an error from the server
+				return;
+			}
 			// send even if `rooms` is empty, for server autojoins
-			PS.send(`/autojoin ${rooms}`);
+			PS.send(cmd);
+		}
+
+		for (const roomid in PS.rooms) {
+			const room = PS.rooms[roomid]!;
+			if (room.type === 'battle') {
+				room.connect();
+			}
 		}
 	}
 }
@@ -309,16 +322,21 @@ export interface Team {
 	name: string;
 	format: ID;
 	folder: string;
-	/** note that this can be wrong if .uploaded?.loaded === false */
+	/** Note that this can be wrong if `.uploaded?.notLoaded` */
 	packedTeam: string;
 	/** The icon cache must be cleared (to `null`) whenever `packedTeam` is modified */
 	iconCache: preact.ComponentChildren;
+	/** Used in roomids (`team-[key]`) to refer to the team. Always persists within
+	  * a single session, but not always between refreshes. As long as a team still
+		* exists, pointers to a Team are equivalent to a key. */
 	key: string;
-	/** `uploaded` will only exist if you're logged into the correct account. otherwise teamid is still tracked */
 	isBox: boolean;
+	/** uploaded team ID. will not exist for teams that are not uploaded. tracked locally */
 	teamid?: number;
+	/** `uploaded` will only exist if you're logged into the correct account. otherwise teamid is still tracked */
 	uploaded?: {
 		teamid: number,
+		/** Promise = loading. */
 		notLoaded: boolean | Promise<void>,
 		/** password, if private. null = public, undefined = unknown, not loaded yet */
 		private?: string | null,
@@ -893,6 +911,7 @@ interface PSNotificationState {
 	id: string;
 	/** normally: automatically dismiss the notification when viewing the room; set this to require manual dismissing */
 	noAutoDismiss: boolean;
+	notification?: Notification | null;
 }
 
 type ClientCommands<RoomT extends PSRoom> = {
@@ -997,7 +1016,24 @@ export class PSRoom extends PSStreamModel<Args | null> implements RoomOptions {
 		return null;
 	}
 	notify(options: { title: string, body?: string, noAutoDismiss?: boolean, id?: string }) {
-		if (PS.isVisible(this)) return;
+		let desktopNotification: Notification | null = null;
+		const roomIsFocused = document.hasFocus?.() && PS.isVisible(this);
+		if (roomIsFocused && !options.noAutoDismiss) return;
+		if (!roomIsFocused) {
+			PS.playNotificationSound();
+			try {
+				desktopNotification = new Notification(options.title, { body: options.body });
+				if (desktopNotification) {
+					desktopNotification.onclick = () => {
+						window.focus();
+						PS.focusRoom(this.id);
+					};
+					if (PS.prefs.temporarynotifications) {
+						setTimeout(() => { desktopNotification?.close(); }, 5000);
+					}
+				}
+			} catch {}
+		}
 		if (options.noAutoDismiss && !options.id) {
 			throw new Error(`Must specify id for manual dismissing`);
 		}
@@ -1009,16 +1045,30 @@ export class PSRoom extends PSStreamModel<Args | null> implements RoomOptions {
 			body: options.body,
 			id: options.id || '',
 			noAutoDismiss: options.noAutoDismiss || false,
+			notification: desktopNotification,
 		});
 		PS.update();
 	}
 	subtleNotify() {
 		if (PS.isVisible(this)) return;
+		const room = PS.rooms[this.id] as ChatRoom;
+		const lastSeenTimestamp = PS.prefs.logtimes?.[PS.server.id]?.[this.id] || 0;
+		const lastMessageTime = +(room.lastMessage?.[1] || 0);
+		if ((lastMessageTime - room.timeOffset) <= lastSeenTimestamp) return;
 		this.isSubtleNotifying = true;
 		PS.update();
 	}
+	dismissNotificationAt(i: number) {
+		try {
+			this.notifications[i].notification?.close();
+		} catch {}
+		this.notifications.splice(i, 1);
+	}
 	dismissNotification(id: string) {
-		this.notifications = this.notifications.filter(notification => notification.id !== id);
+		const index = this.notifications.findIndex(n => n.id === id);
+		if (index !== -1) {
+			this.dismissNotificationAt(index);
+		}
 		PS.update();
 	}
 	autoDismissNotifications() {
@@ -1030,7 +1080,11 @@ export class PSRoom extends PSStreamModel<Args | null> implements RoomOptions {
 			lastMessageDates[PS.server.id][room.id] = room.lastMessageTime || 0;
 			PS.prefs.set('logtimes', lastMessageDates);
 		}
-		this.notifications = this.notifications.filter(notification => notification.noAutoDismiss);
+		for (let i = this.notifications.length - 1; i >= 0; i--) {
+			if (!this.notifications[i].noAutoDismiss) {
+				this.dismissNotificationAt(i);
+			}
+		}
 		this.isSubtleNotifying = false;
 	}
 	connect(): void {
@@ -1049,8 +1103,14 @@ export class PSRoom extends PSStreamModel<Args | null> implements RoomOptions {
 			this.title = args[1];
 			PS.update();
 			break;
+		} case 'notify': {
+			const [, title, body, toHighlight] = args;
+			if (toHighlight && !ChatRoom.getHighlight(toHighlight, this.id)) break;
+			this.notify({ title, body });
+			break;
 		} case 'tempnotify': {
 			const [, id, title, body, toHighlight] = args;
+			if (toHighlight && !ChatRoom.getHighlight(toHighlight, this.id)) break;
 			this.notify({ title, body, id });
 			break;
 		} case 'tempnotifyoff': {
@@ -1110,7 +1170,7 @@ export class PSRoom extends PSStreamModel<Args | null> implements RoomOptions {
 			const room = PS.rooms[roomid];
 			const battle = (room as BattleRoom)?.battle;
 
-			if (room?.type === "battle" && !battle.ended && battle.mySide.id === PS.user.userid) {
+			if (room?.type === "battle" && !battle.ended && battle.mySide.id === PS.user.userid && !battle.isReplay) {
 				PS.join("forfeitbattle" as RoomID, { parentElem: elem });
 				return;
 			}
@@ -1153,10 +1213,22 @@ export class PSRoom extends PSStreamModel<Args | null> implements RoomOptions {
 		'logout'() {
 			PS.user.logOut();
 		},
-		'reconnect'() {
-			if (!PS.isOffline) {
-				return this.add(`|error|You are already connected.`);
+		'reconnect,connect'() {
+			if (this.connected && this.connected !== 'autoreconnect') {
+				return this.errorReply(`You are already connected.`);
 			}
+
+			if (!PS.isOffline) {
+				// connect to room
+				try {
+					this.connect();
+				} catch (err: any) {
+					this.errorReply(err.message);
+				}
+				return;
+			}
+
+			// connect to server
 			const uptime = Date.now() - PS.startTime;
 			if (uptime > 24 * 60 * 60 * 1000) {
 				PS.confirm(`It's been over a day since you first connected. Please refresh.`, {
@@ -1176,17 +1248,6 @@ export class PSRoom extends PSStreamModel<Args | null> implements RoomOptions {
 				return this.add(`|error|You are already offline.`);
 			}
 			PS.connection?.disconnect();
-			this.add(`||You are now offline.`);
-		},
-		'connect'() {
-			if (this.connected && this.connected !== 'autoreconnect') {
-				return this.errorReply(`You are already connected.`);
-			}
-			try {
-				this.connect();
-			} catch (err: any) {
-				this.errorReply(err.message);
-			}
 		},
 		'cancelsearch'() {
 			if (PS.mainmenu.cancelSearch()) {
@@ -1648,6 +1709,7 @@ export class PSRoom extends PSStreamModel<Args | null> implements RoomOptions {
 		this.sendDirect(msg);
 	}
 	sendDirect(msg: string) {
+		if (this.connected === 'expired') return this.add(`This room has expired (you can't chat in it anymore)`);
 		PS.send(msg, this.id);
 	}
 	destroy() {
@@ -1683,6 +1745,7 @@ type PSRoomPanelSubclass<T extends PSRoom = PSRoom> = (new () => PSRoomPanel<T>)
 	noURL?: boolean,
 	icon?: preact.ComponentChildren,
 	title?: string,
+	handleDrop?: (ev: DragEvent) => boolean | void,
 };
 
 /**
@@ -1699,7 +1762,6 @@ export const PS = new class extends PSModel {
 	user = new PSUser();
 	server = new PSServer();
 	connection: PSConnection | null = null;
-	connected = false;
 	/**
 	 * While PS is technically disconnected while it's trying to connect,
 	 * it still shows UI like it's connected, so you can click buttons
@@ -1747,6 +1809,7 @@ export const PS = new class extends PSModel {
 		"ladder-*": "*",
 		"view-*": "*",
 		"login": "*semimodal-popup",
+		"help-*": "chat",
 	});
 	/** List of rooms on the left side of the top tabbar */
 	leftRoomList: RoomID[] = [];
@@ -1807,16 +1870,17 @@ export const PS = new class extends PSModel {
 
 	/**
 	 * The drag-and-drop API is incredibly dumb and doesn't let us know
-	 * what's being dragged until the `drop` event, so we track it here.
+	 * what's being dragged until the `drop` event, so we track what we
+	 * do know here.
 	 *
-	 * Note that `PS.dragging` will be null if the drag was initiated
-	 * outside PS (e.g. dragging a team from File Explorer to PS), and
-	 * for security reasons it's impossible to know what they are until
-	 * they're dropped.
+	 * Note that `PS.dragging` will sometimes have type `?` if the drag
+	 * was initiated outside PS (e.g. dragging a team from File Explorer
+	 * to PS), and for security reasons it's impossible to know what
+	 * they are until they're dropped.
 	 */
 	dragging: { type: 'room', roomid: RoomID, foreground?: boolean } |
 		{ type: 'team', team: Team | number, folder: string | null } |
-		{ type: '?' } | // just a note not to try to figure out what type the dragged thing is
+		{ type: '?' } | // browser preventing us from knowing what's being dragged
 		null = null;
 	lastMessageTime = '';
 
@@ -1838,14 +1902,16 @@ export const PS = new class extends PSModel {
 		this.addRoom({
 			id: 'rooms' as RoomID,
 			title: "Rooms",
-		}, true);
+			autofocus: false,
+		});
 		this.rightPanel = this.rooms['rooms']!;
 
 		if (this.newsHTML) {
 			this.addRoom({
 				id: 'news' as RoomID,
 				title: "News",
-			}, true);
+				autofocus: false,
+			});
 		}
 
 		// Create rooms before /autojoin is sent to the server
@@ -1856,8 +1922,13 @@ export const PS = new class extends PSModel {
 			}
 			let rooms = autojoin[this.server.id] || '';
 			for (let title of rooms.split(",")) {
-				this.addRoom({ id: toID(title) as unknown as RoomID, title, connected: true }, true);
+				this.addRoom({ id: toID(title) as unknown as RoomID, title, connected: true, autofocus: false });
 			}
+		}
+
+		// for old versions of Safari
+		if (window.webkitNotification) {
+			window.Notification ||= window.webkitNotification;
 		}
 
 		this.updateLayout();
@@ -2007,7 +2078,11 @@ export const PS = new class extends PSModel {
 						id: roomid2,
 						type,
 						connected: true,
-					}, roomid === 'staff' || roomid === 'upperstaff');
+						autofocus: roomid !== 'staff' && roomid !== 'upperstaff',
+						// probably the only use for `autoclosePopups: false`.
+						// (the server sometimes sends a popup error message and a new room at the same time)
+						autoclosePopups: false,
+					});
 				} else {
 					room.type = type;
 					this.updateRoomTypes();
@@ -2024,7 +2099,7 @@ export const PS = new class extends PSModel {
 				continue;
 			} case 'deinit': {
 				room = PS.rooms[roomid2];
-				if (room) {
+				if (room && room.connected !== 'expired') {
 					room.connected = false;
 					this.removeRoom(room);
 				}
@@ -2321,14 +2396,23 @@ export const PS = new class extends PSModel {
 	}
 	/**
 	 * Low-level add room. You usually want `join`.
+	 *
+	 * By default, focuses the room after adding it. (`options.autofocus = false` to suppress)
+	 *
+	 * By default, when autofocusing, closes popups that aren't the parent of the added room.
+	 * (`options.autoclosePopups = false` to suppress)
 	 */
-	addRoom(options: RoomOptions, noFocus = false) {
+	addRoom(options: RoomOptions & { autoclosePopups?: boolean, autofocus?: boolean }) {
+		options.autofocus ??= true;
+		options.autoclosePopups ??= options.autofocus;
 		// support hardcoded PM room-IDs
 		if (options.id.startsWith('challenge-')) {
+			this.requestNotifications();
 			options.id = `dm-${options.id.slice(10)}` as RoomID;
 			options.args = { challengeMenuOpen: true };
 		}
 		if (options.id.startsWith('dm-')) {
+			this.requestNotifications();
 			if (options.id.length >= 5 && options.id.endsWith('--')) {
 				options.id = options.id.slice(0, -2) as RoomID;
 				options.args = { initialSlash: true };
@@ -2345,7 +2429,7 @@ export const PS = new class extends PSModel {
 			preexistingRoom = this.rooms[options.id];
 		}
 		if (preexistingRoom) {
-			if (!noFocus) {
+			if (options.autofocus) {
 				if (options.args?.challengeMenuOpen) {
 					(preexistingRoom as ChatRoom).openChallenge();
 				}
@@ -2353,7 +2437,7 @@ export const PS = new class extends PSModel {
 			}
 			return preexistingRoom;
 		}
-		if (!noFocus) {
+		if (options.autoclosePopups) {
 			let parentPopup = parentRoom;
 			if ((options.parentElem as HTMLButtonElement)?.name === 'closeRoom') {
 				// We want to close all popups above the parent element.
@@ -2369,13 +2453,13 @@ export const PS = new class extends PSModel {
 		this.rooms[room.id] = room;
 		const location = room.location;
 		room.location = null!;
-		this.moveRoom(room, location, noFocus);
+		this.moveRoom(room, location, !options.autofocus);
 		if (options.backlog) {
 			for (const args of options.backlog) {
 				room.receiveLine(args);
 			}
 		}
-		if (!noFocus) room.focusNextUpdate = true;
+		if (options.autofocus) room.focusNextUpdate = true;
 		return room;
 	}
 	hideRightRoom() {
@@ -2544,8 +2628,15 @@ export const PS = new class extends PSModel {
 
 		if (this.popups.length && room.id === this.popups[this.popups.length - 1]) {
 			this.popups.pop();
-			PS.room = this.popups.length ? PS.rooms[this.popups[this.popups.length - 1]]! :
-				PS.rooms[room.parentRoomid ?? PS.panel.id] || PS.panel;
+			if (this.popups.length) {
+				// focus topmost popup
+				PS.room = PS.rooms[this.popups[this.popups.length - 1]]!;
+			} else {
+				// if popup parent is a mini-window, focus popup parent
+				PS.room = PS.rooms[room.parentRoomid ?? PS.panel.id] || PS.panel;
+				// otherwise focus current panel
+				if (PS.room.location !== 'mini-window' || PS.panel !== PS.mainmenu) PS.room = PS.panel;
+			}
 		}
 
 		if (wasFocused) {
@@ -2562,6 +2653,7 @@ export const PS = new class extends PSModel {
 		this.closePopupsAbove(null, skipUpdate);
 	}
 	closePopupsAbove(room: PSRoom | null | undefined, skipUpdate?: boolean) {
+		if (!this.popups.length) return;
 		// a while-loop may be simpler, but the loop invariant is very hard to prove
 		// and any bugs (opening a popup while leaving a room) could lead to an infinite loop
 		// a for-loop doesn't have that problem
@@ -2620,6 +2712,25 @@ export const PS = new class extends PSModel {
 
 			autojoin[this.server.id] = thisAutojoin || '';
 			this.prefs.set('autojoin', autojoin);
+		}
+	}
+	requestNotifications() {
+		try {
+			if (window.webkitNotifications?.requestPermission) {
+				// Notification.requestPermission crashes Chrome 23:
+				//   https://code.google.com/p/chromium/issues/detail?id=139594
+				// In lieu of a way to detect Chrome 23, we'll just use the old
+				// requestPermission API, which works to request permissions for
+				// the new Notification spec anyway.
+				window.webkitNotifications.requestPermission();
+			} else if (window.Notification) {
+				Notification.requestPermission?.(permission => {});
+			}
+		} catch {}
+	}
+	playNotificationSound() {
+		if (window.BattleSound && !this.prefs.mute) {
+			window.BattleSound.playSound('audio/notification.wav', this.prefs.notifvolume);
 		}
 	}
 };

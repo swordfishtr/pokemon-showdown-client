@@ -639,19 +639,11 @@ export const Dex = new class implements ModdedDex {
 		spriteData.gen = Math.max(graphicsGen, Math.min(species.gen, 5));
 		const baseDir = ['', 'gen1', 'gen2', 'gen3', 'gen4', 'gen5', '', '', '', ''][spriteData.gen];
 
-		let animationData = null;
 		let miscData = null;
 		let speciesid = species.id;
 		if (species.isTotem) speciesid = toID(name);
-		if (baseDir === '' && window.BattlePokemonSprites) {
-			animationData = BattlePokemonSprites[speciesid];
-		}
-		if (baseDir === 'gen5' && window.BattlePokemonSpritesBW) {
-			animationData = BattlePokemonSpritesBW[speciesid];
-		}
 		if (window.BattlePokemonSprites) miscData = BattlePokemonSprites[speciesid];
 		if (!miscData && window.BattlePokemonSpritesBW) miscData = BattlePokemonSpritesBW[speciesid];
-		if (!animationData) animationData = {};
 		if (!miscData) miscData = {};
 
 		if (miscData.num !== 0 && miscData.num > -5000) {
@@ -720,17 +712,30 @@ export const Dex = new class implements ModdedDex {
 			spriteData.cryurl += '.mp3';
 		}
 
-		if (animationData[facing + 'f'] && options.gender === 'F') facing += 'f';
-		let allowAnim = !Dex.prefs('noanim') && !Dex.prefs('nogif');
-		if (allowAnim && spriteData.gen >= 6) spriteData.pixelated = false;
-		if (allowAnim && animationData[facing] && spriteData.gen >= 5) {
-			if (facing.endsWith('f')) name += '-f';
-			dir = baseDir + 'ani' + dir;
-
-			spriteData.w = animationData[facing].w;
-			spriteData.h = animationData[facing].h;
-			spriteData.url += dir + '/' + name + '.gif';
-		} else {
+		let animatedSprite = false;
+		if (!Dex.prefs('noanim') && !Dex.prefs('nogif') && spriteData.gen >= 5) {
+			const animationArray: [AnyObject, string][] = [];
+			if (baseDir === '' && window.BattlePokemonSprites) {
+				animationArray.push([BattlePokemonSprites[speciesid], '']);
+			}
+			if (window.BattlePokemonSpritesBW) {
+				animationArray.push([BattlePokemonSpritesBW[speciesid], 'gen5']);
+			}
+			for (const [animationData, animDir] of animationArray) {
+				if (!animationData) continue;
+				if (animationData[facing + 'f'] && options.gender === 'F') facing += 'f';
+				if (!animationData[facing]) continue;
+				if (facing.endsWith('f')) name += '-f';
+				if (spriteData.gen >= 6) spriteData.pixelated = false;
+				dir = animDir + 'ani' + dir;
+				spriteData.w = animationData[facing].w;
+				spriteData.h = animationData[facing].h;
+				spriteData.url += dir + '/' + name + '.gif';
+				animatedSprite = true;
+				break;
+			}
+		}
+		if (!animatedSprite) {
 			// There is no entry or enough data in pokedex-mini.js
 			// Handle these in case-by-case basis; either using BW sprites or matching the played gen.
 			dir = (baseDir || 'gen5') + dir;
@@ -827,7 +832,7 @@ export const Dex = new class implements ModdedDex {
 		let left = (num % 12) * 40;
 		let fainted = ((pokemon as Pokemon | ServerPokemon)?.fainted ?
 			`;opacity:.3;filter:grayscale(100%) brightness(.5)` : ``);
-		return `background:transparent url(${Dex.resourcePrefix}sprites/pokemonicons-sheet.png?v18) no-repeat scroll -${left}px -${top}px${fainted}`;
+		return `background:transparent url(${Dex.resourcePrefix}sprites/pokemonicons-sheet.png?v19) no-repeat scroll -${left}px -${top}px${fainted}`;
 	}
 
 	getTeambuilderSpriteData(pokemon: any, dex: ModdedDex = Dex): TeambuilderSpriteData {
@@ -871,7 +876,7 @@ export const Dex = new class implements ModdedDex {
 			species.id === "xerneasneutral") && ![
 			"floetteeternal", "pichuspikyeared", "pikachubelle", "pikachucosplay", "pikachulibre", "pikachuphd", "pikachupopstar", "pikachurockstar",
 		].includes(species.id);
-		if ((gen >= 8 || dex.modid === 'gen7letsgo') && homeExists) {
+		if (gen >= 8 && homeExists) {
 			spriteData.spriteDir = 'sprites/home-centered';
 			spriteData.x = 8;
 			spriteData.y = 10;
