@@ -164,6 +164,11 @@ export class MainMenuRoom extends PSRoom {
 			const [, message] = args;
 			PS.alert(message.replace(/\|\|/g, '\n'));
 			return;
+		} case 'customgroups': {
+			// Generations added.
+			const [, groups] = args;
+			this.parseGroups(groups);
+			return;
 		}
 		}
 		const lobby = PS.rooms['lobby'];
@@ -428,6 +433,42 @@ export class MainMenuRoom extends PSRoom {
 			}
 			break;
 		}
+	}
+
+	// GENERATIONS
+
+	// This caused an error message in lobby. I'm porting the code, but it's unused.
+	// Merge the upstream implementations once it's ready.
+	parseGroups(groupsList: string) {
+		let data: any = null;
+		try {
+			data = JSON.parse(groupsList);
+		} catch (error) {}
+		if (!Array.isArray(data)) return; // broken JSON - keep default ranks
+
+		const groups: any = {};
+		// process the data and sort into the three auth tiers, 0, 1, and 2
+		for (let i = 0; i < data.length; i++) {
+			const entry = data[i];
+			if (!entry) continue;
+
+			const symbol = entry.symbol || ' ';
+			const groupName = entry.name;
+			const groupType = entry.type || 'user';
+
+			// this is where any undeclared groups will be positioned in userlist
+			if (groupType === 'normal' && !Config.defaultOrder) Config.defaultOrder = i + 0.5;
+
+			if (!groupName) Config.defaultGroup = symbol;
+
+			groups[symbol] = {
+				name: groupName ? `${groupName} (${symbol})` : null,
+				type: groupType,
+				order: i + 1
+			};
+		}
+
+		Config.groups = groups; // if nothing from above crashes (malicious json), then the client will use the new custom groups
 	}
 }
 

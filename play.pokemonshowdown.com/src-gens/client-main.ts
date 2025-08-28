@@ -40,6 +40,9 @@ export interface ServerInfo {
 export interface PSConfig {
 	server: ServerInfo;
 	defaultserver: ServerInfo;
+	defaultGroup: string; // unused
+	defaultOrder: number; // unused
+	groups: any; // unused
 	routes: {
 		root: string,
 		client: string,
