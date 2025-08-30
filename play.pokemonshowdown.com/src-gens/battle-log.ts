@@ -349,7 +349,7 @@ export class BattleLog {
 				if (format === 'Random Battle') battleType = 'Random Battle';
 			}
 
-			divHTML = `<a href="/${id}" class="ilink">${battleType} started between <strong style="${BattleLog.usernameColor(toUserid(name1))}">${BattleLog.escapeHTML(name1)}</strong> and <strong style="${BattleLog.usernameColor(toUserid(name2))}">${BattleLog.escapeHTML(name2)}</strong>.</a>`;
+			divHTML = `<a href="/${id}" class="ilink">${battleType} started between <strong style="color:${BattleLog.usernameColor(toUserid(name1))};">${BattleLog.escapeHTML(name1)}</strong> and <strong style="color:${BattleLog.usernameColor(toUserid(name2))};">${BattleLog.escapeHTML(name2)}</strong>.</a>`;
 			divClass = 'notice';
 			break;
 
