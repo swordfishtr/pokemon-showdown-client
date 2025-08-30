@@ -82,12 +82,10 @@ export class ChatRoom extends PSRoom {
 			return;
 
 		case 'join': case 'j': case 'J':
-			this.addUser(args[1]);
 			this.handleJoinLeave("join", args[1], args[0] === "J");
 			return true;
 
 		case 'leave': case 'l': case 'L':
-			this.removeUser(args[1]);
 			this.handleJoinLeave("leave", args[1], args[0] === "L");
 			return true;
 
@@ -147,6 +145,7 @@ export class ChatRoom extends PSRoom {
 				this.subtleNotify();
 			}
 			break;
+
 		case ':':
 			this.timeOffset = Math.trunc(Date.now() / 1000) - (parseInt(args[1], 10) || 0);
 			break;

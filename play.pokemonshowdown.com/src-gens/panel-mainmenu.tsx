@@ -165,7 +165,7 @@ export class MainMenuRoom extends PSRoom {
 			PS.alert(message.replace(/\|\|/g, '\n'));
 			return;
 		} case 'customgroups': {
-			// Generations added.
+			// Generations added. (port)
 			const [, groups] = args;
 			this.parseGroups(groups);
 			return;

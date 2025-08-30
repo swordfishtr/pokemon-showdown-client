@@ -329,6 +329,30 @@ export class BattleLog {
 		case 'initdone':
 			return;
 
+		// Generations added. (port)
+		case 'b': case 'B':
+			const [, id, name1, name2] = args;
+			const isSilent = (args[0] === args[0].toUpperCase());
+
+			const matches = BattleLog.parseBattleID(id);
+			if (!matches) {
+				return; // bogus room ID could be used to inject JavaScript
+			}
+
+			const format = BattleLog.escapeFormat(matches[1]);
+
+			if (isSilent && !Dex.prefs('showbattles')) return;
+
+			let battleType = 'Battle';
+			if (format) {
+				battleType = format + ' battle';
+				if (format === 'Random Battle') battleType = 'Random Battle';
+			}
+
+			divHTML = `<a href="/${id}" class="ilink">${battleType} started between <strong style="${BattleLog.usernameColor(toUserid(name1))}">${BattleLog.escapeHTML(name1)}</strong> and <strong style="${BattleLog.usernameColor(toUserid(name2))}">${BattleLog.escapeHTML(name2)}</strong>.</a>`;
+			divClass = 'notice';
+			break;
+
 		default:
 			this.addBattleMessage(args, kwArgs);
 			this.joinLeave = null;
@@ -1813,6 +1837,15 @@ export class BattleLog {
 			return 'javascript:alert("You will need to click Download again once the replay file is at the end.");void 0';
 		}
 		return 'data:text/plain;base64,' + encodeURIComponent(btoa(unescape(encodeURIComponent(replayFile))));
+	}
+
+	// GENERATIONS
+	
+	static parseBattleID(id: string) {
+		if (id.lastIndexOf('-') > 6) {
+			return id.match(/^battle\-([a-z0-9]*)\-?[0-9]*$/);
+		}
+		return id.match(/^battle\-([a-z0-9]*[a-z])[0-9]*$/);
 	}
 }
 
