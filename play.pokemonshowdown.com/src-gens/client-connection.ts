@@ -388,9 +388,12 @@ PSConnection.connect();
 
 export const PSLoginServer = new class {
 	rawQuery(act: string, data: PostData): Promise<string | null> {
-		data.act = act;
 		// Generations
 		// We replicate Pokeathlon's setup, which is an unregistered server that has functional autologin.
+		data.act = act;
+		if (typeof POKEMON_SHOWDOWN_TESTCLIENT_KEY === 'string') {
+			data.sid = POKEMON_SHOWDOWN_TESTCLIENT_KEY.replace(/%2C/g, ',');
+		}
 		const url = `https://${Config.routes.client}/~~${PS.server.id}/action.php`;
 		return PSStorage.request('POST', url, data) || Net(url).get({ method: 'POST', body: data }).then(
 			res => res ?? null
