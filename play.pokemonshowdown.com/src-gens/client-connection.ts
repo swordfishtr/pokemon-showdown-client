@@ -232,6 +232,8 @@ export const LoginManager = new class {
 		const iframe = document.createElement('iframe');
 		// If src is changed by a malicious script, our messages will no longer reach the iframe.
 		iframe.src = this.child
+		iframe.style.display = 'none';
+		document.body.appendChild(iframe);
 		const iframeWindow = iframe.contentWindow;
 		if(!iframeWindow) {
 			PS.alert('Could not load Login Manager iframe.');
