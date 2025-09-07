@@ -21,17 +21,6 @@ export class PSConnection {
 	private worker: Worker | null = null;
 
 	constructor() {
-		const loading = PSStorage.init();
-		if (loading) {
-			loading.then(() => {
-				this.initConnection();
-			});
-		} else {
-			this.initConnection();
-		}
-	}
-
-	initConnection() {
 		if (!this.tryConnectInWorker()) this.directConnect();
 	}
 
@@ -217,190 +206,126 @@ export class PSConnection {
 	}
 }
 
-export class PSStorage {
-	static frame: WindowProxy | null = null;
-	static requests: Record<string, (data: any) => void> | null = null;
-	static requestCount = 0;
-	static readonly origin = `https://${Config.routes.client}`;
-	static loader?: () => void;
-	static loaded: Promise<void> | boolean = false;
-	static init(): void | Promise<void> {
-		if (this.loaded) {
-			if (this.loaded === true) return;
-			return this.loaded;
-		}
-		if (Config.testclient) {
-			return;
-		} else if (`${location.protocol}//${location.hostname}` === PSStorage.origin) {
-			// Same origin, everything can be kept as default
-			Config.server ||= Config.defaultserver;
-			return;
-		}
-
-		// Cross-origin
-		if (!('postMessage' in window)) {
-			// browser does not support cross-document messaging
-			PS.alert("Sorry, psim connections are unsupported by your browser.");
-			return;
-		}
-
-		window.addEventListener('message', this.onMessage);
-
-		if (document.location.hostname !== Config.routes.client) {
-			const iframe = document.createElement('iframe');
-			iframe.src = 'https://' + Config.routes.client + '/crossdomain.php?host=' +
-				encodeURIComponent(document.location.hostname) +
-				'&path=' + encodeURIComponent(document.location.pathname.substr(1)) +
-				'&protocol=' + encodeURIComponent(document.location.protocol);
-			iframe.style.display = 'none';
-			document.body.appendChild(iframe);
-		} else {
-			Config.server ||= Config.defaultserver;
-			$(
-				`<iframe src="https://${Config.routes.client}/crossprotocol.html?v1.2" style="display: none;"></iframe>`
-			).appendTo('body');
-			setTimeout(() => {
-				// HTTPS may be blocked
-				// yes, this happens, blame Avast! and BitDefender and other antiviruses
-				// that feel a need to MitM HTTPS poorly
-			}, 2000);
-		}
-		this.loaded = new Promise(resolve => {
-			this.loader = resolve;
-		});
-		return this.loaded;
-	}
-
-	static onMessage = (e: MessageEvent) => {
-		if (e.origin !== PSStorage.origin) return;
-
-		this.frame = e.source as WindowProxy;
-		const data = e.data;
-		// console.log(`top recv: ${data}`);
-		switch (data.charAt(0)) {
-		case 'c':
-			Config.server = JSON.parse(data.substr(1));
-			if (Config.server.registered && Config.server.id !== 'showdown' && Config.server.id !== 'smogtours') {
-				const link = document.createElement('link');
-				link.rel = 'stylesheet';
-				link.href = `//${Config.routes.client}/customcss.php?server=${encodeURIComponent(Config.server.id)}`;
-				document.head.appendChild(link);
-			}
-			Object.assign(PS.server, Config.server);
-			break;
-		case 'p':
-			const newData = JSON.parse(data.substr(1));
-			if (newData) PS.prefs.load(newData, true);
-			PS.prefs.save = function () {
-				const prefData = JSON.stringify(PS.prefs.storage);
-				PSStorage.postCrossOriginMessage('P' + prefData);
-
-				// in Safari, cross-origin local storage is apparently treated as session
-				// storage, so mirror the storage in the current origin just in case
-				try {
-					localStorage.setItem('showdown_prefs', prefData);
-				} catch {}
-			};
-			PS.prefs.update(null);
-			break;
-		case 't':
-			if (window.nodewebkit) return;
-			let oldTeams;
-			if (PS.teams.list.length) {
-				// Teams are still stored in the old location; merge them with the
-				// new teams.
-				oldTeams = PS.teams.list;
-			}
-			PS.teams.unpackAll(data.substr(1));
-			PS.teams.save = function () {
-				const packedTeams = PS.teams.packAll(PS.teams.list);
-				PSStorage.postCrossOriginMessage('T' + packedTeams);
-
-				// in Safari, cross-origin local storage is apparently treated as session
-				// storage, so mirror the storage in the current origin just in case
-				if (document.location.hostname === Config.routes.client) {
-					try {
-						localStorage.setItem('showdown_teams_local', packedTeams);
-					} catch {}
-				}
-				PS.teams.update('team');
-			};
-			if (oldTeams) {
-				PS.teams.list = PS.teams.list.concat(oldTeams);
-				PS.teams.save();
-				localStorage.removeItem('showdown_teams');
-			}
-			if (data === 'tnull' && !PS.teams.list.length) {
-				PS.teams.unpackAll(localStorage.getItem('showdown_teams_local'));
-			}
-			break;
-		case 'a':
-			if (data === 'a0') {
-				PS.alert("Your browser doesn't support third-party cookies. Some things might not work correctly.");
-			}
-			if (!window.nodewebkit) {
-				// for whatever reason, Node-Webkit doesn't let us make remote
-				// Ajax requests or something. Oh well, making them direct
-				// isn't a problem, either.
-
-				try {
-					// I really hope this is a Chrome bug that this can fail
-					PSStorage.frame!.postMessage("", PSStorage.origin);
-				} catch {
-					return;
-				}
-
-				PSStorage.requests = {};
-			}
-			PSStorage.loaded = true;
-			PSStorage.loader?.();
-			PSStorage.loader = undefined;
-			break;
-		case 'r':
-			const reqData = JSON.parse(data.slice(1));
-			const idx = reqData[0];
-			if (PSStorage.requests![idx]) {
-				PSStorage.requests![idx](reqData[1]);
-				delete PSStorage.requests![idx];
-			}
-			break;
-		}
-	};
-	static request(type: 'GET' | 'POST', uri: string, data: any): void | Promise<string> {
-		if (!PSStorage.requests) return;
-		const idx = PSStorage.requestCount++;
-		return new Promise(resolve => {
-			PSStorage.requests![idx] = resolve;
-			PSStorage.postCrossOriginMessage((type === 'GET' ? 'R' : 'S') + JSON.stringify([uri, data, idx, 'text']));
-		});
-	}
-	static postCrossOriginMessage = function (data: string) {
-		try {
-			// I really hope this is a Chrome bug that this can fail
-			return PSStorage.frame!.postMessage(data, PSStorage.origin);
-		} catch {
-		}
-		return false;
-	};
-};
-
 PSConnection.connect();
 
-export const PSLoginServer = new class {
+/**
+ * Generations
+ * PSLoginServer replacement.
+ * 
+ * Encrypt only sensitive, unpredictable data (password, assertion).
+ */
+export const LoginManager = new class {
+
+	readonly child = 'https://login.generationssd.co.uk';
+	readonly encoder = new TextEncoder();
+	readonly decoder = new TextDecoder();
+
+	/** Number of requests, used as message identifier. */
+	count = 0;
+
+	/** Login Manager iframe window reference. */
+	readonly window = (() => {
+		if (!('postMessage' in window)) {
+			PS.alert('Sorry, cross-domain logins are unsupported by your browser.');
+			throw new Error('Sorry, cross-domain logins are unsupported by your browser.');
+		}
+		const iframe = document.createElement('iframe');
+		// If src is changed by a malicious script, our messages will no longer reach the iframe.
+		iframe.src = this.child
+		const iframeWindow = iframe.contentWindow;
+		if(!iframeWindow) {
+			PS.alert('Could not load Login Manager iframe.');
+			throw new Error('Could not load Login Manager iframe.');
+		}
+		return iframeWindow;
+	})();
+
+	async upkeep(input: { challstr: string }) {
+		this.count++;
+		const msgid = this.count;
+		const cryptokey = await window.crypto.subtle.generateKey({ name: 'AES-CBC', length: 128 }, false, ['encrypt', 'decrypt']);
+		this.window.postMessage({
+			msgid,
+			act: 'upkeep',
+			cryptokey,
+			challstr: input.challstr,
+		}, this.child);
+
+		const { assertionEncrypted, ...response } = await this.await(msgid);
+		const assertionEncoded = await window.crypto.subtle.decrypt({ name: 'AES-CBC', iv: response.cryptoiv }, cryptokey, assertionEncrypted);
+		const assertion = this.decoder.decode(assertionEncoded);
+		PS.user.registered = { name: response.username, userid: response.userid };
+		PS.user.handleAssertion(response.username, assertion);
+	}
+
+	async login(input: { name: string, pass: string, challstr: string }) {
+		this.count++;
+		const msgid = this.count;
+		const { key: cryptokey, output: [{ iv: cryptoiv, encrypted: passEncrypted }] } = await this.encrypt(input.pass);
+		this.window.postMessage({
+			msgid,
+			act: 'login',
+			cryptokey,
+			cryptoiv,
+			name: input.name,
+			passEncrypted,
+			challstr: input.challstr,
+		}, this.child);
+
+		const { assertionEncrypted, ...response } = await this.await(msgid);
+		const assertionEncoded = await window.crypto.subtle.decrypt({ name: 'AES-CBC', iv: response.cryptoiv }, cryptokey, assertionEncrypted);
+		const assertion = this.decoder.decode(assertionEncoded);
+		PS.user.registered = { name: response.username, userid: response.userid };
+		PS.user.handleAssertion(response.username, assertion);
+	}
+
+	/** Listen for a response to msgid for 30 seconds. */
+	await(msgid: number): Promise<any> {
+		return new Promise(async (resolve, reject) => {
+			const callback = (event: MessageEvent) => {
+				if(event.origin !== this.child) return;
+				const { data } = event;
+				if(data.msgid !== msgid) return;
+				if(data.error) { reject(data.error); }
+				else { resolve(data); }
+				window.removeEventListener('message', callback);
+			};
+			window.addEventListener('message', callback);
+			setTimeout(() => {
+				reject(new Error('No response from the login server.'));
+				window.removeEventListener('message', callback);
+			}, 30 * 1000);
+		});
+	}
+
+	async encrypt(...data: string[]) {
+		const output = [];
+		const key = await window.crypto.subtle.generateKey({ name: 'AES-CBC', length: 128 }, false, ['encrypt', 'decrypt']);
+		for(const piece of data) {
+			const encoded = this.encoder.encode(piece);
+			const iv = window.crypto.getRandomValues(new Uint8Array(16));
+			const encrypted = await window.crypto.subtle.encrypt({ name: 'AES-CBC', iv }, key, encoded);
+			output.push({ iv, encrypted });
+		}
+		return { key, output };
+	}
+
+}
+
+export const PSLoginServer = {
 	rawQuery(act: string, data: PostData): Promise<string | null> {
-		// Generations
-		// We replicate Pokeathlon's setup, which is an unregistered server that has functional autologin.
+		// Generations -- this is to be replaced with LoginManager
 		data.act = act;
 		if (typeof POKEMON_SHOWDOWN_TESTCLIENT_KEY === 'string') {
 			data.sid = POKEMON_SHOWDOWN_TESTCLIENT_KEY.replace(/%2C/g, ',');
 		}
 		const url = `https://${Config.routes.client}/~~${PS.server.id}/action.php`;
-		return PSStorage.request('POST', url, data) || Net(url).get({ method: 'POST', body: data }).then(
+		return Net(url).get({ method: 'POST', body: data }).then(
 			res => res ?? null
 		).catch(
 			() => null
 		);
-	}
+	},
 	query(act: string, data: PostData = {}): Promise<{ [k: string]: any } | null> {
 		return this.rawQuery(act, data).then(
 			res => res ? JSON.parse(res.slice(1)) : null

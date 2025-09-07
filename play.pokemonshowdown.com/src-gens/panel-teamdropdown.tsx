@@ -215,7 +215,6 @@ class TeamDropdownPanel extends PSRoomPanel {
 		}
 		if (!target) return;
 
-		PS.teams.loadTeam(PS.teams.byKey[target.value], true);
 		this.chooseParentValue(target.value);
 	};
 	override render() {

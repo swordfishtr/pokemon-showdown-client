@@ -10,7 +10,7 @@ import { PSPanelWrapper, PSRoomPanel } from "./panels";
 import { toID, type ID } from "./battle-dex";
 import { BattleLog } from "./battle-log";
 import { TeamEditor } from "./battle-team-editor";
-import { Net, PSLoginServer } from "./client-connection";
+import { Net } from "./client-connection";
 import { Teams } from "./battle-teams";
 import { CopyableURLBox } from "./panel-chat";
 
@@ -34,16 +34,11 @@ class TeamRoom extends PSRoom {
 		this.team = team!;
 		this.title = `[Team] ${this.team?.name || 'Error'}`;
 		if (team) this.setFormat(team.format);
-		this.load();
+		this.update(null);
 	}
 	setFormat(format: string) {
 		const team = this.team;
 		team.format = toID(format);
-	}
-	load() {
-		PS.teams.loadTeam(this.team, true)?.then(() => {
-			this.update(null);
-		});
 	}
 	upload(isPrivate: boolean) {
 		const team = this.team;
@@ -193,7 +188,7 @@ class TeamPanel extends PSRoomPanel<TeamRoom> {
 	}
 	override componentDidUpdate() {
 		const room = this.props.room;
-		room.load();
+		room.update(null);
 	}
 	override render() {
 		const { room } = this.props;
@@ -298,79 +293,6 @@ class TeamPanel extends PSRoomPanel<TeamRoom> {
 	}
 }
 
-class ViewTeamPanel extends PSRoomPanel {
-	static readonly id = 'viewteam';
-	static readonly routes = ['viewteam-*'];
-	static readonly Model = TeamRoom;
-	static readonly title = 'Loading...';
-	team: Team | null | undefined;
-	teamData: {
-		team: string, private: string | null, ownerid: ID, format: ID, title: string, views: number,
-	} | null = null;
-	override componentDidMount(): void {
-		super.componentDidMount();
-		const roomid = this.props.room.id;
-		const [teamid, password] = roomid.slice(9).split('-');
-		PSLoginServer.query('getteam', {
-			teamid,
-			password,
-			full: true,
-		}).then(untypedData => {
-			const data = untypedData as ViewTeamPanel['teamData'];
-			if (!data) {
-				this.team = null;
-				return;
-			}
-			this.team = {
-				name: data.title,
-				format: data.format,
-				folder: '',
-				packedTeam: data.team,
-				iconCache: null,
-				key: '',
-				isBox: false,
-				teamid: parseInt(teamid),
-			};
-			for (const localTeam of PS.teams.list) {
-				if (localTeam.teamid === this.team.teamid) {
-					this.team.key = localTeam.key;
-					break;
-				}
-			}
-			this.props.room.title = `[Team] ${this.team.name || 'Untitled team'}`;
-			this.teamData = data;
-			PS.update();
-		});
-	}
-
-	override render() {
-		const { room } = this.props;
-		const team = this.team;
-		const teamData = this.teamData!;
-		if (!team) {
-			return <PSPanelWrapper room={room}>
-				{team === null ? <p class="error">
-					Team doesn't exist
-				</p> : <p>
-					Loading...
-				</p>}
-			</PSPanelWrapper>;
-		}
-
-		return <PSPanelWrapper room={room} scrollable><div class="pad">
-			<h1>{team.name || "Untitled team"}</h1>
-			<CopyableURLBox
-				url={`https://psim.us/t/${team.teamid!}${teamData.private ? '-' + teamData.private : ''}`}
-			/> {}
-			<p>Uploaded by: <strong>{teamData.ownerid}</strong></p>
-			<p>Format: <strong>{teamData.format}</strong></p>
-			<p>Views: <strong>{teamData.views}</strong></p>
-			{team.key && <p><a class="button" href={`team-${team.key}`}>Edit</a></p>}
-			<TeamEditor team={team} readOnly></TeamEditor>
-		</div></PSPanelWrapper>;
-	}
-}
-
 type TeamStorage = 'account' | 'public' | 'disconnected' | 'local';
 class TeamStoragePanel extends PSRoomPanel {
 	static readonly id = "teamstorage";
@@ -448,4 +370,4 @@ class TeamStoragePanel extends PSRoomPanel {
 	}
 }
 
-PS.addRoomType(TeamPanel, TeamStoragePanel, ViewTeamPanel);
+PS.addRoomType(TeamPanel, TeamStoragePanel);

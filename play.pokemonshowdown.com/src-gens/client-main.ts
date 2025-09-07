@@ -9,7 +9,7 @@
  * @license AGPLv3
  */
 
-import { PSConnection, PSLoginServer } from './client-connection';
+import { LoginManager, PSConnection, PSLoginServer } from './client-connection';
 import { PSModel, PSStreamModel } from './client-core';
 import type { PSRoomPanel, PSRouter } from './panels';
 import { ChatRoom } from './panel-chat';
@@ -479,118 +479,6 @@ class PSTeams extends PSStreamModel<'team' | 'format'> {
 			teamid,
 		};
 	}
-	loadRemoteTeams() {
-		PSLoginServer.query('getteams').then(data => {
-			if (!data) return;
-			if (data.actionerror) {
-				return PS.alert('Error loading uploaded teams: ' + data.actionerror);
-			}
-			const teams: { [key: string]: UploadedTeam } = {};
-			for (const team of data.teams) {
-				teams[team.teamid] = team;
-			}
-
-			// find exact teamid matches
-			for (const localTeam of this.list) {
-				if (localTeam.teamid) {
-					const team = teams[localTeam.teamid];
-					if (!team) {
-						continue;
-					}
-					localTeam.uploaded = {
-						teamid: team.teamid,
-						notLoaded: false,
-						private: team.private,
-					};
-					delete teams[localTeam.teamid];
-				}
-			}
-
-			// do best-guess matches for teams that don't have a local team with matching teamid
-			for (const team of Object.values(teams)) {
-				let matched = false;
-				for (const localTeam of this.list) {
-					if (localTeam.teamid) continue;
-
-					const compare = this.compareTeams(team, localTeam);
-					if (compare === 'rename') {
-						if (!localTeam.name.endsWith(' (local version)')) localTeam.name += ' (local version)';
-					} else if (compare) {
-						// prioritize locally saved teams over remote
-						// as so to not overwrite changes
-						matched = true;
-						localTeam.teamid = team.teamid;
-						localTeam.uploaded = {
-							teamid: team.teamid,
-							notLoaded: false,
-							private: team.private,
-						};
-						break;
-					}
-				}
-				if (!matched) {
-					const mons = team.team.split(',').map((m: string) => ({ species: m, moves: [] }));
-					const newTeam: Team = {
-						name: team.name,
-						format: team.format,
-						folder: '',
-						packedTeam: Teams.pack(mons),
-						iconCache: null,
-						isBox: false,
-						key: this.getKey(team.name),
-						uploaded: {
-							teamid: team.teamid,
-							notLoaded: true,
-							private: team.private,
-						},
-					};
-					this.push(newTeam);
-				}
-			}
-		});
-	}
-	loadTeam(team: Team | undefined | null, ifNeeded: true): void | Promise<void>;
-	loadTeam(team: Team | undefined | null): Promise<void>;
-	loadTeam(team: Team | undefined | null, ifNeeded?: boolean): void | Promise<void> {
-		if (!team?.uploaded || team.uploadedPackedTeam) return ifNeeded ? undefined : Promise.resolve();
-		if (team.uploaded.notLoaded && team.uploaded.notLoaded !== true) return team.uploaded.notLoaded;
-
-		const notLoaded = team.uploaded.notLoaded;
-		return (team.uploaded.notLoaded = PSLoginServer.query('getteam', {
-			teamid: team.uploaded.teamid,
-		}).then(data => {
-			if (!team.uploaded) return;
-			if (!data?.team) {
-				PS.alert(`Failed to load team: ${data?.actionerror || "Error unknown. Try again later."}`);
-				return;
-			}
-			team.uploaded.notLoaded = false;
-			team.uploadedPackedTeam = data.team;
-			if (notLoaded) {
-				team.packedTeam = data.team;
-				PS.teams.save();
-			}
-		}));
-	}
-	compareTeams(serverTeam: UploadedTeam, localTeam: Team) {
-		// TODO: decide if we want this
-		// if (serverTeam.teamid === localTeam.teamid && localTeam.teamid) return true;
-
-		// if titles match exactly and mons are the same, assume they're the same team
-		// if they don't match, it might be edited, but we'll go ahead and add it to the user's
-		// teambuilder since they may want that old version around. just go ahead and edit the name
-		let sanitize = (name: string) => (name || "").replace(/\s+\(server version\)/g, '').trim();
-		const nameMatches = sanitize(serverTeam.name) === sanitize(localTeam.name);
-		if (!(nameMatches && serverTeam.format === localTeam.format)) {
-			return false;
-		}
-		// if it's been edited since, invalidate the team id on this one (count it as new)
-		// and load from server
-		const mons = serverTeam.team.split(',').map(toID).sort().join(',');
-		const otherMons = Teams.unpackSpeciesOnly(localTeam.packedTeam).map(toID).sort().join(',');
-		if (mons !== otherMons) return 'rename';
-		return true;
-	}
 }
 
 /**********************************************************************
@@ -685,29 +573,22 @@ class PSUser extends PSStreamModel<PSLoginState | null> {
 			});
 		}
 		this.update(null);
-		PSLoginServer.query(
-			'login', { name, pass: password, challstr: this.challstr }
-		).then(data => {
-			this.loggingIn = null;
-			if (data?.curuser?.loggedin) {
-				// success!
-				const username = data.curuser.loggedin.username;
-				this.registered = { name: username, userid: toID(username) };
-				this.handleAssertion(name, data.assertion);
-			} else {
-				// wrong password
-				if (special.needsGoogle) {
-					try {
-						// @ts-expect-error gapi included dynamically
-						gapi.auth2.getAuthInstance().signOut();
-					} catch {}
-				}
-				this.updateLogin({
-					name,
-					error: data?.error || 'Wrong password.',
-					...special as any,
-				});
+		LoginManager.login({ name, pass: password, challstr: this.challstr })
+		.catch((error) => {
+			if (special.needsGoogle) {
+				try {
+					// @ts-expect-error gapi included dynamically
+					gapi.auth2.getAuthInstance().signOut();
+				} catch {}
 			}
+			this.updateLogin({
+				name,
+				error: error.message || 'Wrong password.',
+				...special as any,
+			});
+		})
+		.then(() => {
+			this.loggingIn = null;
 		});
 	}
 	updateLogin(update: PSLoginState) {
@@ -1686,8 +1567,10 @@ export class PSRoom extends PSStreamModel<Args | null> implements RoomOptions {
 	clientCommands: ParsedClientCommands | null = null;
 	currentElement: HTMLElement | null = null;
 	/**
-	 * Handles outgoing messages, like `/logout`. Return `true` to prevent
-	 * the line from being sent to servers.
+	 * Handles outgoing messages, like `/logout`.
+	 * Return string to send it instead.
+	 * Return true to send the original string.
+	 * Return false | null | void to NOT send to the server.
 	 */
 	handleSend(line: string, element = this.currentElement) {
 		if (!line.startsWith('/') || line.startsWith('//')) return line;

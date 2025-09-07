@@ -15,7 +15,6 @@ import type { Battle } from "./battle";
 import { MiniEdit } from "./miniedit";
 import { Dex, PSUtils, toID, type ID } from "./battle-dex";
 import { BattleTextParser, type Args } from "./battle-text-parser";
-import { PSLoginServer } from "./client-connection";
 import type { BattleRoom } from "./panel-battle";
 import { BattleChoiceBuilder } from "./battle-choices";
 import { ChatTournament, TournamentBox } from "./panel-chat-tournament";
@@ -318,119 +317,6 @@ export class ChatRoom extends PSRoom {
 		'clear'() {
 			this.log?.reset();
 			this.update(null);
-		},
-		'rank,ranking,rating,ladder'(target) {
-			let arg = target;
-			if (!arg) {
-				arg = PS.user.userid;
-			}
-			if (this.battle && !arg.includes(',')) {
-				arg += ", " + this.id.split('-')[1];
-			}
-
-			const targets = arg.split(',');
-			let formatTargeting = false;
-			const formats: { [key: string]: number } = {};
-			const gens: { [key: string]: number } = {};
-			for (let i = 1, len = targets.length; i < len; i++) {
-				targets[i] = $.trim(targets[i]);
-				if (targets[i].length === 4 && targets[i].startsWith('gen')) {
-					gens[targets[i]] = 1;
-				} else {
-					formats[toID(targets[i])] = 1;
-				}
-				formatTargeting = true;
-			}
-
-			PSLoginServer.query("ladderget", {
-				user: targets[0],
-			}).then(data => {
-				if (!data || !Array.isArray(data)) return this.add(`|error|Error: corrupted ranking data`);
-				let buffer = `<div class="ladder"><table><tr><td colspan="9">User: <strong>${toID(targets[0])}</strong></td></tr>`;
-				if (!data.length) {
-					buffer += '<tr><td colspan="9"><em>This user has not played any ladder games yet.</em></td></tr>';
-					buffer += '</table></div>';
-					return this.add(`|html|${buffer}`);
-				}
-				buffer += '<tr><th>Format</th><th><abbr title="Elo rating">Elo</abbr></th><th><abbr title="user\'s percentage chance of winning a random battle (aka GLIXARE)">GXE</abbr></th><th><abbr title="Glicko-1 rating: rating &#177; deviation">Glicko-1</abbr></th><th>COIL</th><th>W</th><th>L</th><th>Total</th>';
-				let suspect = false;
-				for (const item of data) {
-					if ('suspect' in item) suspect = true;
-				}
-				if (suspect) buffer += '<th>Suspect reqs possible?</th>';
-				buffer += '</tr>';
-				const hiddenFormats = [];
-				for (const row of data) {
-					if (!row) return this.add(`|error|Error: corrupted ranking data`);
-					const formatId = toID(row.formatid);
-					if (!formatTargeting ||
-						formats[formatId] ||
-						gens[formatId.slice(0, 4)] ||
-						(gens['gen6'] && !formatId.startsWith('gen'))) {
-						buffer += '<tr>';
-					} else {
-						buffer += '<tr class="hidden">';
-						hiddenFormats.push(window.BattleLog.escapeFormat(formatId, true));
-					}
-
-					// Validate all the numerical data
-					for (const value of [row.elo, row.rpr, row.rprd, row.gxe, row.w, row.l, row.t]) {
-						if (typeof value !== 'number' && typeof value !== 'string') {
-							return this.add(`|error|Error: corrupted ranking data`);
-						}
-					}
-
-					buffer += `<td> ${BattleLog.escapeHTML(BattleLog.formatName(formatId, true))} </td><td><strong>${Math.round(row.elo)}</strong></td>`;
-					if (row.rprd > 100) {
-						// High rating deviation. Provisional rating.
-						buffer += `<td>&ndash;</td>`;
-						buffer += `<td><span style="color:#888"><em>${Math.round(row.rpr)} <small> &#177; ${Math.round(row.rprd)} </small></em> <small>(provisional)</small></span></td>`;
-					} else {
-						buffer += `<td>${Math.trunc(row.gxe)}<small>.${row.gxe.toFixed(1).slice(-1)}%</small></td>`;
-						buffer += `<td><em>${Math.round(row.rpr)} <small> &#177; ${Math.round(row.rprd)}</small></em></td>`;
-					}
-					const N = parseInt(row.w, 10) + parseInt(row.l, 10) + parseInt(row.t, 10);
-					const COIL_B = undefined;
-
-					// Uncomment this after LadderRoom logic is implemented
-					// COIL_B = LadderRoom?.COIL_B[formatId];
-
-					if (COIL_B) {
-						buffer += `<td>${Math.round(40.0 * parseFloat(row.gxe) * 2.0 ** (-COIL_B / N))}</td>`;
-					} else {
-						buffer += '<td>&mdash;</td>';
-					}
-					buffer += `<td> ${row.w} </td><td> ${row.l} </td><td> ${N} </td>`;
-					if (suspect) {
-						if (typeof row.suspect === 'undefined') {
-							buffer += '<td>&mdash;</td>';
-						} else {
-							buffer += '<td>';
-							buffer += (row.suspect ? "Yes" : "No");
-							buffer += '</td>';
-						}
-					}
-					buffer += '</tr>';
-				}
-				if (hiddenFormats.length) {
-					if (hiddenFormats.length === data.length) {
-						const formatsText = Object.keys(gens).concat(Object.keys(formats)).join(', ');
-						buffer += `<tr class="no-matches"><td colspan="8">` +
-							BattleLog.html`<em>This user has not played any ladder games that match ${formatsText}.</em></td></tr>`;
-					}
-					const otherFormats = hiddenFormats.slice(0, 3).join(', ') +
-						(hiddenFormats.length > 3 ? ` and ${hiddenFormats.length - 3} other formats` : '');
-					buffer += `<tr><td colspan="8"><button name="showOtherFormats">` +
-						BattleLog.html`${otherFormats} not shown</button></td></tr>`;
-				}
-				let userid = toID(targets[0]);
-				let registered = PS.user.registered;
-				if (registered && PS.user.userid === userid) {
-					buffer += `<tr><td colspan="8" style="text-align:right"><a href="//${PS.routes.users}/${userid}">Reset W/L</a></tr></td>`;
-				}
-				buffer += '</table></div>';
-				this.add(`|html|${buffer}`);
-			});
 		},
 
 		// battle-specific commands
