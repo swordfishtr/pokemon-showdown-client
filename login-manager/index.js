@@ -1,4 +1,4 @@
-if(self === top) {
+if(window.self === window.top) {
 	console.log('App mode: Manual visit');
 
 	const buttonClearStorage = document.getElementById('button-clear-storage');
@@ -23,11 +23,10 @@ if(self === top) {
 		addLog('Cleared storage successfully.');
 	}
 }
-else if(window.opener) {
+else if(window.top) {
 	console.log('App mode: In iframe');
 
-	/** @type {WindowProxy} */
-	const opener = window.opener;
+	const opener = window.top;
 	const parent = 'https://generationssd.co.uk';
 
 	const encoder = new TextEncoder();
