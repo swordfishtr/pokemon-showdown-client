@@ -224,6 +224,12 @@ export const LoginManager = new class {
 	/** Number of requests, used as message identifier. */
 	count = 0;
 
+	/**
+	 * Some websocket messages will come before the LoginManager iframe loads.
+	 * Await this if you don't want your request to be voided as a result of that.
+	 */
+	readonly ready = this.await(0);
+
 	/** Login Manager iframe window reference. */
 	readonly window = (() => {
 		if (!('postMessage' in window)) {

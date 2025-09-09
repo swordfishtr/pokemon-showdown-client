@@ -117,10 +117,9 @@ export class MainMenuRoom extends PSRoom {
 		case 'challstr': {
 			const [, challstr] = args;
 			PS.user.challstr = challstr;
-			LoginManager.upkeep({ challstr })
-			.catch(() => {
-				PS.user.initializing = false;
-			});
+			LoginManager.ready
+			.then(() => LoginManager.upkeep({ challstr }))
+			.catch(() => PS.user.initializing = false);
 			return;
 		} case 'updateuser': {
 			const [, fullName, namedCode, avatar] = args;

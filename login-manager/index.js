@@ -183,6 +183,9 @@ else if(window.top) {
 		}
 	});
 
+	// we are ready to go!
+	opener.postMessage({ msgid: 0 }, parent);
+
 	/**
 	 * 
 	 * @param {string} data 
