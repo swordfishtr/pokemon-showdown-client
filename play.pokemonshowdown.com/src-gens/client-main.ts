@@ -9,7 +9,7 @@
  * @license AGPLv3
  */
 
-import { LoginManager, PSConnection, PSLoginServer } from './client-connection';
+import { LoginManager, PSConnection } from './client-connection';
 import { PSModel, PSStreamModel } from './client-core';
 import type { PSRoomPanel, PSRouter } from './panels';
 import { ChatRoom } from './panel-chat';
@@ -183,7 +183,10 @@ class PSPrefs extends PSStreamModel<string | null> {
 		try {
 			if (window.localStorage) {
 				this.storageEngine = 'localStorage';
-				this.load(JSON.parse(localStorage.getItem('showdown_prefs')!) || {}, true);
+				const showdown_prefs = JSON.parse(localStorage.getItem('showdown_prefs')!) || {};
+				// Coming from old client.
+				const noSave = !('user' in showdown_prefs) && !('pass' in showdown_prefs);
+				this.load(showdown_prefs, noSave);
 			}
 		} catch {}
 	}
@@ -253,6 +256,10 @@ class PSPrefs extends PSStreamModel<string | null> {
 			}
 			delete newPrefs['dark'];
 		}
+
+		// Coming from old client.
+		delete newPrefs['user'];
+		delete newPrefs['pass'];
 	}
 
 	setAFD(mode?: typeof this['afd']) {
@@ -556,12 +563,7 @@ class PSUser extends PSStreamModel<PSLoginState | null> {
 		}
 		this.loggingIn = name;
 		this.update(null);
-		PSLoginServer.rawQuery(
-			'getassertion', { userid, challstr: this.challstr }
-		).then(res => {
-			this.handleAssertion(name, res);
-			this.updateRegExp();
-		});
+		LoginManager.getassertion({ userid, challstr: this.challstr });
 	}
 	changeNameWithPassword(name: string, password: string, special: PSLoginState = { needsPassword: true }) {
 		this.loggingIn = name;
@@ -628,9 +630,6 @@ class PSUser extends PSStreamModel<PSLoginState | null> {
 		}
 	}
 	logOut() {
-		PSLoginServer.query(
-			'logout', { userid: this.userid }
-		);
 		PS.send(`/logout`);
 		PS.connection?.disconnect();
 

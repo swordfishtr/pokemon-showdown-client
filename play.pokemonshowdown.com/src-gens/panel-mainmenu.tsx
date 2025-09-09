@@ -6,7 +6,7 @@
  */
 
 import preact from "../js/lib/preact";
-import { LoginManager, PSLoginServer } from "./client-connection";
+import { LoginManager } from "./client-connection";
 import { Config, PS, PSRoom, type RoomID, type RoomOptions, type Team } from "./client-main";
 import { PSIcon, PSPanelWrapper, PSRoomPanel } from "./panels";
 import type { BattlesRoom } from "./panel-battle";

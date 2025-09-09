@@ -5,6 +5,7 @@
  * @license MIT
  */
 
+import { toID } from "./battle-dex";
 import { Config, PS } from "./client-main";
 
 declare const SockJS: any;
@@ -253,32 +254,80 @@ export const LoginManager = new class {
 			challstr: input.challstr,
 		}, this.child);
 
-		const { assertionEncrypted, ...response } = await this.await(msgid);
-		const assertionEncoded = await window.crypto.subtle.decrypt({ name: 'AES-CBC', iv: response.cryptoiv }, cryptokey, assertionEncrypted);
+		const { assertionIV, assertionEncrypted, username, userid } = await this.await(msgid);
+		const assertionEncoded = await window.crypto.subtle.decrypt({ name: 'AES-CBC', iv: assertionIV }, cryptokey, assertionEncrypted);
 		const assertion = this.decoder.decode(assertionEncoded);
-		PS.user.registered = { name: response.username, userid: response.userid };
-		PS.user.handleAssertion(response.username, assertion);
+		PS.user.registered = { name: username, userid };
+		PS.user.handleAssertion(username, assertion);
 	}
 
 	async login(input: { name: string, pass: string, challstr: string }) {
 		this.count++;
 		const msgid = this.count;
-		const { key: cryptokey, output: [{ iv: cryptoiv, encrypted: passEncrypted }] } = await this.encrypt(input.pass);
+		const { key: cryptokey, output: [{ iv: passIV, encrypted: passEncrypted }] } = await this.encrypt(input.pass);
 		this.window.postMessage({
 			msgid,
 			act: 'login',
 			cryptokey,
-			cryptoiv,
+			passIV, passEncrypted,
 			name: input.name,
-			passEncrypted,
 			challstr: input.challstr,
 		}, this.child);
 
-		const { assertionEncrypted, ...response } = await this.await(msgid);
-		const assertionEncoded = await window.crypto.subtle.decrypt({ name: 'AES-CBC', iv: response.cryptoiv }, cryptokey, assertionEncrypted);
+		const { assertionIV, assertionEncrypted, username, userid } = await this.await(msgid);
+		const assertionEncoded = await window.crypto.subtle.decrypt({ name: 'AES-CBC', iv: assertionIV }, cryptokey, assertionEncrypted);
 		const assertion = this.decoder.decode(assertionEncoded);
-		PS.user.registered = { name: response.username, userid: response.userid };
-		PS.user.handleAssertion(response.username, assertion);
+		PS.user.registered = { name: username, userid };
+		PS.user.handleAssertion(username, assertion);
+	}
+
+	async getassertion(input: { userid: string, challstr: string }) {
+		this.count++;
+		const msgid = this.count;
+		const cryptokey = await window.crypto.subtle.generateKey({ name: 'AES-CBC', length: 128 }, false, ['encrypt', 'decrypt']);
+		this.window.postMessage({
+			msgid,
+			act: 'getassertion',
+			cryptokey,
+			userid: input.userid,
+			challstr: input.challstr,
+		}, this.child);
+
+		const { assertionIV, assertionEncrypted } = await this.await(msgid);
+		const assertionEncoded = await window.crypto.subtle.decrypt({ name: 'AES-CBC', iv: assertionIV }, cryptokey, assertionEncrypted);
+		const assertion = this.decoder.decode(assertionEncoded);
+		PS.user.handleAssertion(input.userid, assertion);
+		// if ws doesn't receive `updateuser`, run `PS.user.updateRegExp();` ?
+	}
+
+	async register(input: { captcha: string, password: string, cpassword: string, username: string, challstr: string }) {
+		this.count++;
+		const msgid = this.count;
+		const { key: cryptokey, output: [
+			{ iv: captchaIV, encrypted: captchaEncrypted },
+			{ iv: passwordIV, encrypted: passwordEncrypted },
+			{ iv: cpasswordIV, encrypted: cpasswordEncrypted },
+		] } = await this.encrypt(
+			input.captcha,
+			input.password,
+			input.cpassword,
+		);
+		this.window.postMessage({
+			msgid,
+			act: 'register',
+			cryptokey,
+			captchaIV, captchaEncrypted,
+			passwordIV, passwordEncrypted,
+			cpasswordIV, cpasswordEncrypted,
+			username: input.username,
+			challstr: input.challstr,
+		}, this.child);
+
+		const { assertionIV, assertionEncrypted, username, userid } = await this.await(msgid);
+		const assertionEncoded = await window.crypto.subtle.decrypt({ name: 'AES-CBC', iv: assertionIV }, cryptokey, assertionEncrypted);
+		const assertion = this.decoder.decode(assertionEncoded);
+		PS.user.registered = { name: username, userid };
+		PS.user.handleAssertion(username, assertion);
 	}
 
 	/** Listen for a response to msgid for 30 seconds. */
@@ -288,7 +337,7 @@ export const LoginManager = new class {
 				if(event.origin !== this.child) return;
 				const { data } = event;
 				if(data.msgid !== msgid) return;
-				if(data.error) { reject(data.error); }
+				if(data.error || data.actionerror) { reject(data.error || data.actionerror); }
 				else { resolve(data); }
 				window.removeEventListener('message', callback);
 			};
@@ -313,29 +362,6 @@ export const LoginManager = new class {
 	}
 
 }
-
-export const PSLoginServer = {
-	rawQuery(act: string, data: PostData): Promise<string | null> {
-		// Generations -- this is to be replaced with LoginManager
-		data.act = act;
-		if (typeof POKEMON_SHOWDOWN_TESTCLIENT_KEY === 'string') {
-			data.sid = POKEMON_SHOWDOWN_TESTCLIENT_KEY.replace(/%2C/g, ',');
-		}
-		const url = `https://${Config.routes.client}/~~${PS.server.id}/action.php`;
-		return Net(url).get({ method: 'POST', body: data }).then(
-			res => res ?? null
-		).catch(
-			() => null
-		);
-	},
-	query(act: string, data: PostData = {}): Promise<{ [k: string]: any } | null> {
-		return this.rawQuery(act, data).then(
-			res => res ? JSON.parse(res.slice(1)) : null
-		).catch(
-			() => null
-		);
-	}
-};
 
 interface PostData {
 	[key: string]: string | number | boolean | null | undefined;

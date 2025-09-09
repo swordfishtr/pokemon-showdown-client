@@ -1,5 +1,5 @@
 if(window.self === window.top) {
-	console.log('App mode: Manual visit');
+	console.log('Login manager mode: Manual visit');
 
 	const buttonClearStorage = document.getElementById('button-clear-storage');
 	const divOutput = document.getElementById('div-output');
@@ -24,7 +24,7 @@ if(window.self === window.top) {
 	}
 }
 else if(window.top) {
-	console.log('App mode: In iframe');
+	console.log('Login manager mode: In iframe');
 
 	const opener = window.top;
 	const parent = 'https://generationssd.co.uk';
@@ -34,15 +34,16 @@ else if(window.top) {
 
 	// These can return data to send back.
 	const actions = {
+
 		// Not the actual `upkeep` action - that may not be possible.
 		// Logins using the last used credentials.
 		async upkeep(data) {
-			const { cryptokey, challstr } = data;
+			const { act, cryptokey, challstr } = data;
 			if(
 				!(cryptokey instanceof CryptoKey) ||
 				typeof challstr !== 'string'
 			) {
-				throw new Error('Invalid input for "upkeep".');
+				throw new Error(`Invalid input for "${act}".`);
 			}
 
 			const name = window.localStorage.getItem('name');
@@ -54,39 +55,34 @@ else if(window.top) {
 				throw new Error('Login rejected.');
 			}
 
-			// Assertion _shouldn't_, but _could_ be negative. PSUser.handleAssertion can deal with that.
-
 			const encrypted = await encrypt(psresponse.assertion, cryptokey);
 
 			return {
-				cryptoiv: encrypted.iv,
+				assertionIV: encrypted.iv,
 				assertionEncrypted: encrypted.encrypted,
 				username: psresponse.curuser.username,
 				userid: psresponse.curuser.userid,
 			};
 		},
+
 		async login(data) {
-			const { act, cryptokey, cryptoiv, name, passEncrypted, challstr } = data;
+			const { act, cryptokey, passIV, passEncrypted, name, challstr } = data;
 			if(
 				!(cryptokey instanceof CryptoKey) ||
-				!(cryptoiv instanceof Uint8Array) ||
+				!(passIV instanceof Uint8Array) || !(passEncrypted instanceof ArrayBuffer) ||
 				typeof name !== 'string' ||
-				!(passEncrypted instanceof ArrayBuffer) ||
 				typeof challstr !== 'string'
 			) {
-				throw new TypeError('Invalid input for "login".');
+				throw new TypeError(`Invalid input for "${act}".`);
 			}
 
-			const passEncoded = await window.crypto.subtle.decrypt({ name: 'AES-CBC', iv: cryptoiv }, cryptokey, passEncrypted);
+			const passEncoded = await window.crypto.subtle.decrypt({ name: 'AES-CBC', iv: passIV }, cryptokey, passEncrypted);
 			const pass = decoder.decode(passEncoded);
 
 			const psresponse = await requestJSON({ act, name, pass, challstr });
-
 			if(!psresponse.actionsuccess || !psresponse.curuser.loggedin) {
 				throw new Error('Login rejected.');
 			}
-
-			// Assertion _shouldn't_, but _could_ be negative. PSUser.handleAssertion can deal with that.
 
 			const encrypted = await encrypt(psresponse.assertion, cryptokey);
 
@@ -94,12 +90,77 @@ else if(window.top) {
 			window.localStorage.setItem('pass', pass);
 
 			return {
-				cryptoiv: encrypted.iv,
+				assertionIV: encrypted.iv,
 				assertionEncrypted: encrypted.encrypted,
 				username: psresponse.curuser.username,
 				userid: psresponse.curuser.userid,
 			};
 		},
+
+		async getassertion(data) {
+			const { act, cryptokey, userid, challstr } = data;
+			if(
+				!(cryptokey instanceof CryptoKey) ||
+				typeof userid !== 'string' ||
+				typeof challstr !== 'string'
+			) {
+				throw new Error(`Invalid input for "${act}".`);
+			}
+
+			// if registered `;` otherwise random string
+			const assertion = await request({ act, userid, challstr });
+			const { iv: assertionIV, encrypted: assertionEncrypted } = await encrypt(assertion, cryptokey);
+			return { assertionIV, assertionEncrypted };
+		},
+
+		async register(data) {
+			const {
+				act,
+				cryptokey,
+				captchaIV, captchaEncrypted,
+				passwordIV, passwordEncrypted,
+				cpasswordIV, cpasswordEncrypted,
+				username,
+				challstr,
+			} = data;
+			if(
+				!(cryptokey instanceof CryptoKey) ||
+				!(captchaIV instanceof Uint8Array) || !(captchaEncrypted instanceof ArrayBuffer) ||
+				!(passwordIV instanceof Uint8Array) || !(passwordEncrypted instanceof ArrayBuffer) ||
+				!(cpasswordIV instanceof Uint8Array) || !(cpasswordEncrypted instanceof ArrayBuffer) ||
+				typeof username !== 'string' ||
+				typeof challstr !== 'string'
+			) {
+				throw new TypeError(`Invalid input for "${act}".`);
+			}
+
+			const captchaEncoded = await window.crypto.subtle.decrypt({ name: 'AES-CBC', iv: captchaIV }, cryptokey, captchaEncrypted);
+			const captcha = decoder.decode(captchaEncoded);
+
+			const passwordEncoded = await window.crypto.subtle.decrypt({ name: 'AES-CBC', iv: passwordIV }, cryptokey, passwordEncrypted);
+			const password = decoder.decode(passwordEncoded);
+
+			const cpasswordEncoded = await window.crypto.subtle.decrypt({ name: 'AES-CBC', iv: cpasswordIV }, cryptokey, cpasswordEncrypted);
+			const cpassword = decoder.decode(cpasswordEncoded);
+
+			const psresponse = await requestJSON({ act, username, password, cpassword, captcha, challstr });
+			if(!psresponse.actionsuccess || !psresponse.curuser.loggedin) {
+				throw new Error('Login rejected.');
+			}
+
+			const encrypted = await encrypt(psresponse.assertion, cryptokey);
+
+			window.localStorage.setItem('name', username);
+			window.localStorage.setItem('pass', password);
+
+			return {
+				assertionIV: encrypted.iv,
+				assertionEncrypted: encrypted.encrypted,
+				username: psresponse.curuser.username,
+				userid: psresponse.curuser.userid,
+			};
+		},
+
 	};
 
 	window.addEventListener('message', async (event) => {
