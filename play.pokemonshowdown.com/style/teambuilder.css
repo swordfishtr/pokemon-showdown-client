@@ -722,13 +722,16 @@ you can't delete it by pressing Backspace */
 }
 .wizardsearchresults {
 	position: absolute;
-	top: 230px;
+	top: 130px;
 	left: 0;
 	right: 0;
 	bottom: 0;
 	overflow: auto;
 	-webkit-overflow-scrolling: touch;
 	overscroll-behavior-block: contain;
+}
+.wizardsearchresults.belowset {
+	top: 230px;
 }
 .wizardsearchresults .dexlist, .searchresults .dexlist {
 	min-width: 624px;

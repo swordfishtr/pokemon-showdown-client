@@ -161,6 +161,11 @@ else if(window.top) {
 			};
 		},
 
+		logout() {
+			window.localStorage.removeItem('name');
+			window.localStorage.removeItem('pass');
+		},
+
 	};
 
 	window.addEventListener('message', async (event) => {

@@ -1834,25 +1834,6 @@ class TeamWizard extends preact.Component<{
 						<button class="option" style="visibility:hidden"><i class="fa fa-trash" aria-hidden></i> Delete</button>
 					)}
 				</div>
-				<table>
-					<tr>
-						<td rowSpan={2} class="set-pokemon"><div class="border-collapse">
-							<button class="button button-first cur" onClick={this.setFocus} value={`pokemon|${i}`}>
-								<span class="sprite" style={sprite}><span class="sprite-inner">
-									<strong class="label">Pokemon</strong> {}
-									<em>(choose species)</em>
-								</span></span>
-							</button>
-						</div></td>
-						<td colSpan={2} class="set-details"></td>
-						<td rowSpan={2} class="set-moves"></td>
-						<td rowSpan={2} class="set-stats"></td>
-					</tr>
-					<tr>
-						<td class="set-ability"></td>
-						<td class="set-item"></td>
-					</tr>
-				</table>
 			</div>;
 		}
 		while (set.moves.length < 4) set.moves.push('');
@@ -2263,7 +2244,7 @@ class TeamWizard extends preact.Component<{
 						/>
 						{PSSearchResults.renderFilters(editor.search)}
 					</div>
-					<div class="wizardsearchresults" onScroll={this.scrollResults}>
+					<div class={`wizardsearchresults${set ? ' belowset' : ''}`} onScroll={this.scrollResults}>
 						<PSSearchResults
 							search={editor.search} hideFilters resultIndex={editor.searchIndex}
 							onSelect={this.selectResult} windowing={this.windowResults()}

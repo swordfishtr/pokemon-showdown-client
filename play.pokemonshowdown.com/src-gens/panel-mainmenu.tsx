@@ -839,7 +839,7 @@ export class TeamForm extends preact.Component<{
 			// .reverse() because the newest starred format should be the default one
 			const starred = Object.keys(starredPrefs).filter(id => starredPrefs[id] === true).reverse();
 			if (!this.format) {
-				this.format = `gen${Dex.gen}randombattle`;
+				this.format = 'gen9chaoscup';
 				for (let id of starred) {
 					let format = window.BattleFormats[id];
 					if (!format) continue;

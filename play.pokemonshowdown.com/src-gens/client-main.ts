@@ -630,6 +630,7 @@ class PSUser extends PSStreamModel<PSLoginState | null> {
 		}
 	}
 	logOut() {
+		LoginManager.logout();
 		PS.send(`/logout`);
 		PS.connection?.disconnect();
 

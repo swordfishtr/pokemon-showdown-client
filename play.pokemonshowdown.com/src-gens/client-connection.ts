@@ -336,6 +336,10 @@ export const LoginManager = new class {
 		PS.user.handleAssertion(username, assertion);
 	}
 
+	logout() {
+		this.window.postMessage({ act: 'logout' });
+	}
+
 	/** Listen for a response to msgid for 30 seconds. */
 	await(msgid: number): Promise<any> {
 		return new Promise(async (resolve, reject) => {
