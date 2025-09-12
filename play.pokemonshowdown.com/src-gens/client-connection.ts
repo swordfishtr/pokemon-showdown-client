@@ -339,7 +339,7 @@ export const LoginManager = new class {
 	logout() {
 		this.count++;
 		const msgid = this.count;
-		this.window.postMessage({ msgid, act: 'logout' });
+		this.window.postMessage({ msgid, act: 'logout' }, this.child);
 	}
 
 	/** Listen for a response to msgid for 30 seconds. */
