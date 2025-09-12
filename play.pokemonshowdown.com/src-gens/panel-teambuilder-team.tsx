@@ -7,12 +7,11 @@
 
 import { PS, PSRoom, type RoomOptions, type Team } from "./client-main";
 import { PSPanelWrapper, PSRoomPanel } from "./panels";
-import { toID, type ID } from "./battle-dex";
+import { toID } from "./battle-dex";
 import { BattleLog } from "./battle-log";
 import { TeamEditor } from "./battle-team-editor";
 import { Net } from "./client-connection";
 import { Teams } from "./battle-teams";
-import { CopyableURLBox } from "./panel-chat";
 
 class TeamRoom extends PSRoom {
 	/** Doesn't _literally_ always exist, but does in basically all code
@@ -38,25 +37,6 @@ class TeamRoom extends PSRoom {
 	setFormat(format: string) {
 		const team = this.team;
 		team.format = toID(format);
-	}
-	upload(isPrivate: boolean) {
-		const team = this.team;
-		const cmd = team.uploaded ? 'update' : 'save';
-		// teamName, formatid, rawPrivacy, rawTeam
-		const buf = [];
-		if (team.uploaded) {
-			buf.push(team.uploaded.teamid);
-		} else if (team.teamid) {
-			return PS.alert(`This team is for a different account. Please log into the correct account to update it.`);
-		}
-		buf.push(team.name, team.format, isPrivate ? 1 : 0);
-		const exported = team.packedTeam;
-		if (!exported) return PS.alert(`Add a Pokemon to your team before uploading it.`);
-		buf.push(exported);
-		PS.teams.uploading = team;
-		PS.send(`/teams ${cmd} ${buf.join(', ')}`);
-		team.uploadedPackedTeam = exported;
-		this.update(null);
 	}
 	stripNicknames(packedTeam: string) {
 		const team = Teams.unpack(packedTeam);
@@ -114,42 +94,6 @@ class TeamPanel extends PSRoomPanel<TeamRoom> {
 		room.save();
 	};
 
-	uploadTeam = (ev: Event) => {
-		const room = this.props.room;
-		room.upload(room.team.uploaded ? !!room.team.uploaded.private : PS.prefs.uploadprivacy);
-	};
-	restore = (ev: Event) => {
-		const room = this.props.room;
-		const team = room.team;
-		if (!team.uploadedPackedTeam) {
-			// should never happen
-			PS.alert(`Must use on an uploaded team.`);
-			return;
-		}
-		team.packedTeam = team.uploadedPackedTeam;
-		room.forceReload = true;
-		room.save();
-		this.forceUpdate();
-	};
-	compare = (ev: Event) => {
-		const team = this.props.room.team;
-		if (!team.uploadedPackedTeam) {
-			// should never happen
-			PS.alert(`Must use on an uploaded team.`);
-			return;
-		}
-		const uploadedTeam = Teams.export(Teams.unpack(team.uploadedPackedTeam));
-		const localTeam = Teams.export(Teams.unpack(team.packedTeam));
-		PS.alert(BattleLog.html`|html|<table class="table" style="width:100%;font-size:14px"><tr><th>Local</th><th>Uploaded</th></tr><tr><td>${localTeam}</td><td>${uploadedTeam}</td></tr></table>`, { width: 720 });
-		ev.preventDefault();
-		ev.stopImmediatePropagation();
-	};
-
-	changePrivacyPref = (ev: Event) => {
-		PS.prefs.uploadprivacy = !(ev.currentTarget as HTMLInputElement).checked;
-		PS.prefs.save();
-		this.forceUpdate();
-	};
 	handleChangeFormat = (ev: Event) => {
 		const dropdown = ev.currentTarget as HTMLButtonElement;
 		const room = this.props.room;
@@ -203,29 +147,13 @@ class TeamPanel extends PSRoomPanel<TeamRoom> {
 			</PSPanelWrapper>;
 		}
 
-		const unsaved = team.uploaded && team.uploadedPackedTeam ? team.uploadedPackedTeam !== team.packedTeam : false;
 		return <PSPanelWrapper room={room} scrollable><div class="pad">
 			<a class="button" href="teambuilder" data-target="replace">
 				<i class="fa fa-chevron-left" aria-hidden></i> Teams
 			</a> {}
-			{team.uploaded ? (
-				<>
-					<button class={`button${unsaved ? ' button-first' : ''}`} data-href={`teamstorage-${team.key}`}>
-						<i class="fa fa-globe"></i> Account {team.uploaded.private ? '' : "(public)"}
-					</button>
-					{unsaved && <button class="button button-last" onClick={this.uploadTeam}>
-						<strong>Upload changes</strong>
-					</button>}
-				</>
-			) : team.teamid ? (
-				<button class="button" data-href={`teamstorage-${team.key}`}>
-					<i class="fa fa-plug"></i> Disconnected (wrong account?)
-				</button>
-			) : (
-				<button class="button" data-href={`teamstorage-${team.key}`}>
-					<i class="fa fa-laptop"></i> Local
-				</button>
-			)}
+			{team.packedTeam && team.format.length > 4 &&
+				<button data-cmd="/validate" class="button"><i class="fa fa-check"></i> Validate</button>
+			}
 			<div style="float:right"><button
 				name="format" value={team.format} data-selecttype="teambuilder"
 				class="button" data-href="/formatdropdown" onChange={this.handleChangeFormat}
@@ -242,127 +170,9 @@ class TeamPanel extends PSRoomPanel<TeamRoom> {
 			</label>
 			<TeamEditor
 				team={team} onChange={this.save} readOnly={!!team.teamid && !team.uploadedPackedTeam} resources={this.renderResources()}
-			>
-				{!!(team.packedTeam && team.format.length > 4) && <p>
-					<button data-cmd="/validate" class="button"><i class="fa fa-check"></i> Validate</button>
-				</p>}
-				{!!(team.packedTeam || team.uploaded) && <p class="infobox" style="padding: 5px 8px">
-					{team.uploadedPackedTeam && !team.uploaded ? <>
-						Uploading...
-					</> : team.uploaded ? <>
-						<small>Share URL:</small> {}
-						<CopyableURLBox
-							url={`https://psim.us/t/${team.uploaded.teamid}${team.uploaded.private ? '-' + team.uploaded.private : ''}`}
-						/> {}
-						{unsaved && <div style="padding-top:5px">
-							<button class="button" onClick={this.uploadTeam}>
-								<i class="fa fa-upload"></i> <strong>Upload changes</strong>
-							</button> {}
-							<button class="button" onClick={this.restore}>
-								Revert to uploaded version
-							</button> {}
-							<button class="button" onClick={this.compare}>
-								Compare
-							</button>
-						</div>}
-					</> : !team.teamid ? <>
-						<label class="checkbox inline">
-							<input
-								name="teamprivacy" checked={!PS.prefs.uploadprivacy}
-								type="checkbox" onChange={this.changePrivacyPref}
-							/> Public
-						</label>
-						<button class="button exportbutton" onClick={this.uploadTeam}>
-							<i class="fa fa-upload"></i> Upload for
-							{PS.prefs.uploadprivacy ? ' shareable URL' : ' shareable/searchable URL'}
-						</button>
-					</> : <>
-						This is a disconnected team. This could be because you uploaded it
-						on a different account, or because you deleted or un-uploaded it on
-						a different computer. For safety, you can't edit this team. You can,
-						however, delete it, or make a copy (which will be editable).
-					</>}
-				</p>}
-			</TeamEditor>
+			/>
 		</div></PSPanelWrapper>;
 	}
 }
 
-type TeamStorage = 'account' | 'public' | 'disconnected' | 'local';
-class TeamStoragePanel extends PSRoomPanel {
-	static readonly id = "teamstorage";
-	static readonly routes = ["teamstorage-*"];
-	static readonly location = "semimodal-popup";
-	static readonly noURL = true;
-
-	chooseOption = (ev: MouseEvent) => {
-		const storage = (ev.currentTarget as HTMLButtonElement).value as TeamStorage;
-		const room = this.props.room;
-		const team = this.team();
-
-		if (storage === 'local' && team.uploaded) {
-			PS.send(`/teams delete ${team.uploaded.teamid}`);
-			team.uploaded = undefined;
-			team.teamid = undefined;
-			team.uploadedPackedTeam = undefined;
-			PS.teams.save();
-			(room.getParent() as TeamRoom).update(null);
-		} else if (storage === 'public' && team.uploaded?.private) {
-			PS.send(`/teams setprivacy ${team.uploaded.teamid},no`);
-		} else if (storage === 'account' && team.uploaded?.private === null) {
-			PS.send(`/teams setprivacy ${team.uploaded.teamid},yes`);
-		} else if (storage === 'public' && !team.teamid) {
-			(room.getParent() as TeamRoom).upload(false);
-		} else if (storage === 'account' && !team.teamid) {
-			(room.getParent() as TeamRoom).upload(true);
-		}
-		ev.stopImmediatePropagation();
-		ev.preventDefault();
-		this.close();
-	};
-	team() {
-		const teamKey = this.props.room.id.slice(12);
-		const team = PS.teams.byKey[teamKey]!;
-		return team;
-	}
-
-	override render() {
-		const room = this.props.room;
-
-		const team = this.team();
-		const storage: TeamStorage = team.uploaded?.private ? (
-			'account'
-		) : team.uploaded ? (
-			'public'
-		) : team.teamid ? (
-			'disconnected'
-		) : (
-			'local'
-		);
-
-		if (storage === 'disconnected') {
-			return <PSPanelWrapper room={room} width={280}><div class="pad">
-				<div><button class="option cur" data-cmd="/close">
-					<i class="fa fa-plug"></i> <strong>Disconnected</strong><br />
-					Not found in the Teams database. Maybe you uploaded it on a different account?
-				</button></div>
-			</div></PSPanelWrapper>;
-		}
-		return <PSPanelWrapper room={room} width={280}><div class="pad">
-			<div><button class={`option${storage === 'local' ? ' cur' : ''}`} onClick={this.chooseOption} value="local">
-				<i class="fa fa-laptop"></i> <strong>Local</strong><br />
-				Stored in cookies on your computer. Warning: Your browser might delete these. Make sure to use backups.
-			</button></div>
-			<div><button class={`option${storage === 'account' ? ' cur' : ''}`} onClick={this.chooseOption} value="account">
-				<i class="fa fa-cloud"></i> <strong>Account</strong><br />
-				Uploaded to the Teams database. You can share with the URL.
-			</button></div>
-			<div><button class={`option${storage === 'public' ? ' cur' : ''}`} onClick={this.chooseOption} value="public">
-				<i class="fa fa-globe"></i> <strong>Account (public)</strong><br />
-				Uploaded to the Teams database publicly. Share with the URL or people can find it by searching.
-			</button></div>
-		</div></PSPanelWrapper>;
-	}
-}
-
-PS.addRoomType(TeamPanel, TeamStoragePanel);
+PS.addRoomType(TeamPanel);

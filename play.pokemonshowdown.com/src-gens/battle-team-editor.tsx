@@ -894,7 +894,7 @@ export class TeamEditor extends preact.Component<{
 		return <div class="teameditor">
 			<ul class="tabbar">
 				<li><button onClick={this.setTab} value="wizard" class={`button${this.wizard ? ' cur' : ''}`}>
-					Wizard
+					Builder
 				</button></li>
 				<li><button onClick={this.setTab} value="import" class={`button${!this.wizard ? ' cur' : ''}`}>
 					Import/Export
@@ -2206,39 +2206,23 @@ class TeamWizard extends preact.Component<{
 	}
 
 	override componentDidUpdate() {
-		console.log('0');
 		const searchBox = this.base!.querySelector<HTMLInputElement>('input[name=value], input[name=nickname]');
-		console.log('1');
 		if (this.setSearchBox !== null) {
-			console.log('2');
 			if (searchBox) {
-				console.log('3');
 				searchBox.value = this.setSearchBox;
-				if (!TeamEditor.probablyMobile()) {
-					console.log('4');
-					searchBox.select();
-				}
+				if (!TeamEditor.probablyMobile()) searchBox.select();
 			}
 			this.setSearchBox = null;
 		}
-		console.log('5');
 		const filters = this.base!.querySelector('.dexlist-filters');
-		console.log('6');
 		if (searchBox && searchBox.name === 'value') {
-			console.log('7');
 			if (filters) {
-				console.log('8');
 				const { width } = filters.getBoundingClientRect();
-				console.log('9');
 				searchBox.style.paddingLeft = `${width + 5}px`;
-				console.log('10');
 			} else {
-				console.log('11');
 				searchBox.style.paddingLeft = `3px`;
-				console.log('12');
 			}
 		}
-		console.log('13');
 	}
 	renderInnerFocus() {
 		const { editor } = this.props;
