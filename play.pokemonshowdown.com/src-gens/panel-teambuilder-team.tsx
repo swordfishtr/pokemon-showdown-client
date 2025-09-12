@@ -34,7 +34,6 @@ class TeamRoom extends PSRoom {
 		this.team = team!;
 		this.title = `[Team] ${this.team?.name || 'Error'}`;
 		if (team) this.setFormat(team.format);
-		this.update(null);
 	}
 	setFormat(format: string) {
 		const team = this.team;
@@ -185,10 +184,6 @@ class TeamPanel extends PSRoomPanel<TeamRoom> {
 				</p></div>
 			</details>
 		) : null;
-	}
-	override componentDidUpdate() {
-		const room = this.props.room;
-		room.update(null);
 	}
 	override render() {
 		const { room } = this.props;
