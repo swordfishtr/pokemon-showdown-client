@@ -436,7 +436,7 @@ export class PSSearchResults extends preact.Component<{
 					const [type, name, slot] = entry.split('|');
 					if (search.addFilter([type, name])) {
 						if (this.props.onSelect) {
-							this.props.onSelect?.('', '');
+							this.props.onSelect('', '');
 						} else if (search.query) {
 							search.find('');
 							this.forceUpdate();

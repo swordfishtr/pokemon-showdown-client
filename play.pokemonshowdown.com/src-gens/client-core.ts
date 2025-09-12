@@ -13,15 +13,14 @@
  * @license AGPLv3
  */
 
-import { Config, PS } from "./client-main";
+import { Dex } from "./battle-dex";
+import { PS } from "./client-main";
 declare const ColorThief: any;
 
 /**********************************************************************
  * PS Models
  *********************************************************************/
 // PS's model classes are defined here
-
-const PSURL = `${document.location.protocol !== 'http:' ? 'https:' : ''}//${Config.routes.client}/`;
 
 export class PSSubscription<T = any> {
 	observable: PSModel<T> | PSStreamModel<T>;
@@ -167,7 +166,7 @@ export const PSBackground = new class extends PSStreamModel<string | null> {
 		bgid ||= pngbg[0];
 		this.curId = bgid;
 
-		bgUrl ||= (bgid === 'solidblue' ? '#344b6c' : PSURL + 'fx/client-bg-' + bgid + (pngbg.includes(bgid) ? '.png' : '.jpg'));
+		bgUrl ||= (bgid === 'solidblue' ? '#344b6c' : Dex.fxPrefix + 'client-bg-' + bgid + (pngbg.includes(bgid) ? '.png' : '.jpg'));
 
 		// April Fool's 2016 - Digimon theme
 		// bgid = 'digimon';
