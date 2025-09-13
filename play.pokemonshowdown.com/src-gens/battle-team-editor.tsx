@@ -732,22 +732,24 @@ class TeamEditorState extends PSModel {
 	// network requests rather than the UI getting out of sync.
 	_sampleSetPromises: Record<string, Promise<void>> = {};
 	fetchSampleSets(formatid: ID) {
-		if (formatid in TeamEditorState.sampleSets) return;
-		if (formatid.length <= 4) {
-			TeamEditorState.sampleSets[formatid] = null;
-			return;
-		}
-		if (!(formatid in this._sampleSetPromises)) {
-			this._sampleSetPromises[formatid] = Net(
-				`https://${Config.routes.client}/data/sets/${formatid}.json`
-			).get().then(json => {
-				const data = JSON.parse(json);
-				TeamEditorState.sampleSets[formatid] = data;
-				this.update();
-			}).catch(() => {
-				TeamEditorState.sampleSets[formatid] = null;
-			});
-		}
+		// TODO: ask council
+		TeamEditorState.sampleSets[formatid] = null;
+		// if (formatid in TeamEditorState.sampleSets) return;
+		// if (formatid.length <= 4) {
+		// 	TeamEditorState.sampleSets[formatid] = null;
+		// 	return;
+		// }
+		// if (!(formatid in this._sampleSetPromises)) {
+		// 	this._sampleSetPromises[formatid] = Net(
+		// 		`https://${Config.routes.client}/data/sets/${formatid}.json`
+		// 	).get().then(json => {
+		// 		const data = JSON.parse(json);
+		// 		TeamEditorState.sampleSets[formatid] = data;
+		// 		this.update();
+		// 	}).catch(() => {
+		// 		TeamEditorState.sampleSets[formatid] = null;
+		// 	});
+		// }
 	}
 	/** returns null if sample sets aren't done loading */
 	getSampleSets(set: Dex.PokemonSet): string[] | null {
@@ -877,6 +879,7 @@ export class TeamEditor extends preact.Component<{
 		</div>;
 	}
 	override render() {
+		console.log(this);
 		if (!this.editor) {
 			this.editor = new TeamEditorState(this.props.team);
 			this.editor.subscribe(() => {
@@ -2287,6 +2290,7 @@ class TeamWizard extends preact.Component<{
 		</div>;
 	}
 	override render() {
+		console.log(this);
 		const { editor } = this.props;
 		if (editor.innerFocus) return this.renderInnerFocus();
 		if (editor.fetching) {
