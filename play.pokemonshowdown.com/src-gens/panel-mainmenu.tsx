@@ -468,7 +468,7 @@ class NewsPanel extends PSRoomPanel {
 	static readonly location = 'mini-window';
 	override render() {
 		return <PSPanelWrapper room={this.props.room} fullSize scrollable>
-			<div class="readable-bg" dangerouslySetInnerHTML={{ __html: window.newsHTML }}></div>
+			<div class="readable-bg" dangerouslySetInnerHTML={{ __html: Config.newsHTML }}></div>
 		</PSPanelWrapper>;
 	}
 }
