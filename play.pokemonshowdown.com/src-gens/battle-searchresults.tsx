@@ -58,7 +58,7 @@ export class PSSearchResults extends preact.Component<{
 
 	renderPokemonRow(id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
 		const search = this.props.search;
-		const pokemon = search.dex.species.get(id);
+		const pokemon = search.gtt.dex.species.get(id);
 		if (!pokemon) return <li class="result">Unrecognized pokemon</li>;
 
 		let tagStart = (pokemon.forme ? pokemon.name.length - pokemon.forme.length - 1 : 0);
@@ -66,7 +66,7 @@ export class PSSearchResults extends preact.Component<{
 		const stats = pokemon.baseStats;
 		let bst = 0;
 		for (const stat of Object.values(stats)) bst += stat;
-		if (search.dex.gen < 2) bst -= stats['spd'];
+		if (search.gtt.dex.gen < 2) bst -= stats['spd'];
 
 		if (errorMessage) {
 			return <li class="result"><a
@@ -104,14 +104,14 @@ export class PSSearchResults extends preact.Component<{
 					)}
 				</span>
 
-				{search.dex.gen >= 3 && (
+				{search.gtt.dex.gen >= 3 && (
 					pokemon.abilities['1'] ? (
 						<span class="col twoabilitycol">{pokemon.abilities['0']}<br />{pokemon.abilities['1']}</span>
 					) : (
 						<span class="col abilitycol">{pokemon.abilities['0']}</span>
 					)
 				)}
-				{search.dex.gen >= 5 && (
+				{search.gtt.dex.gen >= 5 && (
 					pokemon.abilities['S'] ? (
 						<span class={`col twoabilitycol${pokemon.unreleasedHidden ? ' unreleasedhacol' : ''}`}>
 							{pokemon.abilities['H'] || ''}<br />{pokemon.abilities['S']}
@@ -128,9 +128,9 @@ export class PSSearchResults extends preact.Component<{
 				<span class="col statcol"><em>HP</em><br />{stats.hp}</span>
 				<span class="col statcol"><em>Atk</em><br />{stats.atk}</span>
 				<span class="col statcol"><em>Def</em><br />{stats.def}</span>
-				{search.dex.gen > 2 && <span class="col statcol"><em>SpA</em><br />{stats.spa}</span>}
-				{search.dex.gen > 2 && <span class="col statcol"><em>SpD</em><br />{stats.spd}</span>}
-				{search.dex.gen < 2 && <span class="col statcol"><em>Spc</em><br />{stats.spa}</span>}
+				{search.gtt.dex.gen > 2 && <span class="col statcol"><em>SpA</em><br />{stats.spa}</span>}
+				{search.gtt.dex.gen > 2 && <span class="col statcol"><em>SpD</em><br />{stats.spd}</span>}
+				{search.gtt.dex.gen < 2 && <span class="col statcol"><em>Spc</em><br />{stats.spa}</span>}
 				<span class="col statcol"><em>Spe</em><br />{stats.spe}</span>
 				<span class="col bstcol"><em>BST<br />{bst}</em></span>
 			</a>
@@ -170,7 +170,7 @@ export class PSSearchResults extends preact.Component<{
 
 	renderItemRow(id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
 		const search = this.props.search;
-		const item = search.dex.items.get(id);
+		const item = search.gtt.dex.items.get(id);
 		if (!item) return <li class="result">Unrecognized item</li>;
 
 		return <li class="result"><a
@@ -191,7 +191,7 @@ export class PSSearchResults extends preact.Component<{
 
 	renderAbilityRow(id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
 		const search = this.props.search;
-		const ability = search.dex.abilities.get(id);
+		const ability = search.gtt.dex.abilities.get(id);
 		if (!ability) return <li class="result">Unrecognized ability</li>;
 
 		return <li class="result">
@@ -223,7 +223,7 @@ export class PSSearchResults extends preact.Component<{
 		}
 
 		const search = this.props.search;
-		const move = search.dex.moves.get(id);
+		const move = search.gtt.dex.moves.get(id);
 		const entry = slot ? `move|${move.name}|${slot}` : `move|${move.name}`;
 		if (!move) return <li class="result">Unrecognized move</li>;
 
@@ -241,7 +241,7 @@ export class PSSearchResults extends preact.Component<{
 		}
 
 		let pp = (move.pp === 1 || move.noPPBoosts ? move.pp : move.pp * 8 / 5);
-		if (search.dex.gen < 3) pp = Math.min(61, pp);
+		if (search.gtt.dex.gen < 3) pp = Math.min(61, pp);
 		return <li class="result"><a
 			href={`${this.URL_ROOT}moves/${id}`} class={this.moveIds.includes(id) ? 'cur' : ''}
 			data-target="push" data-entry={entry}

@@ -54,6 +54,7 @@ export interface PSConfig {
 	customcolors: Record<string, string>;
 	whitelist?: string[];
 	testclient?: boolean;
+	newsHTML: string;
 }
 export declare const Config: PSConfig;
 
@@ -169,6 +170,10 @@ class PSPrefs extends PSStreamModel<string | null> {
 	storageEngine: 'localStorage' | 'iframeLocalStorage' | '' = '';
 	storage: { [k: string]: any } = {};
 	readonly origin = `https://${Config.routes.client}`;
+
+	// Showdex autostart
+	showdex = false;
+
 	constructor() {
 		super();
 
@@ -1773,8 +1778,6 @@ export const PS = new class extends PSModel {
 	/** Tracks whether or not to display the "Use arrow keys" hint */
 	arrowKeysUsed = false;
 
-	newsHTML = document.querySelector('#room-news .readable-bg')?.innerHTML || '';
-
 	libsLoaded = makeLoadTracker();
 
 	constructor() {
@@ -1792,12 +1795,22 @@ export const PS = new class extends PSModel {
 		});
 		this.rightPanel = this.rooms['rooms']!;
 
-		if (this.newsHTML) {
-			this.addRoom({
-				id: 'news' as RoomID,
-				title: "News",
-				autofocus: false,
-			});
+		this.addRoom({
+			id: 'news' as RoomID,
+			title: "News",
+			autofocus: false,
+		});
+
+		this.addRoom({
+			id: 'showdex' as RoomID,
+			title: "Showdex",
+			autofocus: false,
+		});
+
+		if(this.prefs.showdex) {
+			const scriptEl = document.createElement('script');
+			scriptEl.src = 'showdex/main.js';
+			document.body.appendChild(scriptEl);
 		}
 
 		// Create rooms before /autojoin is sent to the server

@@ -119,7 +119,8 @@ export class MainMenuRoom extends PSRoom {
 			PS.user.challstr = challstr;
 			LoginManager.ready
 			.then(() => LoginManager.upkeep({ challstr }))
-			.catch(() => PS.user.initializing = false);
+			.catch(() => PS.user.initializing = false)
+			.then(() => PS.update());
 			return;
 		} case 'updateuser': {
 			const [, fullName, namedCode, avatar] = args;
@@ -465,39 +466,41 @@ class NewsPanel extends PSRoomPanel {
 	static readonly routes = ['news'];
 	static readonly title = 'News';
 	static readonly location = 'mini-window';
+	override render() {
+		return <PSPanelWrapper room={this.props.room} fullSize scrollable>
+			<div class="readable-bg" dangerouslySetInnerHTML={{ __html: window.newsHTML }}></div>
+		</PSPanelWrapper>;
+	}
+}
+
+class ShowdexPanel extends PSRoomPanel {
+	static readonly id = 'showdex';
+	static readonly routes = ['showdex'];
+	static readonly title = 'Showdex';
+	static readonly location = 'mini-window';
 	change = (ev: Event) => {
 		const target = ev.currentTarget as HTMLInputElement;
-		if (target.value === '1') {
-			document.cookie = "preactalpha=1; expires=Thu, 1 Sep 2025 12:00:00 UTC; path=/";
-		} else {
-			document.cookie = "preactalpha=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-		}
-		if (target.value === 'leave') {
-			document.location.href = `/`;
-		}
+		PS.prefs.showdex = target.value === '1';
+		PS.prefs.save();
+		document.location.reload();
 	};
 	override render() {
-		const cookieSet = document.cookie.includes('preactalpha=1');
+		const enabled = PS.prefs.showdex;
 		return <PSPanelWrapper room={this.props.room} fullSize scrollable>
-			<div class="construction">
-				This is the client rewrite beta test.
+			<div class="readable-bg">
+				<h4>This client has built-in Showdex!</h4>
+				<p>Opt in to Showdex below. This setting is remembered across sessions, and you can opt out at any time.</p>
 				<form>
 					<label class="checkbox">
-						<input type="radio" name="preactalpha" value="1" onChange={this.change} checked={cookieSet} /> {}
-						Use Rewrite always
+						<input type="radio" name="showdex" value="1" onChange={this.change} checked={enabled} /> {}
+						Enable
 					</label>
 					<label class="checkbox">
-						<input type="radio" name="preactalpha" value="0" onChange={this.change} checked={!cookieSet} /> {}
-						Use Rewrite with URL
-					</label>
-					<label class="checkbox">
-						<input type="radio" name="preactalpha" value="leave" onChange={this.change} /> {}
-						Back to the old client
+						<input type="radio" name="showdex" value="0" onChange={this.change} checked={!enabled} /> {}
+						Disable
 					</label>
 				</form>
-				Provide feedback in <a href="development" style="color:black">the Dev chatroom</a>.
 			</div>
-			<div class="readable-bg" dangerouslySetInnerHTML={{ __html: PS.newsHTML }}></div>
 		</PSPanelWrapper>;
 	}
 }
@@ -872,4 +875,4 @@ export class TeamForm extends preact.Component<{
 	}
 }
 
-PS.addRoomType(NewsPanel, MainMenuPanel);
+PS.addRoomType(NewsPanel, MainMenuPanel, ShowdexPanel);
