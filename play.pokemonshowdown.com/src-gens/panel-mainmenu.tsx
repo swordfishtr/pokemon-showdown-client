@@ -468,7 +468,9 @@ class NewsPanel extends PSRoomPanel {
 	static readonly location = 'mini-window';
 	override render() {
 		return <PSPanelWrapper room={this.props.room} fullSize scrollable>
-			<div class="readable-bg" dangerouslySetInnerHTML={{ __html: Config.newsHTML }}></div>
+			<div class="readable-bg">
+				<div class="newsentry" dangerouslySetInnerHTML={{ __html: Config.newsHTML }}></div>
+			</div>
 		</PSPanelWrapper>;
 	}
 }
@@ -488,18 +490,20 @@ class ShowdexPanel extends PSRoomPanel {
 		const enabled = PS.prefs.showdex;
 		return <PSPanelWrapper room={this.props.room} fullSize scrollable>
 			<div class="readable-bg">
-				<h4>This client has built-in Showdex!</h4>
-				<p>Opt in to Showdex below. This setting is remembered across sessions, and you can opt out at any time.</p>
-				<form>
-					<label class="checkbox">
-						<input type="radio" name="showdex" value="1" onChange={this.change} checked={enabled} /> {}
-						Enable
-					</label>
-					<label class="checkbox">
-						<input type="radio" name="showdex" value="0" onChange={this.change} checked={!enabled} /> {}
-						Disable
-					</label>
-				</form>
+				<div class="newsentry">
+					<h4>This client has built-in Showdex!</h4>
+					<p>Opt in to Showdex below. This setting is remembered across sessions, and you can opt out at any time.</p>
+					<form>
+						<label class="checkbox">
+							<input type="radio" name="showdex" value="1" onChange={this.change} checked={enabled} /> {}
+							Enable
+						</label>
+						<label class="checkbox">
+							<input type="radio" name="showdex" value="0" onChange={this.change} checked={!enabled} /> {}
+							Disable
+						</label>
+					</form>
+				</div>
 			</div>
 		</PSPanelWrapper>;
 	}
