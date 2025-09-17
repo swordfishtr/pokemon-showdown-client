@@ -1797,14 +1797,14 @@ export const PS = new class extends PSModel {
 		this.rightPanel = this.rooms['rooms']!;
 
 		this.addRoom({
-			id: 'news' as RoomID,
-			title: "News",
+			id: 'showdex' as RoomID,
+			title: "Showdex",
 			autofocus: false,
 		});
 
 		this.addRoom({
-			id: 'showdex' as RoomID,
-			title: "Showdex",
+			id: 'news' as RoomID,
+			title: "News",
 			autofocus: false,
 		});
 
