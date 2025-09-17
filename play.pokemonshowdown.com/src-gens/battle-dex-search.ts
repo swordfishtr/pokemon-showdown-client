@@ -80,7 +80,9 @@ export class GTTIndex {
 		this.set(format);
 	}
 	set(format: string) {
-		const formatid = toID(format);
+		let formatid = toID(format);
+		if(!(formatid in GensTeambuilderTable.formats)) formatid = DexSearch.DEFAULT_FORMAT;
+
 		if(formatid === this.formatid) return;
 		this.formatid = formatid;
 

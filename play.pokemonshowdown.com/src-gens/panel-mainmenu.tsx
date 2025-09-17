@@ -481,10 +481,9 @@ class ShowdexPanel extends PSRoomPanel {
 	static readonly title = 'Showdex';
 	static readonly location = 'mini-window';
 	change = (ev: Event) => {
-		console.log(ev);
 		const target = ev.currentTarget as HTMLInputElement;
 		PS.prefs.set('showdex', target.value === '1');
-		//document.location.reload();
+		document.location.reload();
 	};
 	override render() {
 		const enabled = PS.prefs.showdex;
