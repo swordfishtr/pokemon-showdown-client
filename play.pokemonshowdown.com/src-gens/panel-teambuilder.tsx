@@ -12,6 +12,7 @@ import { Dex, PSUtils, toID, type ID } from "./battle-dex";
 import { Teams } from "./battle-teams";
 import { BattleLog } from "./battle-log";
 import preact from "../js/lib/preact";
+import { DexSearch } from "./battle-dex-search";
 
 class PSTextarea extends preact.Component<{ initialValue?: string, name?: string }> {
 	updateSize = () => {
@@ -49,7 +50,6 @@ class PSTextarea extends preact.Component<{ initialValue?: string, name?: string
 }
 
 class TeambuilderRoom extends PSRoom {
-	readonly DEFAULT_FORMAT = Dex.modid;
 
 	/**
 	 * - `""` - all
@@ -109,7 +109,7 @@ class TeambuilderRoom extends PSRoom {
 				key: '',
 			};
 		} else {
-			const format = this.curFolder && !this.curFolder.endsWith('/') ? this.curFolder as ID : this.DEFAULT_FORMAT;
+			const format = this.curFolder && !this.curFolder.endsWith('/') ? this.curFolder as ID : DexSearch.DEFAULT_FORMAT;
 			const folder = this.curFolder.endsWith('/') ? this.curFolder.slice(0, -1) : '';
 			return {
 				name: `${isBox ? "Box" : "Untitled"} ${PS.teams.list.length + 1}`,
@@ -419,7 +419,7 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 				}
 			}
 
-			const format = team.format || room.DEFAULT_FORMAT;
+			const format = team.format || DexSearch.DEFAULT_FORMAT;
 			if (!(format in folderTable)) {
 				folders.push(format);
 				folderTable[format] = 1;

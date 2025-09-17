@@ -76,7 +76,7 @@ export class GTTIndex {
 	format!: GTTFormat;
 	mod!: GTTMod;
 	dex!: ModdedDex;
-	constructor(format = 'gen9nationaldexag') {
+	constructor(format = DexSearch.DEFAULT_FORMAT) {
 		this.set(format);
 	}
 	set(format: string) {
@@ -108,6 +108,8 @@ declare const GensTeambuilderTable: {
  * Backend for search UIs.
  */
 export class DexSearch {
+	static readonly DEFAULT_FORMAT = 'gen9nationaldexag' as ID;
+
 	query = '';
 
 	readonly gtt: GTTIndex;
@@ -156,9 +158,8 @@ export class DexSearch {
 	 */
 	filters: SearchFilter[] | null = null;
 
-	constructor(searchType: SearchType | '' = '', formatid = 'gen9nationaldexag' as ID, species = '' as ID) {
+	constructor(searchType: SearchType | '' = '', formatid = DexSearch.DEFAULT_FORMAT as ID, species = '' as ID) {
 		this.gtt = new GTTIndex(formatid);
-		this.setGTT(formatid);
 		this.setType(searchType, species);
 	}
 
