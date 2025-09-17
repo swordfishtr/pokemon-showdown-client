@@ -483,8 +483,7 @@ class ShowdexPanel extends PSRoomPanel {
 	change = (ev: Event) => {
 		console.log(ev);
 		const target = ev.currentTarget as HTMLInputElement;
-		PS.prefs.showdex = target.value === '1';
-		PS.prefs.save();
+		PS.prefs.set('showdex', target.value === '1');
 		//document.location.reload();
 	};
 	override render() {
