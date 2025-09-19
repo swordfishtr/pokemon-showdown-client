@@ -138,8 +138,8 @@ class TeamEditorState extends PSModel {
 	}
 	getSearchMoves(set: Dex.PokemonSet) {
 		const out: SearchRow[] = [];
-		for (let i = 0; i < Math.max(set.moves.length, 4); i++) {
-			out.push(['move', `_${i + 1}_${toID(set.moves[i] || '')}` as ID]);
+		for (let i = 0; i < Math.max(set.moves.length + 1, 4); i++) {
+			out.push(['move', `_${i + 1}_${toID(set.moves[i])}` as ID]);
 		}
 		return out;
 	}
@@ -693,20 +693,21 @@ class TeamEditorState extends PSModel {
 	}
 	/** returns null if sample sets aren't done loading */
 	getSampleSets(set: Dex.PokemonSet): string[] | null {
-		const d = TeamEditorState.sampleSets[this.gtt.formatid];
-		if (d === undefined) {
-			this.fetchSampleSets(this.gtt.formatid);
-			return null;
-		}
-		if (!d?.dex) return [];
-		const speciesid = toID(set.species);
-		const all = {
-			...d.dex[set.species],
-			...d.dex[speciesid],
-			...d.stats?.[set.species],
-			...d.stats?.[speciesid],
-		};
-		return Object.keys(all);
+		return [];
+		// const d = TeamEditorState.sampleSets[this.gtt.formatid];
+		// if (d === undefined) {
+		// 	this.fetchSampleSets(this.gtt.formatid);
+		// 	return null;
+		// }
+		// if (!d?.dex) return [];
+		// const speciesid = toID(set.species);
+		// const all = {
+		// 	...d.dex[set.species],
+		// 	...d.dex[speciesid],
+		// 	...d.stats?.[set.species],
+		// 	...d.stats?.[speciesid],
+		// };
+		// return Object.keys(all);
 	}
 	/** returns null if no boxes exist, empty array if no sets for this species */
 	getUserSets(set: Dex.PokemonSet): { [setName: string]: Dex.PokemonSet } | null {
@@ -1935,42 +1936,47 @@ class TeamWizard extends preact.Component<{
 				});
 				break;
 			case 'move':
+				// GENERATIONS
+				// We gave the teambuilding experience a little more love.
+				// Merge carefully.
+
+				// clicked one of the set's moves
 				if (slot) {
-					// intentional; we're _removing_ from the slot
-					const i = parseInt(slot) - 1;
-					if (set.moves[i]) {
-						set.moves[i] = '';
-						// remove empty slots at the end
-						if (i === set.moves.length - 1) {
-							while (set.moves.length > 4 && !set.moves[set.moves.length - 1]) {
-								set.moves.pop();
-							}
-						}
-						// if we have more than 4 moves, move the last move into the newly-cleared slot
-						if (set.moves.length > 4 && i < set.moves.length - 1) {
-							set.moves[i] = set.moves.pop()!;
-						}
+					const newIndex = parseInt(slot) - 1;
+
+					// selected another moveslot
+					if(editor.searchIndex !== newIndex) {
+						editor.searchIndex = newIndex;
+						break;
 					}
-				} else if (set.moves.includes(name)) {
-					set.moves.splice(set.moves.indexOf(name), 1);
-				} else {
-					for (let i = 0; i < set.moves.length + 1; i++) {
-						if (!set.moves[i]) {
-							set.moves[i] = name;
-							break;
+
+					// selected current moveslot - delete the move
+					set.moves[newIndex] = '';
+
+					// push extra lower moves upwards into empty spaces
+					for(let i = set.moves.length - 1; set.moves.length > 4 && set.moves.includes(''); i--) {
+						if(set.moves[i] === '') {
+							set.moves.splice(i, 1);
 						}
 					}
 				}
-				if (set.moves.length === 4 && set.moves.every(Boolean)) {
-					this.changeFocus({
-						setIndex,
-						type: reverse ? 'item' : 'stats',
-					});
-				} else {
-					if (editor.search.query) {
-						this.resetScroll();
+
+				// clicked a learnset move
+				else {
+					set.moves[editor.searchIndex] = name;
+					editor.searchIndex++;
+
+					if (set.moves.length === 4 && set.moves.every(Boolean)) {
+						this.changeFocus({
+							setIndex,
+							type: reverse ? 'item' : 'stats',
+						});
+					} else {
+						if (editor.search.query) {
+							this.resetScroll();
+						}
+						editor.updateSearchMoves(set);
 					}
-					editor.updateSearchMoves(set);
 				}
 				break;
 			}

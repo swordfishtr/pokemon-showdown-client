@@ -14,9 +14,9 @@ import type { ChatRoom } from "./panel-chat";
 import type { LadderFormatRoom } from "./panel-ladder";
 import type { RoomsRoom } from "./panel-rooms";
 import { TeamBox, type SelectType } from "./panel-teamdropdown";
-import { Dex, toID, type ID } from "./battle-dex";
+import { toID, type ID } from "./battle-dex";
 import type { Args } from "./battle-text-parser";
-import { BattleLog } from "./battle-log"; // optional
+import { BattleLog } from "./battle-log";
 
 export type RoomInfo = {
 	title: string, desc?: string, userCount?: number, section?: string, privacy?: 'hidden',
@@ -120,7 +120,7 @@ export class MainMenuRoom extends PSRoom {
 			LoginManager.ready
 			.then(() => LoginManager.upkeep({ challstr }))
 			.catch(() => PS.user.initializing = false)
-			.then(() => PS.update());
+			.then(() => PS.user.update(null));
 			return;
 		} case 'updateuser': {
 			const [, fullName, namedCode, avatar] = args;
