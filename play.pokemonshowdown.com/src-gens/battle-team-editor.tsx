@@ -8,7 +8,7 @@
 
 import preact from "../js/lib/preact";
 import type { Team } from "./client-main";
-import { Dex, type ModdedDex, toID, type ID, PSUtils } from "./battle-dex";
+import { Dex, toID, type ID, PSUtils } from "./battle-dex";
 import { Teams } from './battle-teams';
 import { DexSearch, type SearchRow, type SearchType } from "./battle-dex-search";
 import { PSSearchResults } from "./battle-searchresults";
@@ -138,7 +138,9 @@ class TeamEditorState extends PSModel {
 	}
 	getSearchMoves(set: Dex.PokemonSet) {
 		const out: SearchRow[] = [];
-		for (let i = 0; i < Math.max(set.moves.length + 1, 4); i++) {
+		const lastMoveSlot = PSUtils.findLastIndex(set.moves, (x) => x) + 1;
+		const amount = lastMoveSlot <= 3 ? 4 : lastMoveSlot + 1;
+		for (let i = 0; i < amount; i++) {
 			out.push(['move', `_${i + 1}_${toID(set.moves[i])}` as ID]);
 		}
 		return out;
@@ -1959,6 +1961,8 @@ class TeamWizard extends preact.Component<{
 							set.moves.splice(i, 1);
 						}
 					}
+
+					editor.updateSearchMoves(set);
 				}
 
 				// clicked a learnset move

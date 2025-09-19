@@ -162,6 +162,17 @@ export const PSUtils = new class {
 		if (!callback) return (array as any[]).sort(PSUtils.compare);
 		return array.sort((a, b) => PSUtils.compare(callback(a), callback(b)));
 	}
+
+	// GENERATIONS
+
+	/** polyfill for old library */
+	findLastIndex<T>(array: T[], predicate: (value: T, index: number, obj: T[]) => unknown, thisArg?: any): number {
+		for(let i = array.length - 1; i >= 0; i--) {
+			const result = predicate.call(thisArg, array[i], i, array);
+			if(result) return i;
+		}
+		return -1;
+	}
 };
 
 /**
