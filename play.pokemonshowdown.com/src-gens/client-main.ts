@@ -1808,12 +1808,6 @@ export const PS = new class extends PSModel {
 			autofocus: false,
 		});
 
-		if(this.prefs.showdex) {
-			const scriptEl = document.createElement('script');
-			scriptEl.src = 'showdex/main.js';
-			document.body.appendChild(scriptEl);
-		}
-
 		// Create rooms before /autojoin is sent to the server
 		let autojoin = this.prefs.autojoin;
 		if (autojoin) {

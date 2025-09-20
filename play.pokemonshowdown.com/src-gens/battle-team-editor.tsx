@@ -1675,13 +1675,13 @@ class TeamWizard extends preact.Component<{
 		const { editor } = this.props;
 		if (editor.readonly) return;
 		const target = ev.currentTarget as HTMLButtonElement;
-		const [rawType, i] = (target.value || '').split('|');
-		const setIndex = parseInt(i);
-		const type = rawType as SelectionType;
-		if (!target.value || editor.innerFocus && editor.innerFocus.setIndex === setIndex && editor.innerFocus.type === type) {
+		if (!target.value) {
 			this.changeFocus(null);
 			return;
 		}
+		const [rawType, i] = (target.value || '').split('|');
+		const setIndex = parseInt(i);
+		const type = rawType as SelectionType;
 		this.changeFocus({
 			setIndex,
 			type,
