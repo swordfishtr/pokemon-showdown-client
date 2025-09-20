@@ -125,10 +125,7 @@ class TeamEditorState extends PSModel {
 		this.searchIndex = this.search.results?.[0]?.[0] === 'header' ? 1 : 0;
 	}
 	updateSearchMoves(set: Dex.PokemonSet) {
-		let oldResultsLength = this.search.prependResults?.length || 0;
 		this.search.prependResults = this.getSearchMoves(set);
-		this.searchIndex += this.search.prependResults.length - oldResultsLength;
-		if (this.searchIndex < 0) this.searchIndex = 0;
 		this.search.results = null;
 		if (this.search.query) {
 			this.setSearchValue('');
