@@ -70,7 +70,6 @@ class TeamEditorState extends PSModel {
 		this.team = team;
 		this.updateTeam(false);
 		this.setFormat(team.format);
-		window.search = this.search;
 	}
 	updateTeam(readonly: boolean) {
 		if (this.lastPackedTeam !== this.team.packedTeam) {
@@ -2236,6 +2235,7 @@ class TeamWizard extends preact.Component<{
 		</div>;
 	}
 	override render() {
+		window.wizard = this; // debug
 		const { editor } = this.props;
 		if (editor.innerFocus) return this.renderInnerFocus();
 		if (editor.fetching) {
