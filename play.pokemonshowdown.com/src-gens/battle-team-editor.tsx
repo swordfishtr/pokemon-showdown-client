@@ -819,7 +819,6 @@ export class TeamEditor extends preact.Component<{
 		</div>;
 	}
 	override render() {
-		console.log(this);
 		if (!this.editor) {
 			this.editor = new TeamEditorState(this.props.team);
 			this.editor.subscribe(() => {
@@ -2237,7 +2236,6 @@ class TeamWizard extends preact.Component<{
 		</div>;
 	}
 	override render() {
-		console.log(this);
 		const { editor } = this.props;
 		if (editor.innerFocus) return this.renderInnerFocus();
 		if (editor.fetching) {

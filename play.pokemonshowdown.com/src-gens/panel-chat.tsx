@@ -156,7 +156,7 @@ export class ChatRoom extends PSRoom {
 		case 'updateuser':
 			console.log('Fix triggered');
 			this.addUser(`${PS.user.group}${PS.user.name}`);
-			break;
+			return;
 		}
 		super.receiveLine(args);
 	}
