@@ -87,6 +87,11 @@ class TeambuilderRoom extends PSRoom {
 			this.setExportMode(!this.exportMode);
 			this.update(null);
 		},
+		'copyteam'(target) {
+			const team = PS.teams.byKey[target];
+			if(team) PS.teams.unshift(this.createTeam(team, team.isBox));
+			this.update(null);
+		}
 	});
 	override sendDirect(msg: string): void {
 		PS.alert(`Unrecognized command: ${msg}`);
@@ -589,18 +594,12 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 				) : filteredTeams.map(team => team ? (
 					<li key={team.key} onDragEnter={this.dragEnterTeam} data-teamkey={team.key}>
 						<TeamBox team={team} onClick={this.clearSearch} /> {}
-						{!team.uploaded && <button data-cmd={`/deleteteam ${team.key}`} class="option">
+						<button data-cmd={`/copyteam ${team.key}`} class="option">
+							<i class="fa fa-clone" aria-hidden></i>
+						</button> {}
+						<button data-cmd={`/deleteteam ${team.key}`} class="option">
 							<i class="fa fa-trash" aria-hidden></i> Delete
-						</button>} {}
-						{team.uploaded?.private ? (
-							<i class="fa fa-cloud gray"></i>
-						) : team.uploaded ? (
-							<i class="fa fa-globe gray"></i>
-						) : team.teamid ? (
-							<i class="fa fa-plug gray"></i>
-						) : (
-							null
-						)}
+						</button>
 					</li>
 				) : isDragging ? (
 					<li key="dragging">

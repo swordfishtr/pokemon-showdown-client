@@ -346,18 +346,6 @@ export interface Team {
 		* exists, pointers to a Team are equivalent to a key. */
 	key: string;
 	isBox: boolean;
-	/** uploaded team ID. will not exist for teams that are not uploaded. tracked locally */
-	teamid?: number;
-	/** `uploaded` will only exist if you're logged into the correct account. otherwise teamid is still tracked */
-	uploaded?: {
-		teamid: number,
-		/** Promise = loading. */
-		notLoaded: boolean | Promise<void>,
-		/** password, if private. null = public, undefined = unknown, not loaded yet */
-		private?: string | null,
-	};
-	/** team at the point it was last uploaded. outside of `uploaded` so it can track loading state */
-	uploadedPackedTeam?: string;
 }
 interface UploadedTeam {
 	name: string;
@@ -452,7 +440,6 @@ class PSTeams extends PSStreamModel<'team' | 'format'> {
 	}
 	packAll(teams: Team[]) {
 		return teams.map(team => (
-			(team.teamid ? `${team.teamid}[` : '') +
 			(team.format || team.isBox ? `${team.format || ''}${team.isBox ? '-box' : ''}]` : ``) +
 			(team.folder ? `${team.folder}/` : ``) +
 			team.name + `|` + team.packedTeam
@@ -479,7 +466,6 @@ class PSTeams extends PSStreamModel<'team' | 'format'> {
 		) : 'gen9';
 		if (!format.startsWith('gen')) format = 'gen6' + format;
 		const name = line.slice(slashIndex + 1, pipeIndex);
-		const teamid = leftBracketIndex > 0 ? Number(line.slice(0, leftBracketIndex)) : undefined;
 		return {
 			name,
 			format: format as ID,
@@ -488,7 +474,6 @@ class PSTeams extends PSStreamModel<'team' | 'format'> {
 			iconCache: null,
 			key: '',
 			isBox,
-			teamid,
 		};
 	}
 }

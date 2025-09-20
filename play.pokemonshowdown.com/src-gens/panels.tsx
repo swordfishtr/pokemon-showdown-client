@@ -27,12 +27,7 @@ export class PSRouter {
 	roomid = '' as RoomID;
 	panelState = '';
 	constructor() {
-		const currentRoomid = location.pathname.slice(1);
-		if (/^[a-z0-9-]*$/.test(currentRoomid)) {
-			this.subscribeHistory();
-		} else if (location.pathname.endsWith('.html')) {
-			this.subscribeHash();
-		}
+		this.subscribeHistory();
 	}
 	extractRoomID(url: string | null) {
 		if (!url) return null;

@@ -169,7 +169,7 @@ class TeamPanel extends PSRoomPanel<TeamRoom> {
 				/>
 			</label>
 			<TeamEditor
-				team={team} onChange={this.save} readOnly={!!team.teamid && !team.uploadedPackedTeam} resources={this.renderResources()}
+				team={team} onChange={this.save} resources={this.renderResources()}
 			/>
 		</div></PSPanelWrapper>;
 	}
