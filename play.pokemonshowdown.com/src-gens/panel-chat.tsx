@@ -154,6 +154,7 @@ export class ChatRoom extends PSRoom {
 		// Players get confused when they're logged in but see `0 users`, especially in an ongoing battle.
 		// The proper solution in the server side is unknown to me. This should be a safe patch for now.
 		case 'updateuser':
+			console.log('Fix triggered');
 			this.addUser(`${PS.user.group}${PS.user.name}`);
 			break;
 		}
