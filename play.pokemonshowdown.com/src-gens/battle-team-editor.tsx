@@ -1496,6 +1496,7 @@ class TeamTextbox extends preact.Component<{
 		if (document.documentElement.clientWidth === document.documentElement.scrollWidth) {
 			(ev.currentTarget as any).scrollIntoViewIfNeeded?.();
 		}
+		this.forceUpdate();
 	};
 	resetScroll() {
 		this.windowing = true;
@@ -2121,6 +2122,7 @@ class TeamWizard extends preact.Component<{
 		if (document.documentElement.clientWidth === document.documentElement.scrollWidth) {
 			(ev.currentTarget as any).scrollIntoViewIfNeeded?.();
 		}
+		this.forceUpdate();
 	};
 	resetScroll() {
 		this.windowing = true;
