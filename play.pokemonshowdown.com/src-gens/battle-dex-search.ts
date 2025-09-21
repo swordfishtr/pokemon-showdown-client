@@ -95,7 +95,7 @@ export class GTTIndex {
 		this.dex = Dex.mod(gttformat.mod);
 	}
 	/**
-	 * Returns species from this dex with any format specific overrides applied.
+	 * Returns species from this dex with any format specific overrides applied (slow in that case).
 	 * Note: Return value may not satisfy `instanceof Species`.
 	 */
 	getFormatSpecies(speciesName: string) {

@@ -84,7 +84,7 @@ export class PSSearchResults extends preact.Component<{
 			</a></li>;
 		}
 
-		const abilities = Object.values(pokemon.abilities);
+		const abilities = search.gtt.dex.gen >= 3 && Object.values(pokemon.abilities);
 
 		return <li class="result">
 			<a
@@ -105,7 +105,7 @@ export class PSSearchResults extends preact.Component<{
 					)}
 				</span>
 
-				{search.gtt.dex.gen >= 3 && (
+				{abilities && (
 					abilities[1] ? (
 						<span class="col twoabilitycol">{abilities[0]}<br />{abilities[1]}</span>
 					) : abilities[0] ? (
@@ -113,7 +113,8 @@ export class PSSearchResults extends preact.Component<{
 					) : (
 						<span class="col abilitycol"></span>
 					)
-				) && (
+				)}
+				{abilities && (
 					abilities[3] ? (
 						<span class="col twoabilitycol">{abilities[2]}<br />{abilities[3]}</span>
 					) : abilities[2] ? (
