@@ -24,6 +24,7 @@ import {
 	Ability, Item, Move, Species, PureEffect, type ID, type Type,
 } from "./battle-dex-data";
 import type * as DexData from "./battle-dex-data";
+import { GensTeambuilderTable } from "./battle-dex-search";
 import type { Teams } from "./battle-teams";
 import { Config } from "./client-main";
 
@@ -985,16 +986,18 @@ export class ModdedDex {
 
 			let data = { ...Dex.moves.get(name) };
 
-			for (let i = Dex.gen - 1; i >= this.gen; i--) {
-				const table = window.GensTeambuilderTable.mods[`gen${i}`];
-				if (id in table.overrideMoveData) {
-					Object.assign(data, table.overrideMoveData[id]);
+			if(window.GensTeambuilderTable) {
+				for (let i = Dex.gen - 1; i >= this.gen; i--) {
+					const table = GensTeambuilderTable.mods[`gen${i}` as ID];
+					if (id in table.overrideMoveData) {
+						Object.assign(data, table.overrideMoveData[id]);
+					}
 				}
-			}
-			if (this.modid !== `gen${this.gen}`) {
-				const table = window.GensTeambuilderTable.mods[this.modid];
-				if (id in table.overrideMoveData) {
-					Object.assign(data, table.overrideMoveData[id]);
+				if (this.modid !== `gen${this.gen}`) {
+					const table = GensTeambuilderTable.mods[this.modid];
+					if (id in table.overrideMoveData) {
+						Object.assign(data, table.overrideMoveData[id]);
+					}
 				}
 			}
 			if (this.gen <= 3 && data.category !== 'Status') {
@@ -1018,16 +1021,18 @@ export class ModdedDex {
 
 			let data = { ...Dex.items.get(name) };
 
-			for (let i = Dex.gen - 1; i >= this.gen; i--) {
-				const table = window.GensTeambuilderTable.mods[`gen${i}`];
-				if (id in table.overrideItemData) {
-					Object.assign(data, table.overrideItemData[id]);
+			if(window.GensTeambuilderTable) {
+				for (let i = Dex.gen - 1; i >= this.gen; i--) {
+					const table = GensTeambuilderTable.mods[`gen${i}` as ID];
+					if (id in table.overrideItemData) {
+						Object.assign(data, table.overrideItemData[id]);
+					}
 				}
-			}
-			if (this.modid !== `gen${this.gen}`) {
-				const table = window.GensTeambuilderTable.mods[this.modid];
-				if (id in table.overrideItemData) {
-					Object.assign(data, table.overrideItemData[id]);
+				if (this.modid !== `gen${this.gen}`) {
+					const table = GensTeambuilderTable.mods[this.modid];
+					if (id in table.overrideItemData) {
+						Object.assign(data, table.overrideItemData[id]);
+					}
 				}
 			}
 
@@ -1048,16 +1053,18 @@ export class ModdedDex {
 
 			let data = { ...Dex.abilities.get(name) };
 
-			for (let i = Dex.gen - 1; i >= this.gen; i--) {
-				const table = window.GensTeambuilderTable.mods[`gen${i}`];
-				if (id in table.overrideAbilityData) {
-					Object.assign(data, table.overrideAbilityData[id]);
+			if(window.GensTeambuilderTable) {
+				for (let i = Dex.gen - 1; i >= this.gen; i--) {
+					const table = GensTeambuilderTable.mods[`gen${i}` as ID];
+					if (id in table.overrideAbilityData) {
+						Object.assign(data, table.overrideAbilityData[id]);
+					}
 				}
-			}
-			if (this.modid !== `gen${this.gen}`) {
-				const table = window.GensTeambuilderTable.mods[this.modid];
-				if (id in table.overrideAbilityData) {
-					Object.assign(data, table.overrideAbilityData[id]);
+				if (this.modid !== `gen${this.gen}`) {
+					const table = GensTeambuilderTable.mods[this.modid];
+					if (id in table.overrideAbilityData) {
+						Object.assign(data, table.overrideAbilityData[id]);
+					}
 				}
 			}
 
@@ -1078,20 +1085,20 @@ export class ModdedDex {
 
 			let data = { ...Dex.species.get(name) };
 
-			for (let i = Dex.gen - 1; i >= this.gen; i--) {
-				const table = window.GensTeambuilderTable.mods[`gen${i}`];
-				if (id in table.overrideSpeciesData) {
-					Object.assign(data, table.overrideSpeciesData[id]);
+			if(window.GensTeambuilderTable) {
+				for (let i = Dex.gen - 1; i >= this.gen; i--) {
+					const table = GensTeambuilderTable.mods[`gen${i}` as ID];
+					if (id in table.overrideSpeciesData) {
+						Object.assign(data, table.overrideSpeciesData[id]);
+					}
+				}
+				if (this.modid !== `gen${this.gen}`) {
+					const table = GensTeambuilderTable.mods[this.modid];
+					if (id in table.overrideSpeciesData) {
+						Object.assign(data, table.overrideSpeciesData[id]);
+					}
 				}
 			}
-
-			if (this.modid !== `gen${this.gen}`) {
-				const table = window.GensTeambuilderTable.mods[this.modid];
-				if (id in table.overrideSpeciesData) {
-					Object.assign(data, table.overrideSpeciesData[id]);
-				}
-			}
-
 			if (this.gen < 3 || this.modid === 'gen7letsgo') {
 				data.abilities = { 0: "No Ability" };
 			}
@@ -1132,15 +1139,17 @@ export class ModdedDex {
 
 			let data = { ...Dex.types.get(name) };
 
-			for (let i = 7; i >= this.gen; i--) {
-				const table = window.GensTeambuilderTable.mods[`gen${i}`];
-				if (id in table.removeType) {
-					data.exists = false;
-					// don't bother correcting its attributes given it doesn't exist
-					break;
-				}
-				if (id in table.overrideTypeChart) {
-					data = { ...data, ...table.overrideTypeChart[id] };
+			if(window.GensTeambuilderTable) {
+				for (let i = 7; i >= this.gen; i--) {
+					const table = GensTeambuilderTable.mods[`gen${i}` as ID];
+					if (id in table.removeType) {
+						data.exists = false;
+						// don't bother correcting its attributes given it doesn't exist
+						break;
+					}
+					if (id in table.overrideTypeChart) {
+						data = { ...data, ...table.overrideTypeChart[id] };
+					}
 				}
 			}
 

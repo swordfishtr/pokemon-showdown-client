@@ -57,7 +57,7 @@ export class PSSearchResults extends preact.Component<{
 
 	renderPokemonRow(id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
 		const search = this.props.search;
-		const pokemon = search.gtt.dex.species.get(id);
+		const pokemon = search.gtt.getFormatSpecies(id);
 		if (!pokemon) return <li class="result">Unrecognized pokemon</li>;
 
 		let tagStart = (pokemon.forme ? pokemon.name.length - pokemon.forme.length - 1 : 0);
@@ -84,6 +84,8 @@ export class PSSearchResults extends preact.Component<{
 			</a></li>;
 		}
 
+		const abilities = Object.values(pokemon.abilities);
+
 		return <li class="result">
 			<a
 				href={`${this.URL_ROOT}pokemon/${id}`} class={id === this.speciesId ? 'cur' : ''}
@@ -104,21 +106,18 @@ export class PSSearchResults extends preact.Component<{
 				</span>
 
 				{search.gtt.dex.gen >= 3 && (
-					pokemon.abilities['1'] ? (
-						<span class="col twoabilitycol">{pokemon.abilities['0']}<br />{pokemon.abilities['1']}</span>
+					abilities[1] ? (
+						<span class="col twoabilitycol">{abilities[0]}<br />{abilities[1]}</span>
+					) : abilities[0] ? (
+						<span class="col abilitycol">{abilities[0]}</span>
 					) : (
-						<span class="col abilitycol">{pokemon.abilities['0']}</span>
+						<span class="col abilitycol"></span>
 					)
-				)}
-				{search.gtt.dex.gen >= 5 && (
-					pokemon.abilities['S'] ? (
-						<span class={`col twoabilitycol${pokemon.unreleasedHidden ? ' unreleasedhacol' : ''}`}>
-							{pokemon.abilities['H'] || ''}<br />{pokemon.abilities['S']}
-						</span>
-					) : pokemon.abilities['H'] ? (
-						<span class={`col abilitycol${pokemon.unreleasedHidden ? ' unreleasedhacol' : ''}`}>
-							{pokemon.abilities['H']}
-						</span>
+				) && (
+					abilities[3] ? (
+						<span class="col twoabilitycol">{abilities[2]}<br />{abilities[3]}</span>
+					) : abilities[2] ? (
+						<span class="col abilitycol">{abilities[2]}</span>
 					) : (
 						<span class="col abilitycol"></span>
 					)

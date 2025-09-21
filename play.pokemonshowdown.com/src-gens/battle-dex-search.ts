@@ -24,7 +24,7 @@ export type SearchRow = (
 type SearchFilter = [string, string];
 
 interface GTTMod {
-	items: any, // not undefined
+	items: any, // null after move to itemSet
 	itemSet?: any,
 	// TODO
 	// itemsnatdex, itemSetnatdex
@@ -70,17 +70,17 @@ interface GTTFormat {
 	},
 }
 
-/** Use these to keep dexsearch and teambuilder in sync. Throws if format doesn't exist. */
+/** Used for keeping dexsearch and teambuilder in sync. Includes related utilities. Throws if format doesn't exist. */
 export class GTTIndex {
 	formatid!: ID;
 	format!: GTTFormat;
 	mod!: GTTMod;
 	dex!: ModdedDex;
 	constructor(format = DexSearch.DEFAULT_FORMAT) {
-		this.set(format);
+		this.setFormat(format);
 	}
-	set(format: string) {
-		let formatid = toID(format);
+	setFormat(formatName: string) {
+		let formatid = toID(formatName);
 		if(!(formatid in GensTeambuilderTable.formats)) formatid = DexSearch.DEFAULT_FORMAT;
 
 		if(formatid === this.formatid) return;
@@ -94,12 +94,26 @@ export class GTTIndex {
 
 		this.dex = Dex.mod(gttformat.mod);
 	}
+	/**
+	 * Returns species from this dex with any format specific overrides applied.
+	 * Note: Return value may not satisfy `instanceof Species`.
+	 */
+	getFormatSpecies(speciesName: string) {
+		const speciesid = toID(speciesName)
+		let species = this.dex.species.get(speciesid);
+		const overrides = this.format.overrideSpeciesData;
+		if(overrides && (speciesid in overrides)) {
+			species = structuredClone(species);
+			Object.assign(species, overrides[speciesid]);
+		}
+		return species;
+	}
 }
 
 /** ID, SearchType, index (if alias), offset (if offset alias) */
 declare const BattleSearchIndex: [ID, SearchType, number?, number?][];
 declare const BattleSearchIndexOffset: any;
-declare const GensTeambuilderTable: {
+export declare const GensTeambuilderTable: {
 	mods: { [mod: ID]: GTTMod },
 	formats: { [format: ID]: GTTFormat },
 	learnsets: any, // TODO
@@ -166,7 +180,7 @@ export class DexSearch {
 	}
 
 	setGTT(format: string) {
-		this.gtt.set(format);
+		this.gtt.setFormat(format);
 	}
 
 	setType(searchType: SearchType | '', speciesOrSet: ID | Dex.PokemonSet = '' as ID) {
@@ -1095,8 +1109,8 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 	}
 	getDefaultResults(): SearchRow[] {
 		let parent: any = GensTeambuilderTable.mods[`gen${Dex.gen}` as ID];
-		if(this.gtt.mod.items) parent = this.gtt.mod;
-		if(this.gtt.format.items) parent = this.gtt.format;
+		if(this.gtt.mod.items || this.gtt.mod.itemSet) parent = this.gtt.mod;
+		if(this.gtt.format.items || this.gtt.format.itemSet) parent = this.gtt.format;
 
 		if(!parent.itemSet) {
 			parent.itemSet = parent.items.map((r: any) => {
