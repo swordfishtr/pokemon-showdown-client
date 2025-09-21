@@ -116,8 +116,10 @@ export class GTTIndex {
 			console.log(reversedNums);
 			console.log(moddedSpecies.baseStats);
 			console.log(Object.keys(moddedSpecies.baseStats));
-			console.log(Object.keys(moddedSpecies.baseStats).entries());
-			for (const [i, statName] of Object.keys(moddedSpecies.baseStats).entries()) {
+			const iterator = Object.keys(moddedSpecies.baseStats).entries();
+			console.log(iterator);
+			// this must be not working because of broken old library polyfills
+			for (const [i, statName] of iterator) {
 				console.log(`setting ${statName} to ${reversedNums[i]}`);
 				moddedSpecies.baseStats[statName] = reversedNums[i];
 				console.log(`result: ${moddedSpecies.baseStats[statName]}`);
