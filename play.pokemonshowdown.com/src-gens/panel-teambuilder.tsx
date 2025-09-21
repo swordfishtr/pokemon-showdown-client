@@ -69,7 +69,8 @@ class TeambuilderRoom extends PSRoom {
 			const isBox = ` ${target} `.includes(' box ');
 			const isBottom = ` ${target} `.includes(' bottom ');
 			const team = this.createTeam(null, isBox);
-			(isBottom ? PS.teams.push : PS.teams.unshift)(team);
+			if(isBottom) PS.teams.push(team);
+			else PS.teams.unshift(team);
 			// `team` has key at this point
 			PS.join(`team-${team.key}` as RoomID);
 		},
