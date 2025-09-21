@@ -11,7 +11,8 @@
  * @license MIT
  */
 
-import { Dex, type ModdedDex, toID, type ID } from "./battle-dex";
+import { Dex, type ModdedDex, toID, type ID, PSUtils } from "./battle-dex";
+import type { Species } from "./battle-dex-data";
 
 export type SearchType = (
 	'pokemon' | 'type' | 'tier' | 'move' | 'item' | 'ability' | 'egggroup' | 'category' | 'article'
@@ -98,16 +99,42 @@ export class GTTIndex {
 	 * Returns species from this dex with any format specific overrides applied (slow in that case).
 	 * Note: Return value may not satisfy `instanceof Species`.
 	 */
-	getFormatSpecies(speciesName: string) {
+	getFormatSpecies(speciesName: string): Species {
 		const speciesid = toID(speciesName)
-		let species = this.dex.species.get(speciesid);
+		const species = this.dex.species.get(speciesid);
+		let moddedSpecies: any = null;
+
 		const overrides = this.format.overrideSpeciesData;
 		if(overrides && (speciesid in overrides)) {
-			species = structuredClone(species);
-			Object.assign(species, overrides[speciesid]);
+			moddedSpecies ??= structuredClone(species);
+			Object.assign(moddedSpecies, overrides[speciesid]);
 		}
-		return species;
+
+		if(this.format.flipped) {
+			moddedSpecies ??= structuredClone(species);
+			const reversedNums = Object.values(moddedSpecies.baseStats).reverse();
+			for (const [i, statName] of Object.keys(moddedSpecies.baseStats).entries()) {
+				moddedSpecies.baseStats[statName] = reversedNums[i];
+			}
+		}
+
+		// TODO: check mod priority
+		if(this.format.scalemons) {
+			moddedSpecies ??= structuredClone(species);
+			const bstWithoutHp: number = moddedSpecies.bst - moddedSpecies.baseStats['hp'];
+			const scale = 600 - moddedSpecies.baseStats['hp'];
+			moddedSpecies.bst = moddedSpecies.baseStats['hp'];
+			for (const stat in moddedSpecies.baseStats) {
+				if (stat === 'hp') continue;
+				moddedSpecies.baseStats[stat] = PSUtils.clampIntRange(moddedSpecies.baseStats[stat] * scale / bstWithoutHp, 1, 255);
+				moddedSpecies.bst += moddedSpecies.baseStats[stat];
+			}
+		}
+
+		return moddedSpecies || species;
 	}
+	/** Learnset with learnsetDiff applied. */
+	getFormatLearnset() {}
 }
 
 /** ID, SearchType, index (if alias), offset (if offset alias) */

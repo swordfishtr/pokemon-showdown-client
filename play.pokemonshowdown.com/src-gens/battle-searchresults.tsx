@@ -62,11 +62,6 @@ export class PSSearchResults extends preact.Component<{
 
 		let tagStart = (pokemon.forme ? pokemon.name.length - pokemon.forme.length - 1 : 0);
 
-		const stats = pokemon.baseStats;
-		let bst = 0;
-		for (const stat of Object.values(stats)) bst += stat;
-		if (search.gtt.dex.gen < 2) bst -= stats['spd'];
-
 		if (errorMessage) {
 			return <li class="result"><a
 				href={`${this.URL_ROOT}pokemon/${id}`} class={id === this.speciesId ? 'cur' : ''}
@@ -85,6 +80,10 @@ export class PSSearchResults extends preact.Component<{
 		}
 
 		const abilities = search.gtt.dex.gen >= 3 && Object.values(pokemon.abilities);
+		const stats = pokemon.baseStats;
+		let bst = 0;
+		for (const stat of Object.values(stats)) bst += stat;
+		if (search.gtt.dex.gen < 2) bst -= stats['spd'];
 
 		return <li class="result">
 			<a

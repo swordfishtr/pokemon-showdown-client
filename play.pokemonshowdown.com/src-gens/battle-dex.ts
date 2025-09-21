@@ -174,6 +174,14 @@ export const PSUtils = new class {
 		}
 		return -1;
 	}
+
+	clampIntRange(num: any, min?: number, max?: number): number {
+		if (typeof num !== 'number') num = 0;
+		num = Math.floor(num);
+		if (min !== undefined && num < min) num = min;
+		if (max !== undefined && num > max) num = max;
+		return num;
+	}
 };
 
 /**
