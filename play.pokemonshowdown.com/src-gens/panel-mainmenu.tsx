@@ -463,6 +463,7 @@ class ShowdexPanel extends PSRoomPanel {
 			<div class="readable-bg">
 				<div class="newsentry">
 					<h4>This client has built-in Showdex!</h4>
+					<h5>(Experimental support)</h5>
 					<p>Opt in to Showdex below. This setting is remembered across sessions, and you can opt out at any time.</p>
 					<form>
 						<label class="checkbox">

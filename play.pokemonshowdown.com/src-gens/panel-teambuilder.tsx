@@ -72,7 +72,7 @@ class TeambuilderRoom extends PSRoom {
 			} else {
 				PS.teams.unshift(this.createTeam(null, isBox));
 			}
-			this.update(null);
+			PS.join(target as RoomID);
 		},
 		'deleteteam'(target) {
 			const team = PS.teams.byKey[target];
@@ -90,7 +90,7 @@ class TeambuilderRoom extends PSRoom {
 		'copyteam'(target) {
 			const team = PS.teams.byKey[target];
 			if(team) PS.teams.unshift(this.createTeam(team, team.isBox));
-			this.update(null);
+			PS.join(target as RoomID);
 		}
 	});
 	override sendDirect(msg: string): void {
