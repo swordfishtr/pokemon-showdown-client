@@ -2675,7 +2675,7 @@ class StatForm extends preact.Component<{
 	override render() {
 		const { editor, set } = this.props;
 		const team = editor.team;
-		const species = editor.gtt.dex.species.get(set.species);
+		const species = editor.gtt.getFormatSpecies(set.species);
 
 		const baseStats = species.baseStats;
 

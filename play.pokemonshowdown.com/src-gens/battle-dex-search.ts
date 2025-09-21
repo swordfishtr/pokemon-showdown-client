@@ -131,7 +131,8 @@ export class GTTIndex {
 			}
 		}
 
-		return moddedSpecies || species;
+		console.log(moddedSpecies ?? species);
+		return moddedSpecies ?? species;
 	}
 	/** Learnset with learnsetDiff applied. */
 	getFormatLearnset() {}
