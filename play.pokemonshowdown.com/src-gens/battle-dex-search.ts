@@ -106,11 +106,13 @@ export class GTTIndex {
 
 		const overrides = this.format.overrideSpeciesData;
 		if(overrides && (speciesid in overrides)) {
+			console.log('override');
 			moddedSpecies ??= structuredClone(species);
 			Object.assign(moddedSpecies, overrides[speciesid]);
 		}
 
 		if(this.format.flipped) {
+			console.log('flipped');
 			moddedSpecies ??= structuredClone(species);
 			const reversedNums = Object.values(moddedSpecies.baseStats).reverse();
 			for (const [i, statName] of Object.keys(moddedSpecies.baseStats).entries()) {
@@ -120,6 +122,7 @@ export class GTTIndex {
 
 		// TODO: check mod priority
 		if(this.format.scalemons) {
+			console.log('scalemons');
 			moddedSpecies ??= structuredClone(species);
 			const bstWithoutHp: number = moddedSpecies.bst - moddedSpecies.baseStats['hp'];
 			const scale = 600 - moddedSpecies.baseStats['hp'];
