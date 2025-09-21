@@ -113,9 +113,10 @@ export class GTTIndex {
 		if(this.format.flipped) {
 			moddedSpecies ??= structuredClone(species);
 			const reversedNums = Object.values(moddedSpecies.baseStats).reverse();
-			console.log(reversedNums);
 			for (const [i, statName] of Object.keys(moddedSpecies.baseStats).entries()) {
+				console.log(`setting ${statName} to ${reversedNums[i]}`);
 				moddedSpecies.baseStats[statName] = reversedNums[i];
+				console.log(`result: ${moddedSpecies.baseStats[statName]}`);
 			}
 		}
 
