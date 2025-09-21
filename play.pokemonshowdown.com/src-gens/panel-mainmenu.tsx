@@ -455,7 +455,7 @@ class ShowdexPanel extends PSRoomPanel {
 	change = (ev: Event) => {
 		const target = ev.currentTarget as HTMLInputElement;
 		PS.prefs.set('showdex', target.value === '1');
-		document.location.reload();
+		document.location.replace(location.origin);
 	};
 	override render() {
 		const enabled = PS.prefs.showdex;
