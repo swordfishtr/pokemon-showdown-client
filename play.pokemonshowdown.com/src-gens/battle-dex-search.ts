@@ -1449,6 +1449,8 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 		// vgc and bss logic was here (regionBornLegality)
 		const regionBornLegality = dex.gen > 8 && !this.gtt.format.natdex;
 
+		const ref35Moves = this.gtt.format.moves;
+
 		let learnsetid = this.firstLearnsetid(species.id);
 		let moves: string[] = [];
 		let sketchMoves: string[] = [];
@@ -1465,6 +1467,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 			if (learnset) {
 				for (let moveid in learnset) {
 					if (moves.includes(moveid)) continue;
+					if(ref35Moves && !(moveid in ref35Moves)) continue;
 					let learnsetEntry = learnset[moveid];
 					const move = dex.moves.get(moveid);
 					if (regionBornLegality && !learnsetEntry.includes(minGenCode[dex.gen])) {
