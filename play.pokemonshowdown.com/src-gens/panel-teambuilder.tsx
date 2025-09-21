@@ -67,12 +67,11 @@ class TeambuilderRoom extends PSRoom {
 	override clientCommands = this.parseClientCommands({
 		'newteam'(target) {
 			const isBox = ` ${target} `.includes(' box ');
-			if (` ${target} `.includes(' bottom ')) {
-				PS.teams.push(this.createTeam(null, isBox));
-			} else {
-				PS.teams.unshift(this.createTeam(null, isBox));
-			}
-			PS.join(target as RoomID);
+			const isBottom = ` ${target} `.includes(' bottom ');
+			const team = this.createTeam(null, isBox);
+			(isBottom ? PS.teams.push : PS.teams.unshift)(team);
+			// `team` has key at this point
+			PS.join(`team-${team.key}` as RoomID);
 		},
 		'deleteteam'(target) {
 			const team = PS.teams.byKey[target];
@@ -89,8 +88,11 @@ class TeambuilderRoom extends PSRoom {
 		},
 		'copyteam'(target) {
 			const team = PS.teams.byKey[target];
-			if(team) PS.teams.unshift(this.createTeam(team, team.isBox));
-			PS.join(target as RoomID);
+			if(!team) return;
+			const copy = this.createTeam(team, team.isBox);
+			PS.teams.unshift(copy);
+			// `team` has key at this point
+			PS.join(`team-${copy.key}` as RoomID);
 		}
 	});
 	override sendDirect(msg: string): void {
