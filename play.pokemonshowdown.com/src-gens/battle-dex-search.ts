@@ -136,8 +136,6 @@ export class GTTIndex {
 
 		return moddedSpecies ?? species;
 	}
-	/** Learnset with learnsetDiff applied. */
-	getFormatLearnset() {}
 }
 
 /** ID, SearchType, index (if alias), offset (if offset alias) */
@@ -1610,6 +1608,16 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 					}
 				}
 				if (valid) moves.push(id);
+			}
+		}
+
+		if(this.gtt.format.learnsetDiff) {
+			for(const move in this.gtt.format.learnsetDiff.removals) {
+				const i = moves.indexOf(move);
+				if(i >= 0) moves.splice(i, 1);
+			}
+			for(const move in this.gtt.format.learnsetDiff.additions) {
+				if(!moves.includes(move)) moves.push(move);
 			}
 		}
 
