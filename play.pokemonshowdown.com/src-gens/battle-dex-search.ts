@@ -1050,7 +1050,7 @@ class BattleAbilitySearch extends BattleTypedSearch<'ability'> {
 		const isHackmons = !!this.gtt.format.hackmons;
 		const isAAA = !!this.gtt.format.aaa;
 		const dex = this.gtt.dex;
-		let species = dex.species.get(this.species);
+		let species = this.gtt.getFormatSpecies(this.species);
 		let abilitySet: SearchRow[] = [['header', "Abilities"]];
 
 		if (species.isMega) {
