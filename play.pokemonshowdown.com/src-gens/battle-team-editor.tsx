@@ -525,7 +525,7 @@ class TeamEditorState extends PSModel {
 
 		// do this after setting set.evs because it's assumed to exist
 		// after getStat is run
-		const species = this.gtt.dex.species.get(set.species);
+		const species = this.gtt.getFormatSpecies(set.species);
 		if (!species.exists) return 0;
 
 		const level = set.level || this.gtt.format.level;

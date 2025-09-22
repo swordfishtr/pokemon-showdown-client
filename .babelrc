@@ -34,7 +34,8 @@
 		"@babel/plugin-transform-strict-mode"
 	],
 	"ignore": [
-		"src/globals.d.ts"
+		"src/globals.d.ts",
+		"src-gens/globals.d.ts"
 	],
 	"compact": true,
 	"comments": false,
