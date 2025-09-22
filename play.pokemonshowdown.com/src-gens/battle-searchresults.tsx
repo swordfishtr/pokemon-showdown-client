@@ -100,7 +100,7 @@ export class PSSearchResults extends preact.Component<{
 
 				<span class="col typecol">
 					{pokemon.types.map(type =>
-						<img src={`${Dex.resourcePrefix}sprites/types/${type}.png`} alt={type} height="14" width="32" class="pixelated" />
+						<img src={`${Dex.resourcePrefix}sprites/types/${encodeURIComponent(type)}.png`} alt={type} height="14" width="32" class="pixelated" />
 					)}
 				</span>
 

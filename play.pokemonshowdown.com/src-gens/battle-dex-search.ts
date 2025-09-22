@@ -798,6 +798,7 @@ abstract class BattleTypedSearch<T extends SearchType> {
 	}
 	protected firstLearnsetid(speciesid: ID) {
 		const learnsets = this.gtt.format.learnsets ?? this.gtt.mod.learnsets ?? GensTeambuilderTable.learnsets;
+		if (speciesid in learnsets) return speciesid;
 
 		const species = this.gtt.dex.species.get(speciesid);
 		if (!species.exists) return '' as ID;
@@ -1622,6 +1623,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 
 		if(ref35Moves) {
 			moves = moves.filter((move) => (move in ref35Moves))
+			sketchMoves = sketchMoves.filter((move) => (move in ref35Moves))
 		}
 
 		moves.sort();
