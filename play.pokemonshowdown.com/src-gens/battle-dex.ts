@@ -182,6 +182,19 @@ export const PSUtils = new class {
 		if (max !== undefined && num > max) num = max;
 		return num;
 	}
+
+	/** relaxed Object.keys */
+	keys<O extends {}>(o: O) {
+		type Keys = keyof O;
+		return Object.keys(o) as Keys[];
+	}
+
+	/** relaxed Object.entries */
+	entries<O extends {}>(o: O) {
+		type Keys = keyof O;
+		type Values = typeof o[Keys];
+		return Object.entries(o) as [Keys, Values][];
+	}
 };
 
 /**

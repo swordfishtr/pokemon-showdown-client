@@ -102,44 +102,38 @@ export class GTTIndex {
 	getFormatSpecies(speciesName: string): Species {
 		const speciesid = toID(speciesName)
 		const species = this.dex.species.get(speciesid);
-		let moddedSpecies: any = null;
+		let moddedSpecies: Species | null = null;
 
-		const overrides = this.format.overrideSpeciesData;
-		if(overrides && (speciesid in overrides)) {
+		const formatOverrides = this.format.overrideSpeciesData;
+		if(formatOverrides && (speciesid in formatOverrides)) {
 			moddedSpecies ??= structuredClone(species);
-			Object.assign(moddedSpecies, overrides[speciesid]);
+			Object.assign(moddedSpecies, formatOverrides[speciesid]);
 		}
 
 		if(this.format.flipped) {
 			moddedSpecies ??= structuredClone(species);
+			const overrides: AnyObject = {};
 			const reversedNums = Object.values(moddedSpecies.baseStats).reverse();
-			console.log(reversedNums);
-			console.log(moddedSpecies.baseStats);
-			console.log(Object.keys(moddedSpecies.baseStats));
-			const iterator = Object.keys(moddedSpecies.baseStats).entries();
-			console.log(iterator);
-			// this must be not working because of broken old library polyfills
-			for (const [i, statName] of iterator) {
-				console.log(`setting ${statName} to ${reversedNums[i]}`);
-				moddedSpecies.baseStats[statName] = reversedNums[i];
-				console.log(`result: ${moddedSpecies.baseStats[statName]}`);
-			}
+			Object.keys(moddedSpecies.baseStats).forEach((statName, i) => overrides[statName] = reversedNums[i]);
+			Object.assign(moddedSpecies.baseStats, overrides);
 		}
 
 		// TODO: check mod priority
 		if(this.format.scalemons) {
 			moddedSpecies ??= structuredClone(species);
-			const bstWithoutHp: number = moddedSpecies.bst - moddedSpecies.baseStats['hp'];
-			const scale = 600 - moddedSpecies.baseStats['hp'];
-			moddedSpecies.bst = moddedSpecies.baseStats['hp'];
-			for (const stat in moddedSpecies.baseStats) {
-				if (stat === 'hp') continue;
-				moddedSpecies.baseStats[stat] = PSUtils.clampIntRange(moddedSpecies.baseStats[stat] * scale / bstWithoutHp, 1, 255);
-				moddedSpecies.bst += moddedSpecies.baseStats[stat];
+			const overrides: AnyObject = {};
+			let bst = moddedSpecies.baseStats.hp;
+			const bstWithoutHp = moddedSpecies.bst - moddedSpecies.baseStats.hp;
+			const scale = 600 - moddedSpecies.baseStats.hp;
+			for(const [statName, stat] of Object.entries(moddedSpecies.baseStats)) {
+				if (statName === 'hp') continue;
+				overrides[statName] = PSUtils.clampIntRange(stat * scale / bstWithoutHp, 1, 255);
+				bst += stat;
 			}
+			Object.assign(moddedSpecies.baseStats, overrides);
+			Object.assign(moddedSpecies, { bst });
 		}
 
-		console.log(moddedSpecies ?? species);
 		return moddedSpecies ?? species;
 	}
 	/** Learnset with learnsetDiff applied. */

@@ -1848,10 +1848,3 @@ export class BattleLog {
 		return id.match(/^battle\-([a-z0-9]*[a-z])[0-9]*$/);
 	}
 }
-
-if (window.Net) {
-	Net(`/config/colors.json`).get().then(response => {
-		const data = JSON.parse(response);
-		Object.assign(Config.customcolors, data);
-	}).catch(() => {});
-}

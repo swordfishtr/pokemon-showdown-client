@@ -22,3 +22,9 @@ declare const NonBattleGames: { [id: string]: string };
 interface Window {
 	[k: string]: any;
 }
+
+// typescript
+/////////////
+
+type Writable<T> = { -readonly [P in keyof T]: T[P] };
+type DeepWritable<T> = { -readonly [P in keyof T]: DeepWritable<T[P]> };
