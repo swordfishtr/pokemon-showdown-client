@@ -1509,7 +1509,6 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 			if (learnset) {
 				for (let moveid in learnset) {
 					if (moves.includes(moveid)) continue;
-					if(ref35Moves && !(moveid in ref35Moves)) continue;
 					let learnsetEntry = learnset[moveid];
 					const move = dex.moves.get(moveid);
 					if (regionBornLegality && !learnsetEntry.includes(minGenCode[dex.gen])) {
@@ -1619,6 +1618,10 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 			for(const move in this.gtt.format.learnsetDiff.additions[species.id]) {
 				if(!moves.includes(move)) moves.push(move);
 			}
+		}
+
+		if(ref35Moves) {
+			moves = moves.filter((move) => (move in ref35Moves))
 		}
 
 		moves.sort();
