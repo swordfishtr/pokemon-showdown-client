@@ -44,18 +44,18 @@ interface GTTFormat {
 	natdex: ID | null, // keyof GTT.mods
 	level: 5 | 50 | 100,
 
-	doubles?: true,
-	cap?: true // not in use yet
-	tradebacks?: true, // not in use yet
-	flipped?: true,
-	aaa?: true, // not in use yet
-	hackmons?: true, // not in use yet
-	stabmons?: true, // not in use yet
-	scalemons?: true,
+	doubles?: 1,
+	cap?: 1 // not in use yet
+	tradebacks?: 1, // not in use yet
+	flipped?: 1,
+	aaa?: 1, // not in use yet
+	hackmons?: 1, // not in use yet
+	stabmons?: 1, // not in use yet
+	scalemons?: 1,
 
-	whitelist?: { [species: ID]: true },
-	blacklist?: { [species: ID]: true },
-	moves?: { [move: ID]: true },
+	whitelist?: { [species: ID]: 1 },
+	blacklist?: { [species: ID]: 1 },
+	moves?: { [move: ID]: 1 },
 	customNumCol?: { [species: ID]: number },
 
 	items?: GTTMod['items'], // not in use yet
@@ -66,8 +66,8 @@ interface GTTFormat {
 	overrideItemData?: GTTMod['overrideItemData'],
 	learnsets?: GTTMod['learnsets'], // not in use yet
 	learnsetDiff?: {
-		additions: { [species: ID]: { [move: ID]: true } },
-		removals: { [species: ID]: { [move: ID]: true } },
+		additions: { [species: ID]: { [move: ID]: 1 } },
+		removals: { [species: ID]: { [move: ID]: 1 } },
 	},
 }
 

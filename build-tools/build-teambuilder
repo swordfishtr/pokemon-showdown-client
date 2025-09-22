@@ -746,21 +746,21 @@ for(const format of Dex.formats.all()) {
 
 	gtt.level = check.idToLevel(format.id);
 
-	if(check.isDoubles(format.id)) gtt.doubles = true;
+	if(check.isDoubles(format.id)) gtt.doubles = 1;
 
-	if(check.isCAP(format.id)) gtt.cap = true;
+	if(check.isCAP(format.id)) gtt.cap = 1;
 
-	if(check.isTradebacks(format.id)) gtt.tradebacks = true;
+	if(check.isTradebacks(format.id)) gtt.tradebacks = 1;
 
-	if(check.isFlipped(format.id)) gtt.flipped = true;
+	if(check.isFlipped(format.id)) gtt.flipped = 1;
 
-	if(check.isAAA(format.id)) gtt.aaa = true;
+	if(check.isAAA(format.id)) gtt.aaa = 1;
 
-	if(check.isHackmons(format.id)) gtt.hackmons = true;
+	if(check.isHackmons(format.id)) gtt.hackmons = 1;
 
-	if(check.isStabmons(format.id)) gtt.stabmons = true;
+	if(check.isStabmons(format.id)) gtt.stabmons = 1;
 
-	if(check.isScalemons(format.id)) gtt.scalemons = true;
+	if(check.isScalemons(format.id)) gtt.scalemons = 1;
 
 	if(
 		(format.id.includes('35pokes') || format.id.includes('generationsdraft')) &&
@@ -785,7 +785,7 @@ for(const format of Dex.formats.all()) {
 					)
 				)
 			) {
-				whitelist[mon.id] = true;
+				whitelist[mon.id] = 1;
 			}
 		}
 	}
@@ -795,7 +795,7 @@ for(const format of Dex.formats.all()) {
 
 		const blacklist = (gtt.blacklist ??= {});
 		for(const mon of Dex.species.all().filter((x) => x.natDexTier === 'AG')) {
-			blacklist[mon.id] = true;
+			blacklist[mon.id] = 1;
 		}
 
 		const moves = (gtt.moves = {});
@@ -803,11 +803,11 @@ for(const format of Dex.formats.all()) {
 		for(const move of Dex.moves.all()) {
 			if(!validator.ruleTable.has(`+move:${move.id}`)) continue;
 			if(!move.realMove) {
-				moves[move.id] = true;
+				moves[move.id] = 1;
 			}
 			else {
 				// Hidden Power [type]
-				moves[toID(move.name)] = true;
+				moves[toID(move.name)] = 1;
 				continue;
 			}
 			for(const mon of Dex.species.all()) {
@@ -828,7 +828,7 @@ for(const format of Dex.formats.all()) {
 function processDiffMon(mon) {
 	const learnset = {};
 	for(const x in mon.learnset) {
-		learnset[x] = true;
+		learnset[x] = 1;
 	}
 	return learnset;
 }
