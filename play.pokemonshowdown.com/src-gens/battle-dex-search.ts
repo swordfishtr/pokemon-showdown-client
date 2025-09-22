@@ -1612,11 +1612,11 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 		}
 
 		if(this.gtt.format.learnsetDiff) {
-			for(const move in this.gtt.format.learnsetDiff.removals) {
+			for(const move in this.gtt.format.learnsetDiff.removals[species.id]) {
 				const i = moves.indexOf(move);
 				if(i >= 0) moves.splice(i, 1);
 			}
-			for(const move in this.gtt.format.learnsetDiff.additions) {
+			for(const move in this.gtt.format.learnsetDiff.additions[species.id]) {
 				if(!moves.includes(move)) moves.push(move);
 			}
 		}
