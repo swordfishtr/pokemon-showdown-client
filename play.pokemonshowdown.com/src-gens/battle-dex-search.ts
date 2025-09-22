@@ -1499,7 +1499,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 		let moves: string[] = [];
 		let sketchMoves: string[] = [];
 		let sketch = false;
-		let gen = `${dex.gen}`;
+		let gen = this.gtt.format.natdex?.slice(3) ?? `${dex.gen}`;
 		const minGenCode: { [gen: number]: string } = { 6: 'p', 7: 'q', 8: 'g', 9: 'a' };
 
 		let parent: any = GensTeambuilderTable;
