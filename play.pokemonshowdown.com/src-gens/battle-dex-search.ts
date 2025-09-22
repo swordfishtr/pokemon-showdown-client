@@ -96,12 +96,12 @@ export class GTTIndex {
 		this.dex = Dex.mod(gttformat.mod);
 	}
 	/**
-	 * Returns species from this dex with any format specific overrides applied (slow in that case).
+	 * Returns species from the specified dex with any format specific overrides applied (slow in that case).
 	 * Note: Return value may not satisfy `instanceof Species`.
 	 */
-	getFormatSpecies(speciesName: string): Species {
+	getFormatSpecies(speciesName: string, dex = this.dex): Species {
 		const speciesid = toID(speciesName)
-		const species = this.dex.species.get(speciesid);
+		const species = dex.species.get(speciesid);
 		let moddedSpecies: Species | null = null;
 
 		const formatOverrides = this.format.overrideSpeciesData;
@@ -1049,8 +1049,8 @@ class BattleAbilitySearch extends BattleTypedSearch<'ability'> {
 		if (!this.species) return this.getDefaultResults();
 		const isHackmons = !!this.gtt.format.hackmons;
 		const isAAA = !!this.gtt.format.aaa;
-		const dex = this.gtt.dex;
-		let species = this.gtt.getFormatSpecies(this.species);
+		const dex = this.gtt.format.natdex ? Dex.mod(this.gtt.format.natdex) : this.gtt.dex;
+		let species = this.gtt.getFormatSpecies(this.species, dex);
 		let abilitySet: SearchRow[] = [['header', "Abilities"]];
 
 		if (species.isMega) {
@@ -1482,7 +1482,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 	] as ID[] as readonly ID[];
 	getBaseResults() {
 		if (!this.species) return this.getDefaultResults();
-		const dex = this.gtt.dex;
+		const dex = this.gtt.format.natdex ? Dex.mod(this.gtt.format.natdex) : this.gtt.dex;
 		let species = dex.species.get(this.species);
 		//const format = this.format;
 		const isHackmons = !!this.gtt.format.hackmons;
@@ -1497,7 +1497,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 		let moves: string[] = [];
 		let sketchMoves: string[] = [];
 		let sketch = false;
-		let gen = this.gtt.format.natdex?.slice(3) ?? `${dex.gen}`;
+		let gen = `${dex.gen}`;
 		const minGenCode: { [gen: number]: string } = { 6: 'p', 7: 'q', 8: 'g', 9: 'a' };
 
 		let parent: any = GensTeambuilderTable;
