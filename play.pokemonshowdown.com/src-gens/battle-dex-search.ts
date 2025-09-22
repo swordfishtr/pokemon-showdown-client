@@ -619,7 +619,7 @@ export class DexSearch {
 				buf.push(['header', `${ability} Pok\u00e9mon`]);
 				for (let id in BattlePokedex) {
 					if (!BattlePokedex[id].abilities) continue;
-					if (Dex.hasAbility(this.gtt.dex.species.get(id), ability)) {
+					if (Dex.hasAbility(this.gtt.getFormatSpecies(id), ability)) {
 						(illegal && id in illegal ? illegalBuf : buf).push(['pokemon', id as ID]);
 					}
 				}
@@ -1008,14 +1008,14 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 		const sortOrder = reverseSort ? -1 : 1;
 		if (['hp', 'atk', 'def', 'spa', 'spd', 'spe'].includes(sortCol)) {
 			return results.sort(([rowType1, id1], [rowType2, id2]) => {
-				const stat1 = this.gtt.dex.species.get(id1).baseStats[sortCol as Dex.StatName];
-				const stat2 = this.gtt.dex.species.get(id2).baseStats[sortCol as Dex.StatName];
+				const stat1 = this.gtt.getFormatSpecies(id1).baseStats[sortCol as Dex.StatName];
+				const stat2 = this.gtt.getFormatSpecies(id2).baseStats[sortCol as Dex.StatName];
 				return (stat2 - stat1) * sortOrder;
 			});
 		} else if (sortCol === 'bst') {
 			return results.sort(([rowType1, id1], [rowType2, id2]) => {
-				const base1 = this.gtt.dex.species.get(id1).baseStats;
-				const base2 = this.gtt.dex.species.get(id2).baseStats;
+				const base1 = this.gtt.getFormatSpecies(id1).baseStats;
+				const base2 = this.gtt.getFormatSpecies(id2).baseStats;
 				let bst1 = base1.hp + base1.atk + base1.def + base1.spa + base1.spd + base1.spe;
 				let bst2 = base2.hp + base2.atk + base2.def + base2.spa + base2.spd + base2.spe;
 				if (this.gtt.dex.gen === 1) {
@@ -1122,7 +1122,7 @@ class BattleAbilitySearch extends BattleTypedSearch<'ability'> {
 		for (const [filterType, value] of filters) {
 			switch (filterType) {
 			case 'pokemon':
-				if (!Dex.hasAbility(this.gtt.dex.species.get(value), ability.name)) return false;
+				if (!Dex.hasAbility(this.gtt.getFormatSpecies(value), ability.name)) return false;
 				break;
 			}
 		}
