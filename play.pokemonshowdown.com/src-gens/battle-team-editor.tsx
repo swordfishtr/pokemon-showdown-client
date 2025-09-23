@@ -16,7 +16,7 @@ import { BattleNatures, BattleStatNames, type StatName } from "./battle-dex-data
 import { BattleStatGuesser, BattleStatOptimizer } from "./battle-tooltips";
 import { PSModel } from "./client-core";
 import { Net } from "./client-connection";
-import { PSIcon } from "./panels";
+import { PSIcon, PSView } from "./panels";
 
 type SelectionType = 'pokemon' | 'ability' | 'item' | 'move' | 'stats' | 'details';
 
@@ -752,7 +752,7 @@ export class TeamEditor extends preact.Component<{
 		this.forceUpdate();
 	};
 	static probablyMobile() {
-		return document.body.offsetWidth < 500;
+		return PSView.narrowMode || document.body.offsetWidth < 500;
 	}
 	renderDefensiveCoverage() {
 		const { editor } = this;

@@ -224,9 +224,9 @@ export class PSHeader extends preact.Component {
 			<div class="scrollable-part">
 				<img
 					class="logo"
-					src={`https://${Config.routes.client}/favicon-256.png`}
+					src={`https://generationssd.co.uk/pokemonshowdownbeta.png`}
 					alt="Pokémon Showdown! (beta)"
-					width="50" height="50"
+					height="50"
 				/>
 				<div class="tablist" role="tablist">
 					<ul>
