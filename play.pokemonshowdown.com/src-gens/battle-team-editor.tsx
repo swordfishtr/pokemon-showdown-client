@@ -2738,7 +2738,7 @@ class StatForm extends preact.Component<{
 						<td class="setstatbar">{this.renderStatbar(stat, statID)}</td>
 						<td><input
 							name={`ev-${statID}`} placeholder={`${defaultEV || ''}`}
-							type="text" inputMode="numeric" class="textbox default-placeholder" style="width:40px"
+							type="text" class="textbox default-placeholder" style="width:40px"
 							onInput={this.changeEV} onChange={this.changeEV}
 						/></td>
 						<td><input
@@ -2748,7 +2748,7 @@ class StatForm extends preact.Component<{
 						/></td>
 						<td><input
 							name={`iv-${statID}`} min={0} max={useIVs ? 31 : 15} placeholder={`${defaultIVs[statID]}`} style="width:40px"
-							type="number" inputMode="numeric" class="textbox default-placeholder" onInput={this.changeIV} onChange={this.changeIV}
+							type="number" class="textbox default-placeholder" onInput={this.changeIV} onChange={this.changeIV}
 						/></td>
 						<td style="text-align:right"><strong>{stat}</strong></td>
 					</tr>)}

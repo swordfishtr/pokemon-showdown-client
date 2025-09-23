@@ -224,7 +224,7 @@ export class PSHeader extends preact.Component {
 			<div class="scrollable-part">
 				<img
 					class="logo"
-					src={`https://generationssd.co.uk/pokemonshowdownbeta.png`}
+					src={"https://generationssd.co.uk/pokemonshowdownbeta.png"}
 					alt="Pokémon Showdown! (beta)"
 					height="50"
 				/>
@@ -265,9 +265,9 @@ export class PSHeader extends preact.Component {
 					<li>
 						<img
 							class="logo"
-							src={`https://${Config.routes.client}/favicon-256.png`}
+							src={"https://generationssd.co.uk/pokemonshowdownbeta.png"}
 							alt="Pokémon Showdown! (beta)"
-							width="48" height="48"
+							height="48"
 						/>
 					</li>
 					{PSHeader.renderRoomTab(PS.leftRoomList[0])}
