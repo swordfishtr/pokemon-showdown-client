@@ -2161,7 +2161,8 @@ class TeamWizard extends preact.Component<{
 		const cur = (i: number) => setIndex === i ? ' cur' : '';
 		const sampleSets = type === 'ability' ? editor.getSampleSets(set!) : [];
 		const userSets = type === 'ability' ? editor.getUserSets(set!) : null;
-		return <div class={`team-focus-editor${TeamEditor.probablyMobile() ? ' mobile' : ''}`}>
+		const isMobile = TeamEditor.probablyMobile() ? ' mobile' : '';
+		return <div class={`team-focus-editor${isMobile}`} onScroll={isMobile ? this.scrollResults : undefined}>
 			<ul class="tabbar">
 				<li class="home-li"><button class="button" onClick={this.setFocus}>
 					<i class="fa fa-chevron-left" aria-hidden></i> Back
@@ -2192,7 +2193,7 @@ class TeamWizard extends preact.Component<{
 						/>
 						{PSSearchResults.renderFilters(editor.search)}
 					</div>
-					<div class={`wizardsearchresults${set ? ' belowset' : ''}`} onScroll={this.scrollResults}>
+					<div class={`wizardsearchresults${set ? ' belowset' : ''}`} onScroll={isMobile ? undefined : this.scrollResults}>
 						<PSSearchResults
 							search={editor.search} hideFilters resultIndex={editor.searchIndex}
 							onSelect={this.selectResult} windowing={this.windowResults()}

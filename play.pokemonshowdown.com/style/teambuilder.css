@@ -739,6 +739,7 @@ you can't delete it by pressing Backspace */
 
 /* Generations teambuilder mobile tweaks */
 div.team-focus-editor.mobile > ul.tabbar {
+	background: inherit;
 	z-index: 1;
 	position: sticky;
 	left: 0;
