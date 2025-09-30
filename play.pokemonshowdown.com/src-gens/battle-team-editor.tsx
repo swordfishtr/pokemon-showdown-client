@@ -2161,7 +2161,7 @@ class TeamWizard extends preact.Component<{
 		const cur = (i: number) => setIndex === i ? ' cur' : '';
 		const sampleSets = type === 'ability' ? editor.getSampleSets(set!) : [];
 		const userSets = type === 'ability' ? editor.getUserSets(set!) : null;
-		return <div class="team-focus-editor">
+		return <div class={`team-focus-editor${TeamEditor.probablyMobile() ? ' mobile' : ''}`}>
 			<ul class="tabbar">
 				<li class="home-li"><button class="button" onClick={this.setFocus}>
 					<i class="fa fa-chevron-left" aria-hidden></i> Back
@@ -2184,7 +2184,7 @@ class TeamWizard extends preact.Component<{
 			) : type === 'details' ? (
 				<DetailsForm editor={editor} set={set!} onChange={this.handleSetChange} />
 			) : (
-				<div>
+				<>
 					<div class="searchboxwrapper pad" onClick={this.handleClickFilters}>
 						<input
 							type="search" name="value" class="textbox" placeholder="Search or filter"
@@ -2230,7 +2230,7 @@ class TeamWizard extends preact.Component<{
 							</div>
 						)}
 					</div>
-				</div>
+				</>
 			)}
 		</div>;
 	}

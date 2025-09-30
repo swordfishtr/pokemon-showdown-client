@@ -737,6 +737,22 @@ you can't delete it by pressing Backspace */
 	min-width: 624px;
 }
 
+/* Generations teambuilder mobile tweaks */
+div.team-focus-editor.mobile > ul.tabbar {
+	z-index: 1;
+	position: sticky;
+	left: 0;
+	top: 0;
+}
+div.team-focus-editor.mobile > div.pad {
+	position: sticky;
+	left: 0;
+}
+div.team-focus-editor.mobile > div.wizardsearchresults {
+	overflow: unset;
+}
+/*****************************************/
+
 .sample-sets {
 	border: 1px solid #888;
 	border-radius: 6px;
