@@ -78,8 +78,10 @@ export class LadderFormatRoom extends PSRoom {
 		this.searchValue = searchValue;
 		this.loading = true;
 		if (PS.teams.usesLocalLadder) {
+			console.trace(1);
 			this.send(`/cmd laddertop ${this.format} ${toID(this.searchValue)}`);
 		} else if (this.format !== undefined) {
+			console.trace(2);
 			Net(`//pokemonshowdown.com/ladder/${this.format}.json`)
 				.get({
 					query: {
@@ -89,6 +91,7 @@ export class LadderFormatRoom extends PSRoom {
 				.then(this.setLadderData)
 				.catch(this.setError);
 		}
+		console.trace(3);
 		this.update(null);
 	};
 }
@@ -104,6 +107,7 @@ class LadderFormatPanel extends PSRoomPanel<LadderFormatRoom> {
 		room.requestLadderData('');
 		this.subscriptions.push(
 			room.subscribe((response: any) => {
+				console.trace(5, response);
 				if (response) {
 					const [format, ladderData] = response;
 					if (room.format === format) {

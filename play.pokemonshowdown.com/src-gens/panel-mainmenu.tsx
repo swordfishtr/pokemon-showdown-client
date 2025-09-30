@@ -387,6 +387,7 @@ export class MainMenuRoom extends PSRoom {
 			}
 			break;
 		case 'laddertop':
+			console.trace(4);
 			for (const [roomid, ladderRoom] of Object.entries(PS.rooms)) {
 				if (roomid.startsWith('ladder-')) {
 					(ladderRoom as LadderFormatRoom).update(response);
