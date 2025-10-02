@@ -62,9 +62,12 @@ export class LadderFormatRoom extends PSRoom {
 	};
 	requestLadderData = (searchValue: string) => {
 		if (!this.format) return;
-		this.searchValue = searchValue;
 		this.loading = true;
-		PS.send(`/cmd laddertop ${this.format} ${toID(this.searchValue)}`);
+		this.searchValue = searchValue;
+		const search = toID(searchValue);
+		let cmd = `/cmd laddertop ${this.format}`;
+		if(search) cmd += `, ${search}`;
+		PS.send(cmd);
 		this.update(null);
 	};
 }
