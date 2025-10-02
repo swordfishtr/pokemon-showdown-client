@@ -57,7 +57,7 @@ export class LadderFormatRoom extends PSRoom {
 	};
 	setLadderData = (ladderHTML: string | undefined) => {
 		this.loading = false;
-		this.ladderHTML = ladderHTML;
+		this.ladderHTML = ladderHTML && BattleLog.sanitizeHTML(ladderHTML);
 		this.update(null);
 	};
 	requestLadderData = (searchValue: string) => {
