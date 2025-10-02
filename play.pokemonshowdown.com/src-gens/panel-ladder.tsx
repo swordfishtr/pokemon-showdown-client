@@ -113,9 +113,6 @@ class LadderFormatPanel extends PSRoomPanel<LadderFormatRoom> {
 					</button>
 				</p>
 				<p>
-					<button class="button" data-href="ladder" data-target="replace">
-						<i class="fa fa-refresh" aria-hidden></i> Refresh
-					</button>
 					<form class="search" onSubmit={this.changeSearch}>
 						<p>
 							<input

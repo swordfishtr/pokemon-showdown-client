@@ -209,6 +209,7 @@ export class MainMenuRoom extends PSRoom {
 		window.BattleFormats = {};
 		for (let j = 1; j < formatsList.length; j++) {
 			const entry = formatsList[j];
+			if (entry === ',LL') continue;
 			if (isSection) {
 				section = entry;
 				isSection = false;
