@@ -212,8 +212,6 @@ export class MainMenuRoom extends PSRoom {
 			if (isSection) {
 				section = entry;
 				isSection = false;
-			} else if (entry === ',LL') {
-				PS.teams.usesLocalLadder = true;
 			} else if (entry === '' || (entry.startsWith(',') && !isNaN(Number(entry.slice(1))))) {
 				isSection = true;
 
@@ -387,7 +385,6 @@ export class MainMenuRoom extends PSRoom {
 			}
 			break;
 		case 'laddertop':
-			console.trace(4);
 			for (const [roomid, ladderRoom] of Object.entries(PS.rooms)) {
 				if (roomid.startsWith('ladder-')) {
 					(ladderRoom as LadderFormatRoom).update(response);

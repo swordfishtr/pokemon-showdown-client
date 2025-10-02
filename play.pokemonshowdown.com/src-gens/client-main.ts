@@ -362,8 +362,6 @@ if (!window.BattleFormats) window.BattleFormats = {};
  * This model tracks teams and formats, updating when either is updated.
  */
 class PSTeams extends PSStreamModel<'team' | 'format'> {
-	/** false if it uses the ladder in the website */
-	usesLocalLadder = false;
 	list: Team[] = [];
 	byKey: { [key: string]: Team | undefined } = {};
 	deletedTeams: [Team, number][] = [];

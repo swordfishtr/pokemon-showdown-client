@@ -8,7 +8,6 @@
  */
 
 import { Config, PS, PSRoom } from "./client-main";
-import { Net } from "./client-connection";
 import { PSPanelWrapper, PSRoomPanel } from "./panels";
 import { BattleLog } from "./battle-log";
 import { toID, type ID } from "./battle-dex";
@@ -40,58 +39,32 @@ type LadderData = {
 export class LadderFormatRoom extends PSRoom {
 	override readonly classType: string = 'ladder';
 	readonly format?: string = this.id.split('-')[1];
-	notice?: string;
 	searchValue = '';
 	loading = false;
 	error?: string;
 	ladderData?: LadderData;
+	ladderHTML?: string;
 
 	constructor(options: any) {
 		super(options);
 		if (this.format) this.title = BattleLog.formatName(this.format);
 	}
 
-	setNotice = (notice: string) => {
-		this.notice = notice;
-		this.update(null);
-	};
-	setSearchValue = (searchValue: string) => {
-		this.searchValue = searchValue;
-		this.update(null);
-	};
 	setError = (error: Error) => {
 		this.loading = false;
 		this.error = error.message;
 		this.update(null);
 	};
-	setLadderData = (ladderData: string | undefined) => {
+	setLadderData = (ladderHTML: string | undefined) => {
 		this.loading = false;
-		if (ladderData) {
-			this.ladderData = JSON.parse(ladderData);
-		} else {
-			this.ladderData = undefined;
-		}
+		this.ladderHTML = ladderHTML;
 		this.update(null);
 	};
 	requestLadderData = (searchValue: string) => {
 		if (!this.format) return;
 		this.searchValue = searchValue;
 		this.loading = true;
-		if (PS.teams.usesLocalLadder) {
-			console.trace(1);
-			this.send(`/cmd laddertop ${this.format} ${toID(this.searchValue)}`);
-		} else if (this.format !== undefined) {
-			console.trace(2);
-			Net(`//pokemonshowdown.com/ladder/${this.format}.json`)
-				.get({
-					query: {
-						prefix: toID(searchValue),
-					},
-				})
-				.then(this.setLadderData)
-				.catch(this.setError);
-		}
-		console.trace(3);
+		PS.send(`/cmd laddertop ${this.format} ${toID(this.searchValue)}`);
 		this.update(null);
 	};
 }
@@ -107,14 +80,13 @@ class LadderFormatPanel extends PSRoomPanel<LadderFormatRoom> {
 		room.requestLadderData('');
 		this.subscriptions.push(
 			room.subscribe((response: any) => {
-				console.trace(5, response);
 				if (response) {
-					const [format, ladderData] = response;
+					const [format, ladderHTML] = response;
 					if (room.format === format) {
-						if (!ladderData) {
+						if (!ladderHTML) {
 							room.setError(new Error('No data returned from server.'));
 						} else {
-							room.setLadderData(ladderData);
+							room.setLadderData(ladderHTML);
 						}
 					}
 				}
@@ -131,79 +103,8 @@ class LadderFormatPanel extends PSRoomPanel<LadderFormatRoom> {
 		e.preventDefault();
 		this.props.room.requestLadderData(this.base!.querySelector<HTMLInputElement>('input[name=searchValue]')!.value);
 	};
-	renderHeader() {
-		if (PS.teams.usesLocalLadder) return null;
-
-		const room = this.props.room;
-		return <h3>
-			{BattleLog.formatName(room.format)} Top
-			{room.searchValue ? ` - '${room.searchValue}'` : " 500"}
-		</h3>;
-	}
-	renderSearch() {
-		if (PS.teams.usesLocalLadder) return null;
-
-		const room = this.props.room;
-		return <form class="search" onSubmit={this.changeSearch}><p>
-			<input
-				type="text"
-				name="searchValue"
-				class="textbox searchinput"
-				value={BattleLog.escapeHTML(room.searchValue)}
-				placeholder="username prefix"
-				onChange={this.changeSearch}
-			/> {}
-			<button type="submit" class="button">Search</button>
-		</p></form>;
-	}
-	renderTable() {
-		const room = this.props.room;
-
-		if (room.loading || !BattleFormats) {
-			return <p><i class="fa fa-refresh fa-spin" aria-hidden></i> <em>Loading...</em></p>;
-		} else if (room.error !== undefined) {
-			return <p>Error: {room.error}</p>;
-		} else if (!room.ladderData) {
-			return null;
-		}
-		const showCOIL = room.ladderData?.toplist[0]?.coil !== undefined;
-
-		return <table class="table readable-bg">
-			<tr class="table-header">
-				<th></th>
-				<th>Name</th>
-				<th style={{ textAlign: 'center' }}><abbr title="Elo rating">Elo</abbr></th>
-				<th style={{ textAlign: 'center' }}>
-					<abbr title="user's percentage chance of winning a random battle (Glicko X-Act Estimate)">GXE</abbr>
-				</th>
-				<th style={{ textAlign: 'center' }}>
-					<abbr title="Glicko-1 rating system: rating&plusmn;deviation (provisional if deviation>100)">Glicko-1</abbr>
-				</th>
-				{showCOIL && <th style={{ textAlign: 'center' }}>COIL</th>}
-			</tr>
-			{room.ladderData.toplist.map((row, i) => <tr>
-				<td style={{ textAlign: 'right' }}>
-					{i < 3 && <i class="fa fa-trophy" aria-hidden style={{ color: ['#d6c939', '#adb2bb', '#ca8530'][i] }}></i>} {i + 1}
-				</td>
-				<td><span
-					class="username no-interact" style={{
-						fontWeight: i < 10 ? 'bold' : 'normal', color: BattleLog.usernameColor(row.userid),
-					}}
-				>
-					{row.username}
-				</span></td>
-				<td style={{ textAlign: 'center' }}><strong>{row.elo.toFixed(0)}</strong></td>
-				<td style={{ textAlign: 'center' }}>{Math.trunc(row.gxe)}<small>.{row.gxe.toFixed(1).slice(-1)}%</small></td>
-				<td style={{ textAlign: 'center' }}><em>{row.rpr.toFixed(0)}<small> &plusmn; {row.rprd.toFixed(0)}</small></em></td>
-				{showCOIL && <td style={{ textAlign: 'center' }}>{row.coil?.toFixed(0)}</td>}
-			</tr>)}
-			{!room.ladderData.toplist.length && <tr><td colSpan={5}>
-				<em>No one has played any ranked games yet.</em>
-			</td></tr>}
-		</table>;
-	}
 	override render() {
-		const room = this.props.room;
+		const { room } = this.props;
 		return <PSPanelWrapper room={room} scrollable>
 			<div class="ladder pad">
 				<p>
@@ -214,13 +115,28 @@ class LadderFormatPanel extends PSRoomPanel<LadderFormatRoom> {
 				<p>
 					<button class="button" data-href="ladder" data-target="replace">
 						<i class="fa fa-refresh" aria-hidden></i> Refresh
-					</button> <a class="button" href="/view-seasonladder-gen9randombattle">
-						<i class="fa fa-trophy" aria-hidden></i> Seasonal rankings
-					</a>
-					{this.renderSearch()}
+					</button>
+					<form class="search" onSubmit={this.changeSearch}>
+						<p>
+							<input
+								type="text"
+								name="searchValue"
+								class="textbox searchinput"
+								value={BattleLog.escapeHTML(room.searchValue)}
+								placeholder="username prefix"
+								onChange={this.changeSearch}
+							/> {}
+							<button type="submit" class="button">Search</button>
+						</p>
+					</form>
 				</p>
-				{this.renderHeader()}
-				{this.renderTable()}
+				{(room.loading || !BattleFormats) ? (
+					<p><i class="fa fa-refresh fa-spin" aria-hidden></i> <em>Loading...</em></p>
+				) : room.error !== undefined ? (
+					<p>Error: {room.error}</p>
+				) : room.ladderHTML && (
+					<div dangerouslySetInnerHTML={{ __html: room.ladderHTML }}></div>
+				)}
 			</div>
 		</PSPanelWrapper>;
 	}
