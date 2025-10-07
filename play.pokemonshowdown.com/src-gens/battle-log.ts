@@ -18,7 +18,6 @@ import type { BattleScene } from './battle-animations';
 import { Dex, toID, toRoomid, toUserid, type ID } from './battle-dex';
 import { Teams } from './battle-teams';
 import { BattleTextParser, type Args, type KWArgs } from './battle-text-parser';
-import { Net } from './client-connection'; // optional
 import { Config } from './client-main';
 
 // Caja
@@ -411,7 +410,9 @@ export class BattleLog {
 			if (this.addAFDMessage(args, kwArgs)) return;
 			const line = this.battleParser?.parseArgs(args, kwArgs || {}, true) ?? null;
 			if (line === null) {
-				this.addDiv('chat message-error', 'Unrecognized: |' + BattleLog.escapeHTML(args.join('|')));
+				const debug = 'Unrecognized: |' + BattleLog.escapeHTML(args.join('|'));
+				console.trace(debug);
+				this.addDiv('chat message-error', debug);
 				return;
 			}
 			if (line) this.messageFromLog(line);
