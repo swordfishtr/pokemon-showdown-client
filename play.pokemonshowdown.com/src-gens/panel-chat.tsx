@@ -127,7 +127,6 @@ export class ChatRoom extends PSRoom {
 			}
 			// falls through
 		case 'c:':
-			if (args[0] === 'c:') PS.lastMessageTime = args[1];
 			this.lastMessage = args;
 			this.joinLeave = null;
 			this.markUserActive(args[args[0] === 'c:' ? 2 : 1]);
@@ -166,38 +165,22 @@ export class ChatRoom extends PSRoom {
 			this.battle.stepQueue = [];
 			return false;
 		} else {
-			let lines = msg.split('\n');
+			// GENERATIONS
+			this.log?.reset();
 
-			// cut off starting lines until we get to PS.lastMessage timestamp
-			// then cut off roomintro from the end
-			let cutOffStart = 0;
-			let cutOffEnd = lines.length;
-			const cutOffTime = parseInt(PS.lastMessageTime);
-			const cutOffExactLine = this.lastMessage ? '|' + this.lastMessage?.join('|') : '';
+			const lines = msg.split('\n');
 			let reconnectMessage = '|raw|<div class="infobox">You reconnected.</div>';
-			for (let i = 0; i < lines.length; i++) {
-				if (lines[i].startsWith('|users|')) {
-					this.add(lines[i]);
-				}
-				if (lines[i] === cutOffExactLine) {
-					cutOffStart = i + 1;
-				} else if (lines[i].startsWith(`|c:|`)) {
-					const time = parseInt(lines[i].split('|')[2] || '');
-					if (time < cutOffTime) cutOffStart = i;
-				}
-				if (lines[i].startsWith('|raw|<div class="infobox"> You joined ')) {
-					reconnectMessage = `|raw|<div class="infobox">You reconnected to ${lines[i].slice(38)}`;
-					cutOffEnd = i;
-					if (!lines[i - 1]) cutOffEnd = i - 1;
-				}
-			}
-			lines = lines.slice(cutOffStart, cutOffEnd);
 
-			if (lines.length) {
-				this.receiveLine([`raw`, `<div class="infobox">You disconnected.</div>`]);
-				for (const line of lines) this.receiveLine(BattleTextParser.parseLine(line));
-				this.receiveLine(BattleTextParser.parseLine(reconnectMessage));
+			for(const line of lines) {
+				if(line.startsWith('|init|')) {
+					continue;
+				}
+				if(line.startsWith('|raw|<div class="infobox"> You joined ')) {
+					reconnectMessage = `|raw|<div class="infobox">You reconnected to ${line.slice(38)}`;
+				}
+				this.receiveLine(BattleTextParser.parseLine(line));
 			}
+			this.receiveLine(BattleTextParser.parseLine(reconnectMessage));
 			this.update(null);
 			return true;
 		}

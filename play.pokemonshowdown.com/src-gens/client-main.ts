@@ -1757,7 +1757,6 @@ export const PS = new class extends PSModel {
 		{ type: 'team', team: Team | number, folder: string | null } |
 		{ type: '?' } | // browser preventing us from knowing what's being dragged
 		null = null;
-	lastMessageTime = '';
 
 	/** Tracks whether or not to display the "Use arrow keys" hint */
 	arrowKeysUsed = false;
@@ -2009,7 +2008,7 @@ export const PS = new class extends PSModel {
 			}
 			room?.receiveLine(args);
 		}
-		room?.update(isInit ? [`initdone`] : null);
+		room?.update(isInit ? ['initdone'] : null);
 	}
 	send(msg: string, roomid?: RoomID) {
 		const bracketRoomid = roomid ? `[${roomid}] ` : '';
