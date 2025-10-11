@@ -5,11 +5,9 @@
  * @license MIT
  */
 
-import { toID } from "./battle-dex";
-import { Config, PS } from "./client-main";
+import { PS } from "./client-main";
 
 declare const SockJS: any;
-declare const POKEMON_SHOWDOWN_TESTCLIENT_KEY: string | undefined;
 
 export class PSConnection {
 	socket: WebSocket | null = null;
@@ -383,7 +381,7 @@ interface NetRequestOptions {
 	body?: string | PostData;
 	query?: PostData;
 }
-class HttpError extends Error {
+export class HttpError extends Error {
 	statusCode?: number;
 	body: string;
 	constructor(message: string, statusCode: number | undefined, body: string) {

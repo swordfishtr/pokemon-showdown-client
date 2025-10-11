@@ -482,12 +482,12 @@ class PSTeams extends PSStreamModel<'team' | 'format'> {
 
 export type PSLoginState = { error?: string, success?: true, name?: string, needsPassword?: true, needsGoogle?: true };
 class PSUser extends PSStreamModel<PSLoginState | null> {
-	name = "";
+	name = '';
 	group = '';
-	userid = "" as ID;
+	userid = '' as ID;
 	named = false;
 	registered: { name: string, userid: ID } | null = null;
-	avatar = "lucas";
+	avatar = 'lucas';
 	challstr = '';
 	loggingIn: string | null = null;
 	initializing = true;

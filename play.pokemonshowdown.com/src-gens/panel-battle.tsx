@@ -19,7 +19,7 @@ import {
 } from "./battle-choices";
 import type { Args } from "./battle-text-parser";
 import { ModifiableValue } from "./battle-tooltips";
-import { Net } from "./client-connection";
+import { HttpError, Net } from "./client-connection";
 
 type BattleDesc = {
 	id: RoomID,
@@ -148,22 +148,71 @@ export class BattleRoom extends ChatRoom {
 	choices: BattleChoiceBuilder | null = null;
 	autoTimerActivated: boolean | null = null;
 
-	loadReplay() {
-		const replayid = this.id.slice(7);
-		Net(`https://replay.generationssd.co.uk/${replayid}.json`).get().catch().then(data => {
-			try {
-				const replay = JSON.parse(data);
-				this.title = `[${replay.format}] ${replay.players.join(' vs. ')}`;
-				this.battle.stepQueue = replay.log.split('\n');
-				this.battle.atQueueEnd = false;
-				this.battle.pause();
-				this.battle.seekTurn(0);
-				this.connected = 'client-only';
-				this.update(null);
-			} catch {
-				this.receiveLine(['error', 'Battle not found']);
+	loadReplay(replayid: string, accessreplay?: true) {
+		const url = `https://replay.generationssd.co.uk/${replayid}`;
+		return Net(`${url}.json`)
+		.get()
+		.then((data) => {
+			const replay = JSON.parse(data);
+			this.title = `[${replay.format}] ${replay.players.join(' vs. ')}`;
+			this.battle.stepQueue = replay.log.split('\n');
+			this.battle.atQueueEnd = false;
+			this.battle.pause();
+			this.battle.seekTurn(0);
+			this.connected = 'client-only';
+			this.update(null);
+		})
+		.catch((error) => {
+			if(error instanceof HttpError) {
+				if(error.statusCode === 404) {
+					// TODO: determine from response whether the replay server is down.
+					PS.leave(this.id);
+					PS.alert('Replay not found, or replay server down.');
+					return;
+				}
+				if(error.statusCode === 403) {
+					if(accessreplay) {
+						PS.leave(this.id);
+						PS.alert('This replay is private and you do not have access to it.');
+						return;
+					}
+					this.subscriptions.push(PS.mainmenu.subscribe((args) => {
+						if(!args) return;
+						const [cmd, code, response] = args;
+						if(cmd !== 'accessreplay') return;
+						console.trace('accessreplay response');
+						
+						if(code !== '0') {
+							PS.leave(this.id);
+							PS.alert(response);
+							return;
+						}
+
+						this.loadReplay(response, true);
+					}));
+					PS.mainmenu.send(`/accessreplay ${url}`);
+					return;
+				}
 			}
+			if(error instanceof SyntaxError) {
+				PS.leave(this.id);
+				PS.alert(`This replay appears to be malformed. Please inform the admin.\nBattle ID: ${this.id}\nReplay ID:${replayid}`);
+				return;
+			}
+			PS.leave(this.id);
+			PS.alert(`Error loading replay:\n${error?.trace}`);
 		});
+	}
+
+	override receiveLine(args: Args) {
+		switch (args[0]) {
+		case 'noinit': {
+			const replayid = this.id.slice(7);
+			this.loadReplay(replayid);
+			return;
+		}
+		}
+		super.receiveLine(args);
 	}
 }
 

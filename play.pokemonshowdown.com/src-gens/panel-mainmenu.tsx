@@ -153,10 +153,15 @@ export class MainMenuRoom extends PSRoom {
 			const [, message] = args;
 			PS.alert(message.replace(/\|\|/g, '\n'));
 			return;
-		} case 'customgroups': {
-			// Generations added. (port)
+		}
+		// GENERATIONS
+		case 'customgroups': {
 			const [, groups] = args;
 			this.parseGroups(groups);
+			return;
+		}
+		case 'accessreplay': {
+			this.update(args);
 			return;
 		}
 		}
@@ -398,7 +403,7 @@ export class MainMenuRoom extends PSRoom {
 	// GENERATIONS
 
 	// This caused an error message in lobby. I'm porting the code, but it's unused.
-	// Merge the upstream implementations once it's ready.
+	// TODO: Merge the upstream implementations once it's ready.
 	parseGroups(groupsList: string) {
 		let data: any = null;
 		try {

@@ -82,11 +82,11 @@ export class ChatRoom extends PSRoom {
 
 		case 'join': case 'j': case 'J':
 			this.handleJoinLeave("join", args[1], args[0] === "J");
-			return true;
+			return;
 
 		case 'leave': case 'l': case 'L':
 			this.handleJoinLeave("leave", args[1], args[0] === "L");
-			return true;
+			return;
 
 		case 'name': case 'n': case 'N':
 			this.renameUser(args[1], args[2]);
@@ -97,14 +97,11 @@ export class ChatRoom extends PSRoom {
 			this.tour.receiveLine(args);
 			return;
 
-		case 'noinit':
-			if (this.battle) {
-				// check the Replays database
-				(this as any as BattleRoom).loadReplay();
-			} else {
-				this.receiveLine(['bigerror', 'Room does not exist']);
-			}
+		case 'noinit': {
+			this.receiveLine(['bigerror', 'Room does not exist']);
 			return;
+		}
+
 		case 'expire':
 			this.connected = 'expired';
 			this.receiveLine(['', `This room has expired (you can't chat in it anymore)`]);
