@@ -179,15 +179,11 @@ export class BattleRoom extends ChatRoom {
 						if(!args) return;
 						const [cmd, code, request, response] = args;
 						if(cmd !== 'accessreplay' || request !== url) return;
-
-						console.trace('accessreplay response');
-
 						if(code !== '0') {
 							PS.leave(this.id);
 							PS.alert(response);
 							return;
 						}
-
 						PS.mainmenu.subscriptions.splice(PS.mainmenu.subscriptions.findIndex((s) => s === subscription), 1);
 						this.loadReplay(response, true);
 					});
