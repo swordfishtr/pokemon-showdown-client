@@ -715,11 +715,11 @@ export class TournamentTreeBracket extends preact.Component<{
 			div.innerHTML = `<b>d3 not loaded yet</b>`;
 			console.log('d3 debug', this);
 			this.d3Loader ||= PS.libsLoaded.then(() => {
+				this.d3Loader = null;
 				this.forceUpdate();
 			});
 			return div;
 		}
-		this.d3Loader = null;
 
 		let name = PS.user.name;
 
