@@ -176,20 +176,22 @@ export class BattleRoom extends ChatRoom {
 						PS.alert('This replay is private and you do not have access to it.');
 						return;
 					}
-					this.subscriptions.push(PS.mainmenu.subscribe((args) => {
+					const subscription = PS.mainmenu.subscribe((args) => {
 						if(!args) return;
-						const [cmd, code, response] = args;
-						if(cmd !== 'accessreplay') return;
+						const [cmd, code, request, response] = args;
+						if(cmd !== 'accessreplay' || request !== url) return;
+
 						console.trace('accessreplay response');
-						
+
 						if(code !== '0') {
 							PS.leave(this.id);
 							PS.alert(response);
 							return;
 						}
 
+						PS.mainmenu.subscriptions.splice(PS.mainmenu.subscriptions.findIndex((s) => s === subscription), 1);
 						this.loadReplay(response, true);
-					}));
+					});
 					PS.mainmenu.send(`/accessreplay ${url}`);
 					return;
 				}
