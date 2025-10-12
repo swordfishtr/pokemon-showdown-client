@@ -713,9 +713,10 @@ export class TournamentTreeBracket extends preact.Component<{
 		}
 		if (!window.d3) {
 			div.innerHTML = `<b>d3 not loaded yet</b>`;
-			console.log('d3 debug', this);
 			this.d3Loader ||= PS.libsLoaded.then(() => {
-				this.forceUpdate();
+				//this.forceUpdate();
+				// ^ this doesn't actually display the bracket on d3 load.
+				this.base!.replaceChild(this.generateTreeBracket(this.props.data), this.base!.children[0]);
 			});
 			return div;
 		}
@@ -932,9 +933,7 @@ export class TournamentTreeBracket extends preact.Component<{
 		this.base!.appendChild(this.generateTreeBracket(this.props.data, this.props.abbreviated));
 	}
 	override shouldComponentUpdate(props: typeof this.props) {
-		console.log(props);
 		if (props.data === this.props.data && !this.d3Loader) return false;
-		console.log('replacing');
 		this.base!.replaceChild(this.generateTreeBracket(props.data), this.base!.children[0]);
 		return false;
 	}
