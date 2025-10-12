@@ -148,8 +148,7 @@ export class BattleRoom extends ChatRoom {
 	choices: BattleChoiceBuilder | null = null;
 	autoTimerActivated: boolean | null = null;
 
-	loadReplay(replayid: string, accessreplay?: true) {
-		const url = `https://replay.generationssd.co.uk/${replayid}`;
+	loadReplay(url: string, accessreplay?: true) {
 		return Net(`${url}.json`)
 		.get()
 		.then((data) => {
@@ -198,7 +197,7 @@ export class BattleRoom extends ChatRoom {
 			}
 			if(error instanceof SyntaxError) {
 				PS.leave(this.id);
-				PS.alert(`This replay appears to be malformed. Please inform the admin.\nBattle ID: ${this.id}\nReplay ID:${replayid}`);
+				PS.alert(`This replay appears to be malformed. Please inform the admin.\nBattle ID: ${this.id}\nReplay URL:${url}`);
 				return;
 			}
 			PS.leave(this.id);
@@ -209,8 +208,8 @@ export class BattleRoom extends ChatRoom {
 	override receiveLine(args: Args) {
 		switch (args[0]) {
 		case 'noinit': {
-			const replayid = this.id.slice(7);
-			this.loadReplay(replayid);
+			const url = `https://replay.generationssd.co.uk/${this.id.slice(7)}`;
+			this.loadReplay(url);
 			return;
 		}
 		}
