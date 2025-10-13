@@ -10,7 +10,7 @@ import { LoginManager } from "./client-connection";
 import { Config, PS, PSRoom, type RoomID, type RoomOptions, type Team } from "./client-main";
 import { PSIcon, PSPanelWrapper, PSRoomPanel } from "./panels";
 import type { BattlesRoom } from "./panel-battle";
-import type { ChatRoom } from "./panel-chat";
+import { ChatRoom } from "./panel-chat";
 import type { LadderFormatRoom } from "./panel-ladder";
 import type { RoomsRoom } from "./panel-rooms";
 import { TeamBox, type SelectType } from "./panel-teamdropdown";
@@ -397,6 +397,14 @@ export class MainMenuRoom extends PSRoom {
 				}
 			}
 			break;
+		// GENERATIONS
+		case 'roomidentity': {
+			const [roomid, identity] = response;
+			const room = PS.rooms[roomid];
+			if(!(room instanceof ChatRoom)) return;
+			room.addUser(identity);
+			break;
+		}
 		}
 	}
 

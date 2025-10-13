@@ -146,12 +146,11 @@ export class ChatRoom extends PSRoom {
 			break;
 
 		// Generations
-		// In some cases, the server will fail to communicate that we're part of our chatrooms.
+		// In some cases, the server will fail to communicate that we're part of a chatroom.
 		// Players get confused when they're logged in but see `0 users`, especially in an ongoing battle.
-		// The proper solution in the server side is unknown to me. This should be a safe patch for now.
+		// This asks the server to confirm or correct that.
 		case 'updateuser':
-			console.log('Fix triggered');
-			this.addUser(`${PS.user.group}${PS.user.name}`);
+			PS.send(`/cmd roomidentity ${this.id}`);
 			return;
 		}
 		super.receiveLine(args);
@@ -485,9 +484,8 @@ export class ChatRoom extends PSRoom {
 		));
 	}
 	addUser(username: string) {
-		if (!username) return;
-
 		const userid = toID(username);
+		if(!userid || /^guest./.test(userid)) return;
 		this.users[userid] = username;
 		const index = this.onlineUsers.findIndex(([curUserid]) => curUserid === userid);
 		if (index >= 0) {
