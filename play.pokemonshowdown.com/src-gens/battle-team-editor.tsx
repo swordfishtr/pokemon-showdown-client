@@ -44,6 +44,11 @@ class TeamEditorState extends PSModel {
 	readonly search = new DexSearch();
 	readonly gtt = this.search.gtt;
 	searchIndex = 0;
+	/**
+	 * Remembers the search index when searching moves to assign to the intended moveslot.
+	 * Non-null when `this.search.typedSearch?.searchType === 'move' && this.search.query`
+	 */
+	searchIndexTmp: number | null = null;
 
 	team: Team;
 	sets: Dex.PokemonSet[] = [];
@@ -142,6 +147,7 @@ class TeamEditorState extends PSModel {
 		return out;
 	}
 	setSearchValue(value: string) {
+		console.trace(`Set search value: ${value}`);
 		this.search.find(value);
 		this.searchIndex = this.search.results?.[0]?.[0] === 'header' ? 1 : 0;
 	}
@@ -166,17 +172,17 @@ class TeamEditorState extends PSModel {
 		set.ability = this.getDefaultAbility(set);
 		set.item = this.getDefaultItem(species.name) ?? set.item;
 
-		if (toID(speciesName) === 'Cathy') {
-			set.name = "Cathy";
-			set.species = 'Trevenant';
-			set.level = undefined;
-			set.gender = 'F';
-			set.item = 'Starf Berry';
-			set.ability = 'Harvest';
-			set.moves = ['Substitute', 'Horn Leech', 'Earthquake', 'Phantom Force'];
-			set.evs = { hp: 36, atk: 252, def: 0, spa: 0, spd: 0, spe: 220 };
-			set.ivs = undefined;
-			set.nature = 'Jolly';
+		if (toID(speciesName) === 'satanice') {
+			set.name = "Ice";
+			set.species = 'Regice';
+			set.level = 100;
+			set.gender = undefined;
+			set.item = 'Leftovers';
+			set.ability = 'Ice Body';
+			set.moves = ['Ice Beam', 'Substitute', 'Toxic', 'Snowscape'];
+			set.evs = { hp: 204, atk: 0, def: 148, spa: 12, spd: 56, spe: 88 };
+			set.ivs = { hp: 31, atk: 0, def: 31, spa: 31, spd: 31, spe: 31 };
+			set.nature = 'Bold';
 		}
 	}
 	deleteSet(index: number) {
