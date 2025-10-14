@@ -46,7 +46,7 @@ class TeamEditorState extends PSModel {
 	searchIndex = 0;
 	/**
 	 * Remembers the search index when searching moves to assign to the intended moveslot.
-	 * Non-null when `this.search.typedSearch?.searchType === 'move' && this.search.query`
+	 * Non-null when `this.innerFocus?.type === 'move' && this.search.query`
 	 */
 	searchIndexTmp: number | null = null;
 
@@ -126,7 +126,13 @@ class TeamEditorState extends PSModel {
 
 		if (type === 'item') (this.search.prependResults ||= []).push(['item', '' as ID]);
 		this.search.find(value || '');
-		this.searchIndex = this.search.results?.[0]?.[0] === 'header' ? 1 : 0;
+		if(type === 'move' && this.searchIndexTmp !== null) {
+			this.searchIndex = this.searchIndexTmp;
+			this.searchIndexTmp = null;
+		}
+		else {
+			this.searchIndex = this.search.results?.[0]?.[0] === 'header' ? 1 : 0;
+		}
 	}
 	updateSearchMoves(set: Dex.PokemonSet) {
 		this.search.prependResults = this.getSearchMoves(set);
@@ -147,9 +153,19 @@ class TeamEditorState extends PSModel {
 		return out;
 	}
 	setSearchValue(value: string) {
-		console.trace(`Set search value: ${value}`);
+		if(value) {
+			if(this.innerFocus?.type === 'move' && this.searchIndexTmp === null) {
+				this.searchIndexTmp = this.searchIndex;
+			}
+			this.searchIndex = this.search.results?.[0]?.[0] === 'header' ? 1 : 0;
+		}
+		else {
+			if(this.innerFocus?.type === 'move' && this.searchIndexTmp !== null) {
+				this.searchIndex = this.searchIndexTmp;
+				this.searchIndexTmp = null;
+			}
+		}
 		this.search.find(value);
-		this.searchIndex = this.search.results?.[0]?.[0] === 'header' ? 1 : 0;
 	}
 	selectSearchValue(): string | null {
 		let result = this.search.results?.[this.searchIndex];
@@ -159,7 +175,7 @@ class TeamEditorState extends PSModel {
 		}
 		if (!result) return null;
 		if (this.search.addFilter(result)) {
-			this.searchIndex = 0;
+			this.searchIndex = this.search.results?.[0]?.[0] === 'header' ? 1 : 0;
 			return null;
 		}
 		return this.getResultValue(result);
@@ -2038,15 +2054,15 @@ class TeamWizard extends preact.Component<{
 		this.forceUpdate();
 	};
 	handleClickFilters = (ev: Event) => {
-		const search = this.props.editor.search;
+		const { editor } = this.props;
 		let target = ev.target as HTMLElement | null;
 		while (target && target.className !== 'dexlist') {
 			if (target.tagName === 'BUTTON') {
 				const filter = target.getAttribute('data-filter');
 				if (filter) {
-					search.removeFilter(filter.split(':') as any);
+					editor.search.removeFilter(filter.split(':') as any);
 					const searchBox = this.base!.querySelector<HTMLInputElement>('input[name=value]');
-					search.find(searchBox?.value || '');
+					editor.setSearchValue(searchBox?.value || '');
 					if (!TeamEditor.probablyMobile()) searchBox?.select();
 					this.forceUpdate();
 					ev.preventDefault();
