@@ -182,6 +182,7 @@ class TeamEditorState extends PSModel {
 		return this.getResultValue(result);
 	}
 	changeSpecies(set: Dex.PokemonSet, speciesName: string) {
+		console.log(`changeSpecies: ${speciesName}`);
 		const species = this.gtt.dex.species.get(speciesName);
 		if (set.item === this.getDefaultItem(set.species)) set.item = undefined;
 		if (set.name === set.species.split('-')[0]) delete set.name;
