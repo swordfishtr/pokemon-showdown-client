@@ -181,8 +181,7 @@ class TeamEditorState extends PSModel {
 		}
 		return this.getResultValue(result);
 	}
-	changeSpecies(set: Dex.PokemonSet, speciesName: string) {
-		console.log(`changeSpecies: ${speciesName}`);
+	changeSpecies(set: Dex.PokemonSet, speciesName: string, searchBoxValue?: string) {
 		const species = this.gtt.dex.species.get(speciesName);
 		if (set.item === this.getDefaultItem(set.species)) set.item = undefined;
 		if (set.name === set.species.split('-')[0]) delete set.name;
@@ -190,7 +189,7 @@ class TeamEditorState extends PSModel {
 		set.ability = this.getDefaultAbility(set);
 		set.item = this.getDefaultItem(species.name) ?? set.item;
 
-		if (toID(speciesName) === 'satanice') {
+		if (toID(searchBoxValue) === 'satanice') {
 			set.name = "Ice";
 			set.species = 'Regice';
 			set.level = 100;
@@ -1922,6 +1921,7 @@ class TeamWizard extends preact.Component<{
 	}
 	selectResult = (type: string | null, name: string, slot?: string, reverse?: boolean) => {
 		const { editor } = this.props;
+		const searchBoxValue = this.base!.querySelector<HTMLInputElement>('input[name=value]')?.value;
 		this.clearSearchBox();
 		if (type === null) {
 			this.resetScroll();
@@ -1935,7 +1935,7 @@ class TeamWizard extends preact.Component<{
 			const set = (editor.sets[setIndex] ||= { species: '', moves: [] });
 			switch (type) {
 			case 'pokemon':
-				editor.changeSpecies(set, name);
+				editor.changeSpecies(set, name, searchBoxValue);
 				this.changeFocus({
 					setIndex,
 					type: reverse ? 'details' : 'ability',
