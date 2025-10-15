@@ -1984,8 +1984,14 @@ class TeamWizard extends preact.Component<{
 
 				// clicked a learnset move
 				else {
-					set.moves[editor.searchIndexTmp ?? editor.searchIndex] = name;
-					editor.searchIndex++;
+					if(editor.searchIndexTmp) {
+						set.moves[editor.searchIndexTmp] = name;
+						editor.searchIndexTmp++;
+					}
+					else {
+						set.moves[editor.searchIndex] = name;
+						editor.searchIndex++;
+					}
 
 					if (set.moves.length === 4 && set.moves.every(Boolean)) {
 						this.changeFocus({
