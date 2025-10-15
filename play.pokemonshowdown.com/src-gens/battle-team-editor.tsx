@@ -94,7 +94,8 @@ class TeamEditorState extends PSModel {
 		this.search.prependResults = null;
 		let searchIndex = 0;
 		if (type === 'move') {
-			searchIndex = set.moves.findIndex((x) => x) + 1;
+			searchIndex = set.moves.findIndex((x) => !x);
+			if(searchIndex === -1) searchIndex = set.moves.length;
 			this.search.prependResults = this.getSearchMoves(set);
 			if (value && this.search.prependResults.some(row => row[1].split('_')[2] === toID(value))) {
 				value = '';
