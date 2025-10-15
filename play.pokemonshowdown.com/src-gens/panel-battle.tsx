@@ -184,7 +184,7 @@ export class BattleRoom extends ChatRoom {
 							PS.alert(response);
 							return;
 						}
-						PS.mainmenu.subscriptions.splice(PS.mainmenu.subscriptions.findIndex((s) => s === subscription), 1);
+						subscription.unsubscribe();
 						this.loadReplay(response, true);
 					});
 					PS.mainmenu.send(`/accessreplay ${url}`);

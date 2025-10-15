@@ -262,7 +262,19 @@ class PSPrefs extends PSStreamModel<string | null> {
 			delete newPrefs['dark'];
 		}
 
-		// Coming from old client.
+		// Migrating from old client.
+		if(('user' in newPrefs) && ('pass' in newPrefs)) {
+			const { user, pass } = newPrefs;
+			const subscription = PS.user.subscribe((args) => {
+				// Listening for receiveLine in mainmenu:
+				// 'challstr' or 'updateuser'
+				if(args || PS.user.initializing) return;
+				subscription.unsubscribe();
+				if(!PS.user.named) {
+					PS.user.changeNameWithPassword(user, pass);
+				}
+			});
+		}
 		delete newPrefs['user'];
 		delete newPrefs['pass'];
 	}
