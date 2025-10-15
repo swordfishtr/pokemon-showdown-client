@@ -2123,7 +2123,6 @@ class TeamWizard extends preact.Component<{
 		case 13: // enter
 		case 9: // tab
 			const value = editor.selectSearchValue();
-			if (editor.innerFocus?.type !== 'move') searchBox.value = value || '';
 			if (value !== null) {
 				if (ev.keyCode === 9 && editor.innerFocus?.type === 'move') {
 					this.changeFocus({
