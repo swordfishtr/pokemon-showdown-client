@@ -94,9 +94,8 @@ class TeamEditorState extends PSModel {
 		this.search.prependResults = null;
 		let searchIndex = 0;
 		if (type === 'move') {
-			const { searchMoves, lastMoveSlot } = this.getSearchMoves(set);
-			searchIndex = lastMoveSlot;
-			this.search.prependResults = searchMoves;
+			searchIndex = set.moves.findIndex((x) => x) + 1;
+			this.search.prependResults = this.getSearchMoves(set);
 			if (value && this.search.prependResults.some(row => row[1].split('_')[2] === toID(value))) {
 				value = '';
 			}
@@ -136,8 +135,7 @@ class TeamEditorState extends PSModel {
 		) : 0;
 	}
 	updateSearchMoves(set: Dex.PokemonSet) {
-		const { searchMoves } = this.getSearchMoves(set);
-		this.search.prependResults = searchMoves;
+		this.search.prependResults = this.getSearchMoves(set);
 		this.search.results = null;
 		if (this.search.query) {
 			this.setSearchValue('');
@@ -152,7 +150,7 @@ class TeamEditorState extends PSModel {
 		for (let i = 0; i < amount; i++) {
 			searchMoves.push(['move', `_${i + 1}_${toID(set.moves[i])}` as ID]);
 		}
-		return { searchMoves, lastMoveSlot };
+		return searchMoves;
 	}
 	setSearchValue(value: string) {
 		if(value) {
