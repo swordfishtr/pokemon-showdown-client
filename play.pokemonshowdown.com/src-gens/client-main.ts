@@ -323,7 +323,7 @@ class PSPrefs extends PSStreamModel<string | null> {
 				PS.addRoom({ id: toID(title) as string as RoomID, title, connected: true, autofocus: false });
 			};
 			const cmd = `/autojoin ${rooms}`;
-			if (PS.connection?.queue.includes(cmd)) {
+			if (PS.connection?.queue.includes(`|${cmd}`)) {
 				// don't jam up the queue with autojoin requests
 				// sending autojoin again after a prior autojoin successfully resolves likely returns an error from the server
 				return;
