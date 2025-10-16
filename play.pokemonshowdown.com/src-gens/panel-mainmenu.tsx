@@ -131,7 +131,7 @@ export class MainMenuRoom extends PSRoom {
 			// Players get confused when they're logged in but see `0 users`, especially in an ongoing battle.
 			// This asks the server to confirm or correct that.
 			const [, fullName, namedCode, avatar] = args;
-			if(fullName !== PS.user.userid) {
+			if(toID(fullName) !== PS.user.userid) {
 				for(const roomid in PS.rooms) {
 					const room = PS.rooms[roomid];
 					if(room instanceof ChatRoom) {
