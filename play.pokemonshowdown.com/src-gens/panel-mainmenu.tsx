@@ -126,11 +126,23 @@ export class MainMenuRoom extends PSRoom {
 			});
 			return;
 		} case 'updateuser': {
+			// Generations
+			// In some cases, the server will fail to communicate that we're part of a chatroom upon joining it.
+			// Players get confused when they're logged in but see `0 users`, especially in an ongoing battle.
+			// This asks the server to confirm or correct that.
 			const [, fullName, namedCode, avatar] = args;
+			if(fullName !== PS.user.userid) {
+				for(const roomid in PS.rooms) {
+					const room = PS.rooms[roomid];
+					if(room instanceof ChatRoom) {
+						PS.send(`/cmd roomidentity ${room.id}`);
+					}
+				}
+			}
 			const named = namedCode === '1';
 			if (named) PS.user.initializing = false;
 			PS.user.setName(fullName, named, avatar);
-			break;
+			return;
 		} case 'updatechallenges': {
 			const [, challengesBuf] = args;
 			this.receiveChallenges(challengesBuf);

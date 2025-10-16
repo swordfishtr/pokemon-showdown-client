@@ -144,17 +144,6 @@ export class ChatRoom extends PSRoom {
 		case ':':
 			this.timeOffset = Math.trunc(Date.now() / 1000) - (parseInt(args[1], 10) || 0);
 			break;
-
-		// Generations
-		// In some cases, the server will fail to communicate that we're part of a chatroom upon joining it.
-		// Players get confused when they're logged in but see `0 users`, especially in an ongoing battle.
-		// This asks the server to confirm or correct that.
-		case 'updateuser':
-			const id = toID(args[1]);
-			if(id !== PS.user.userid) {
-				PS.send(`/cmd roomidentity ${this.id}`);
-			}
-			return;
 		}
 		super.receiveLine(args);
 	}
