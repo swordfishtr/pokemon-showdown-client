@@ -1511,7 +1511,6 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 				for (let moveid in learnset) {
 					if (moves.includes(moveid)) continue;
 					let learnsetEntry = learnset[moveid];
-					const move = dex.moves.get(moveid);
 					if (regionBornLegality && !learnsetEntry.includes(minGenCode[dex.gen])) {
 						continue;
 					}
@@ -1521,13 +1520,14 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 					) {
 						continue;
 					}
+					const move = dex.moves.get(moveid);
 					if (
 						!learnsetEntry.includes(gen) &&
 						(!isTradebacks ? true : !(move.gen <= dex.gen && learnsetEntry.includes(`${dex.gen + 1}`)))
 					) {
 						continue;
 					}
-					if (this.gtt.format.natdex && move.isNonstandard === "Past") {
+					if (!this.gtt.format.natdex && move.isNonstandard === "Past") {
 						continue;
 					}
 					moves.push(moveid);
