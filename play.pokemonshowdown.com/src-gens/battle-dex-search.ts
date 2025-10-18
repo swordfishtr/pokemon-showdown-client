@@ -145,7 +145,7 @@ export declare const GensTeambuilderTable: {
 	mods: { [mod: ID]: GTTMod },
 	formats: { [format: ID]: GTTFormat },
 	learnsets: any, // TODO
-	build: string,
+	build: string, // Date-compatible
 };
 
 /**
