@@ -165,6 +165,7 @@ export class BattleTooltips {
 	static isPressed = false;
 
 	static hideTooltip() {
+		console.trace('static hideTooltip');
 		BattleTooltips.cancelLongTap();
 		if (!BattleTooltips.elem) return;
 		BattleTooltips.elem.parentNode!.removeChild(BattleTooltips.elem);
