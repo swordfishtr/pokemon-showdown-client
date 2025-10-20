@@ -213,6 +213,7 @@ export class BattleTooltips {
 
 		$elem.on('touchstart', '.has-tooltip', e => {
 			e.preventDefault();
+			e.stopPropagation();
 			this.holdLockTooltipEvent(e);
 			if (!BattleTooltips.parentElem) {
 				// should never happen, but in case there's a bug in the tooltip handler

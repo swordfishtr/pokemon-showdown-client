@@ -618,6 +618,11 @@ export class PSView extends preact.Component {
 			PS.dragging = null;
 		});
 
+		window.addEventListener('touchstart', ev => {
+			console.log('Tapped out of tooltip!');
+			BattleTooltips.hideTooltip();
+		});
+
 		const colorSchemeQuery = window.matchMedia?.('(prefers-color-scheme: dark)');
 		if (colorSchemeQuery?.media !== 'not all') {
 			colorSchemeQuery.addEventListener('change', cs => {
