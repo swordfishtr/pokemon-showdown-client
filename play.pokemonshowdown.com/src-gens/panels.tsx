@@ -621,6 +621,9 @@ export class PSView extends preact.Component {
 		window.addEventListener('mousedown', ev => {
 			BattleTooltips.hideTooltip();
 		});
+		window.addEventListener('touchstart', ev => {
+			BattleTooltips.hideTooltip();
+		});
 
 		const colorSchemeQuery = window.matchMedia?.('(prefers-color-scheme: dark)');
 		if (colorSchemeQuery?.media !== 'not all') {
