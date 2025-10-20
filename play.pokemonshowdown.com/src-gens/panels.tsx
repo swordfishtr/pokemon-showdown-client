@@ -618,7 +618,7 @@ export class PSView extends preact.Component {
 			PS.dragging = null;
 		});
 
-		window.addEventListener('touchstart', ev => {
+		window.addEventListener('mousedown', ev => {
 			console.log('Tapped out of tooltip!');
 			BattleTooltips.hideTooltip();
 		});

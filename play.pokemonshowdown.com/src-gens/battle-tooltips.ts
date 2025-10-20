@@ -213,7 +213,6 @@ export class BattleTooltips {
 
 		$elem.on('touchstart', '.has-tooltip', e => {
 			e.preventDefault();
-			e.stopPropagation();
 			this.holdLockTooltipEvent(e);
 			if (!BattleTooltips.parentElem) {
 				// should never happen, but in case there's a bug in the tooltip handler
@@ -245,6 +244,7 @@ export class BattleTooltips {
 	 * (Namely, a long-tap or long-click)
 	 */
 	holdLockTooltipEvent = (e: JQuery.TriggeredEvent) => {
+		e.stopPropagation();
 		if (BattleTooltips.isLocked) BattleTooltips.hideTooltip();
 		const target = e.currentTarget as HTMLElement;
 		this.showTooltip(target);
