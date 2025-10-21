@@ -923,6 +923,7 @@ class TeamTextbox extends preact.Component<{
 		return this.heightTester.scrollHeight;
 	}
 	input = () => {
+		this.maybeReplaceLine();
 		this.updateText();
 		this.save();
 	};
@@ -999,9 +1000,7 @@ class TeamTextbox extends preact.Component<{
 			if (ev.keyCode === 13 && ev.shiftKey) return;
 			if (ev.altKey || ev.metaKey) return;
 			if (!this.innerFocus) {
-				if (this.maybeReplaceLine()) {
-					// do nothing else
-				} else if (
+				if (
 					this.textbox.selectionStart === this.textbox.value.length &&
 					(this.textbox.value.endsWith('\n\n') || !this.textbox.value)
 				) {
@@ -1607,7 +1606,7 @@ class TeamTextbox extends preact.Component<{
 				<textarea
 					class="textbox teamtextbox" style={`padding-left:${editor.narrow ? '50px' : '100px'}`}
 					onInput={this.input} onContextMenu={this.contextMenu} onKeyUp={this.keyUp} onKeyDown={this.keyDown}
-					onClick={this.keyUp} onChange={this.maybeReplaceLine}
+					onClick={this.keyUp}
 					placeholder=" Paste exported teams, pokepaste URLs, or JSON here" readOnly={editor.readonly}
 				/>
 				<textarea
