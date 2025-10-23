@@ -1,11 +1,11 @@
-import { PS } from "./client-main";
+import { PS } from './client-main';
+import { enableDragDropTouch } from '../js-gens/lib/drag-drop-touch.esm'
+
+enableDragDropTouch(undefined, undefined, {
+	isPressHoldMode: true,
+});
 
 PS.libsLoaded.loaded();
-
-if(window.DragDropTouch) {
-	console.log('Polyfill DragDropTouch');
-	window.DragDropTouch.enable();
-}
 
 if(PS.prefs.showdex) {
 	const script = document.createElement('script');
