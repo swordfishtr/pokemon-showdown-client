@@ -3,9 +3,8 @@ import { PS } from "./client-main";
 PS.libsLoaded.loaded();
 
 if(window.DragDropTouch) {
-	window.DragDropTouch.enable(undefined, undefined, {
-		isPressHoldMode: true,
-	});
+	console.log('Polyfill DragDropTouch');
+	window.DragDropTouch.enable();
 }
 
 if(PS.prefs.showdex) {
