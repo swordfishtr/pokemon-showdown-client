@@ -170,7 +170,7 @@ export function TeamBox(props: {
 	}
 	return <a
 		href={`team-${team ? team.key : ''}`} class={className} draggable onDragStart={PSTeambuilder.dragStart}
-		onClick={props.onClick} onContextMenu={() => false}
+		onClick={props.onClick} onContextMenu={(e)=> e.preventDefault()}
 	>
 		{contents}
 	</a>;
