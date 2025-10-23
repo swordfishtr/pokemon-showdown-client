@@ -1,5 +1,5 @@
 import { PS } from './client-main';
-import { enableDragDropTouch } from '../js-gens/lib/drag-drop-touch.esm'
+import { enableDragDropTouch } from '../js-gens/lib/drag-drop-touch.esm.js';
 
 enableDragDropTouch(undefined, undefined, {
 	isPressHoldMode: true,
