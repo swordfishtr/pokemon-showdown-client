@@ -582,7 +582,7 @@ export class PSView extends preact.Component {
 		});
 
 		window.addEventListener('drop', ev => {
-			console.log(`drop: ${ev.dataTransfer?.dropEffect as any}`);
+			console.log(`drop: ${ev.dataTransfer?.dropEffect}`);
 			const target = ev.target as HTMLElement;
 			if (PS.dragging?.type === 'room') {
 				if ((target as HTMLInputElement).type?.startsWith("text")) {

@@ -353,6 +353,11 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		target.value = '';
 		this.props.room.updateSearch('');
 	};
+	handleClickTeam = (ev: MouseEvent) => {
+		// right click
+		if(ev.button === 2) return false;
+		this.clearSearch();
+	}
 	renderFolder(value: string) {
 		const { room } = this.props;
 		const cur = room.curFolder === value;
@@ -596,7 +601,7 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 					<li><em>you have no teams matching <code>{room.searchTerms.join(", ")}</code></em></li>
 				) : filteredTeams.map(team => team ? (
 					<li key={team.key} onDragEnter={this.dragEnterTeam} data-teamkey={team.key}>
-						<TeamBox team={team} onClick={this.clearSearch} /> {}
+						<TeamBox team={team} onClick={this.handleClickTeam} /> {}
 						<button data-cmd={`/copyteam ${team.key}`} class="option">
 							<i class="fa fa-clone" aria-hidden></i>
 						</button> {}

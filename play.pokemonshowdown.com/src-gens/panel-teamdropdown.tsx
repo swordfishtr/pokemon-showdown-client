@@ -95,7 +95,6 @@ export class PSTeambuilder {
 		return teams;
 	}
 
-	static draggedTeam: Team | null = null;
 	static dragStart(ev: DragEvent) {
 		const href = (ev.currentTarget as HTMLAnchorElement)?.getAttribute('href');
 		const team = href ? PS.teams.byKey[href.slice(5)] : null;
@@ -132,7 +131,7 @@ export function TeamBox(props: {
 	team: Team | null,
 	noLink?: boolean,
 	button?: boolean,
-	onClick?: () => void,
+	onClick?: (ev: MouseEvent) => false | void,
 }) {
 	const team = props.team;
 	let contents;
