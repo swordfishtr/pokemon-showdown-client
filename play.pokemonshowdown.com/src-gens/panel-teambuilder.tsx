@@ -347,16 +347,15 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		this.props.room.updateSearch(target.value);
 		this.forceUpdate();
 	};
-	clearSearch = () => {
+	clearSearch() {
 		const target = this.base!.querySelector<HTMLInputElement>('input[type="search"]');
 		if (!target) return;
 		target.value = '';
 		this.props.room.updateSearch('');
 	};
 	handleClickTeam = (ev: MouseEvent) => {
-		// right click
-		if(ev.button === 2) return false;
-		this.clearSearch();
+		// left click
+		if(ev.button === 0) this.clearSearch();
 	}
 	renderFolder(value: string) {
 		const { room } = this.props;

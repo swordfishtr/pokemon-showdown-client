@@ -131,7 +131,7 @@ export function TeamBox(props: {
 	team: Team | null,
 	noLink?: boolean,
 	button?: boolean,
-	onClick?: (ev: MouseEvent) => false | void,
+	onClick?: (ev: MouseEvent) => void,
 }) {
 	const team = props.team;
 	let contents;
@@ -169,8 +169,8 @@ export function TeamBox(props: {
 		</div>;
 	}
 	return <a
-		href={`team-${team ? team.key : ''}`} class={className} draggable
-		onDragStart={PSTeambuilder.dragStart} onClick={props.onClick}
+		href={`team-${team ? team.key : ''}`} class={className} draggable onDragStart={PSTeambuilder.dragStart}
+		onClick={props.onClick} onContextMenu={() => false}
 	>
 		{contents}
 	</a>;
