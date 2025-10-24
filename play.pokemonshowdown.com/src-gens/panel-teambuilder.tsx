@@ -199,8 +199,8 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		if (!dataTransfer) return null;
 
 		PS.dragging = { type: '?' };
-		console.log(`dragging: ${dataTransfer.types as any} | ${[...dataTransfer.files]?.map(file => file.name) as any}`);
-		if (!dataTransfer.types.includes?.('Files')) return null;
+		console.log(`dragging: ${dataTransfer.types} | ${[...dataTransfer.files].map(file => file.name)}`);
+		if (!dataTransfer.types.includes('Files')) return null;
 		// MDN says files will be empty except on a Drop event, but the spec says no such thing
 		// in practice, Chrome gives this info but Firefox doesn't
 		if (dataTransfer.files[0] && !dataTransfer.files[0].name.endsWith('.txt')) return null;
@@ -266,7 +266,7 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		}
 		name = name.slice(0, -4);
 
-		return file.text?.()?.then(result => {
+		return file.text().then(result => {
 			let sets;
 			try {
 				sets = Teams.import(result);
@@ -340,6 +340,7 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		this.forceUpdate();
 	};
 	static handleDrop(ev: DragEvent) {
+		console.log(ev);
 		return !!this.addDraggedTeam(ev, (PS.rooms['teambuilder'] as TeambuilderRoom)?.curFolder);
 	}
 	updateSearch = (ev: KeyboardEvent) => {

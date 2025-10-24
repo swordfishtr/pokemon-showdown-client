@@ -168,9 +168,10 @@ export function TeamBox(props: {
 			{contents}
 		</div>;
 	}
+	const preventContextMenu = (e: MouseEvent) => e.preventDefault();
 	return <a
 		href={`team-${team ? team.key : ''}`} class={className} draggable onDragStart={PSTeambuilder.dragStart}
-		onClick={props.onClick} onContextMenu={(e)=> e.preventDefault()}
+		onClick={props.onClick} onContextMenu={preventContextMenu}
 	>
 		{contents}
 	</a>;
