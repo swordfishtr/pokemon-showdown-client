@@ -12,7 +12,7 @@ import { Dex, PSUtils, toID, type ID } from "./battle-dex";
 import { Teams } from "./battle-teams";
 import { BattleLog } from "./battle-log";
 import preact from "../js/lib/preact";
-import { DexSearch } from "./battle-dex-search";
+import { DexSearch, GensTeambuilderTable } from "./battle-dex-search";
 
 class PSTextarea extends preact.Component<{ initialValue?: string, name?: string }> {
 	updateSize = () => {
@@ -56,7 +56,7 @@ class TeambuilderRoom extends PSRoom {
 	 * - `"gen[NUMBER][ID]"` - format folder
 	 * - `"gen[NUMBER]"` - uncategorized gen folder
 	 * - `"[ID]/"` - folder
-	 * - `"/"` - not in folder
+	 * - `"/"` - not in any folder
 	 */
 	curFolder = '';
 	curFolderKeep = '';
@@ -191,70 +191,6 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		button.value = '';
 		this.forceUpdate();
 	};
-	/** undefined: not dragging, null: dragging a new team */
-	getDraggedTeam(ev: DragEvent): Team | number | null {
-		if (PS.dragging?.type === 'team') return PS.dragging.team;
-
-		const dataTransfer = ev.dataTransfer;
-		if (!dataTransfer) return null;
-
-		PS.dragging = { type: '?' };
-		console.log(`dragging: ${dataTransfer.types} | ${[...dataTransfer.files].map(file => file.name)}`);
-		if (!dataTransfer.types.includes('Files')) return null;
-		// MDN says files will be empty except on a Drop event, but the spec says no such thing
-		// in practice, Chrome gives this info but Firefox doesn't
-		if (dataTransfer.files[0] && !dataTransfer.files[0].name.endsWith('.txt')) return null;
-
-		// We're dragging a file! It might be a team!
-		PS.dragging = {
-			type: 'team',
-			team: 0,
-			folder: null,
-		};
-		return PS.dragging.team;
-	}
-	dragEnterTeam = (ev: DragEvent) => {
-		const draggedTeam = this.getDraggedTeam(ev);
-		if (draggedTeam === null) return;
-
-		const value = (ev.currentTarget as HTMLElement)?.getAttribute('data-teamkey');
-		const team = value ? PS.teams.byKey[value] : null;
-		if (!team || team === draggedTeam) return;
-
-		const iOver = PS.teams.list.indexOf(team);
-		if (typeof draggedTeam === 'number') {
-			if (iOver >= draggedTeam) (PS.dragging as any).team = iOver + 1;
-			(PS.dragging as any).team = iOver;
-			this.forceUpdate();
-			return;
-		}
-
-		const iDragged = PS.teams.list.indexOf(draggedTeam);
-		if (iDragged < 0 || iOver < 0) return; // shouldn't happen
-
-		PS.teams.list.splice(iDragged, 1);
-		// by coincidence, splicing into iOver works in both directions
-		// before: Dragged goes before Over, splice at i
-		// after: Dragged goes after Over, splice at i - 1 + 1
-		PS.teams.list.splice(iOver, 0, draggedTeam);
-		this.forceUpdate();
-	};
-	dragEnterFolder = (ev: DragEvent) => {
-		const value = (ev.currentTarget as HTMLElement)?.getAttribute('data-value') || null;
-		if (value === null || PS.dragging?.type !== 'team') return;
-		if (value === '++' || value === '') return;
-
-		PS.dragging.folder = value;
-		this.forceUpdate();
-	};
-	dragLeaveFolder = (ev: DragEvent) => {
-		const value = (ev.currentTarget as HTMLElement)?.getAttribute('data-value') || null;
-		if (value === null || PS.dragging?.type !== 'team') return;
-		if (value === '++' || value === '') return;
-
-		if (PS.dragging.folder === value) PS.dragging.folder = null;
-		this.forceUpdate();
-	};
 	static extractDraggedTeam(ev: DragEvent): Promise<Team | null> | null {
 		const file = ev.dataTransfer?.files?.[0];
 		if (!file) return null;
@@ -297,52 +233,106 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 			} satisfies Team;
 		});
 	}
-	static addDraggedTeam(ev: DragEvent, folder?: string) {
-		let index: number = (PS.dragging as any)?.team;
-		if (typeof index !== 'number') index = 0;
-		return this.extractDraggedTeam(ev)?.then(team => {
-			if (!team) {
-				return;
-			}
-			if (folder?.endsWith('/')) {
-				team.folder = folder.slice(0, -1);
-			} else if (folder) {
-				team.format = folder as ID;
-			}
-			PS.teams.push(team);
-			PS.teams.list.pop();
-			PS.teams.list.splice(index, 0, team);
-			PS.teams.save();
-			PS.join('teambuilder' as RoomID);
-			PS.update();
-		});
-	}
-	dropFolder = (ev: DragEvent) => {
-		const value = (ev.currentTarget as HTMLElement)?.getAttribute('data-value') || null;
-		if (value === null || PS.dragging?.type !== 'team') return;
-		if (value === '++' || value === '') return;
 
-		PS.dragging.folder = null;
-		let team = PS.dragging.team;
 
-		if (typeof team === 'number') {
-			TeambuilderPanel.addDraggedTeam(ev, value);
-			return;
-		}
 
-		if (value.endsWith('/')) {
-			team.folder = value.slice(0, -1);
-		} else {
-			team.format = value as ID;
-		}
-		PS.teams.save();
-		ev.stopImmediatePropagation();
+	// NOTE: We intentionally ignore possible team files dragged in from outside of PS.
+	// While Chromium allows us to deduce this information, Firefox doesn't, so for the sake
+	// of reducing complexity, we don't act on them.
+	handleDragEnter = (ev: DragEvent) => {
+		if(PS.dragging?.type !== 'team') return;
+		const enteringKey = (ev.currentTarget as HTMLElement)?.getAttribute('data-teamkey');
+		if(enteringKey === null) return;
+		const team = PS.teams.byKey[enteringKey];
+		if(!team) return;
+		const index = PS.teams.list.indexOf(team);
+		if(index < 0) return;
+		console.log('dragenter\n', enteringKey, index, team);
+		PS.dragging.index = index;
 		this.forceUpdate();
 	};
-	static handleDrop(ev: DragEvent) {
-		console.log(ev);
-		return !!this.addDraggedTeam(ev, (PS.rooms['teambuilder'] as TeambuilderRoom)?.curFolder);
+	handleDragLeave = (ev: DragEvent) => {
+		if(PS.dragging?.type !== 'team') return;
+		const leavingKey = (ev.currentTarget as HTMLElement)?.getAttribute('data-teamkey');
+		if(leavingKey === null) return;
+		const team = PS.teams.byKey[leavingKey];
+		if(!team) return;
+		const index = PS.teams.list.indexOf(team);
+		if(index < 0) return;
+		console.log('dragleave\n', leavingKey, index, team);
+		// `dragenter` fires before `dragleave`.
+		// if `dragenter` hasn't changed `PS.dragging.index` to another team,
+		// that means we're not dragging over a team anymore.
+		if(index === PS.dragging.index) {
+			PS.dragging.index = null;
+		}
+		this.forceUpdate();
+	};
+	// Dropped on a folder in the folder list
+	static handleDropFolder = (ev: DragEvent) => {
+		const value = (ev.currentTarget as HTMLElement)?.getAttribute('data-value')!;
+		const isValidFolder = ![
+			null, // a header or something else
+			'++', // (add folder) button
+		].includes(value);
+		const folder = isValidFolder ? value : null;
+		this.tryInsertDrop(ev, folder);
 	}
+	// Dropped elsewhere, called from panels.tsx
+	static handleDrop = (ev: DragEvent): Promise<boolean> => {
+		return this.tryInsertDrop(ev, null);
+	}
+	static tryInsertDrop = async (ev: DragEvent, folder: string | null) => {
+		if(!PS.dragging) return false;
+		console.trace('tryInsertDrop\n', PS.dragging, ev);
+
+		let team: Team | null = null;
+		let index: number | null = 0;
+
+		if(PS.dragging.type === '?') {
+			// Dragging something in from outside of PS.
+			team = await this.extractDraggedTeam(ev);
+		}
+		else if(PS.dragging.type === 'team') {
+			// Dragging a teambuilder team HTMLAnchorElement.
+			({ team, index } = PS.dragging);
+		}
+
+		if(!team) return false;
+
+		// If folder is unspecified, and if applicable, use current folder.
+		folder ??= (PS.rooms['teambuilder'] as TeambuilderRoom)?.curFolder ?? null;
+
+		if(folder !== null) {
+			if(!folder || folder.endsWith('/')) {
+				// Dropped on a personal folder or the `(all)` folder.
+				team.folder = folder.slice(0, -1);
+			}
+			else if(folder in GensTeambuilderTable.formats){
+				// Dropped on a format folder.
+				team.format = toID(folder);
+			}
+		}
+
+		const oldIndex = PS.teams.list.indexOf(team);
+		if(oldIndex < 0) {
+			PS.teams.unshift(team);
+		}
+		else {
+			PS.teams.list.splice(oldIndex, 1);
+			PS.teams.list.splice(index ?? 0, 0, team);
+		}
+		PS.teams.save();
+
+		PS.join('teambuilder' as RoomID);
+		PS.update();
+
+		ev.stopImmediatePropagation();
+		return true;
+	}
+
+
+
 	updateSearch = (ev: KeyboardEvent) => {
 		const target = ev.currentTarget as HTMLInputElement;
 		this.props.room.updateSearch(target.value);
@@ -390,23 +380,19 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		// modern browsers don't seem to have these bugs, so we're going to make
 		// them buttons for now
 		const active = (PS.dragging as any)?.folder === value ? ' active' : '';
-		if (cur) {
-			return <div
-				class="folder cur" data-value={value}
-				onDragEnter={this.dragEnterFolder} onDragLeave={this.dragLeaveFolder} onDrop={this.dropFolder}
-			>
+		
+		return cur ? (
+			<div class="folder cur" data-value={value} onDrop={TeambuilderPanel.handleDropFolder}>
 				<div class="folderhack3">
 					<div class="folderhack1"></div><div class="folderhack2"></div>
 					<button class={`selectFolder${active}`} data-value={value}>{children}</button>
 				</div>
-			</div>;
-		}
-		return <div
-			class="folder" data-value={value}
-			onDragEnter={this.dragEnterFolder} onDragLeave={this.dragLeaveFolder} onDrop={this.dropFolder}
-		>
-			<button class={`selectFolder${active}`} data-value={value}>{children}</button>
-		</div>;
+			</div>
+		) : (
+			<div class="folder" data-value={value} onDrop={TeambuilderPanel.handleDropFolder}>
+				<button class={`selectFolder${active}`} data-value={value}>{children}</button>
+			</div>
+		);
 	}
 	saveExport = (e: MouseEvent) => {
 		alert("Unimplemented");
@@ -523,11 +509,13 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 	renderTeamPane() {
 		const room = this.props.room;
 
-		let teams: (Team | null)[] = PS.teams.list.slice();
+		const teams: (Team | null)[] = PS.teams.list.slice();
 		let isDragging = false;
-		if (PS.dragging?.type === 'team' && typeof PS.dragging.team === 'number') {
-			teams.splice(PS.dragging.team, 0, null);
+		if (PS.dragging?.type === 'team') {
 			isDragging = true;
+			if(PS.dragging.index !== null) {
+				teams.splice(PS.dragging.index, 0, null);
+			}
 		} else if (PS.teams.deletedTeams.length) {
 			const undeleteIndex = PS.teams.deletedTeams[PS.teams.deletedTeams.length - 1][1];
 			teams.splice(undeleteIndex, 0, null);
@@ -600,7 +588,7 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 				) : !filteredTeams.length ? (
 					<li><em>you have no teams matching <code>{room.searchTerms.join(", ")}</code></em></li>
 				) : filteredTeams.map(team => team ? (
-					<li key={team.key} onDragEnter={this.dragEnterTeam} data-teamkey={team.key}>
+					<li key={team.key} onDragEnter={this.handleDragEnter} onDragLeave={this.handleDragLeave} data-teamkey={team.key}>
 						<TeamBox team={team} onClick={this.handleClickTeam} /> {}
 						<button data-cmd={`/copyteam ${team.key}`} class="option">
 							<i class="fa fa-clone" aria-hidden></i>

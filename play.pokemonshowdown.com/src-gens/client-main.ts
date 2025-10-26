@@ -359,15 +359,6 @@ export interface Team {
 	key: string;
 	isBox: boolean;
 }
-interface UploadedTeam {
-	name: string;
-	teamid: number;
-	format: ID;
-	/** comma-separated list of species, for generating the icon cache */
-	team: string;
-	/** password, if private */
-	private?: string | null;
-}
 if (!window.BattleFormats) window.BattleFormats = {};
 
 /**
@@ -428,6 +419,12 @@ class PSTeams extends PSStreamModel<'team' | 'format'> {
 	unshift(team: Team) {
 		team.key = this.getKey(team.name);
 		this.list.unshift(team);
+		this.byKey[team.key] = team;
+	}
+	insert(team: Team, index: number) {
+		if(index < 0) throw new RangeError('Invalid team index.');
+		team.key = this.getKey(team.name);
+		this.list.splice(index, 0, team);
 		this.byKey[team.key] = team;
 	}
 	delete(team: Team) {
@@ -1631,7 +1628,7 @@ type PSRoomPanelSubclass<T extends PSRoom = PSRoom> = (new () => PSRoomPanel<T>)
 	noURL?: boolean,
 	icon?: preact.ComponentChildren,
 	title?: string,
-	handleDrop?: (ev: DragEvent) => boolean | void,
+	handleDrop?: (ev: DragEvent) => boolean | Promise<boolean>,
 };
 
 /**
@@ -1766,8 +1763,8 @@ export const PS = new class extends PSModel {
 	 * they are until they're dropped.
 	 */
 	dragging: { type: 'room', roomid: RoomID, foreground?: boolean } |
-		{ type: 'team', team: Team | number, folder: string | null } |
-		{ type: '?' } | // browser preventing us from knowing what's being dragged
+		{ type: 'team', team: Team, index: number | null } |
+		{ type: '?' } |
 		null = null;
 
 	/** Tracks whether or not to display the "Use arrow keys" hint */
