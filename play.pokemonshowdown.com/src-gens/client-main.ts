@@ -421,6 +421,12 @@ class PSTeams extends PSStreamModel<'team' | 'format'> {
 		this.list.unshift(team);
 		this.byKey[team.key] = team;
 	}
+	insert(team: Team, index: number) {
+		if(index < 0) throw new RangeError('Invalid team index.');
+		team.key = this.getKey(team.name);
+		this.list.splice(index, 0, team);
+		this.byKey[team.key] = team;
+	}
 	delete(team: Team) {
 		const teamIndex = this.list.indexOf(team);
 		if (teamIndex < 0) return false;
