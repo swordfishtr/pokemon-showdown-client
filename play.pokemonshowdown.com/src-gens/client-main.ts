@@ -359,15 +359,6 @@ export interface Team {
 	key: string;
 	isBox: boolean;
 }
-interface UploadedTeam {
-	name: string;
-	teamid: number;
-	format: ID;
-	/** comma-separated list of species, for generating the icon cache */
-	team: string;
-	/** password, if private */
-	private?: string | null;
-}
 if (!window.BattleFormats) window.BattleFormats = {};
 
 /**
@@ -1631,7 +1622,7 @@ type PSRoomPanelSubclass<T extends PSRoom = PSRoom> = (new () => PSRoomPanel<T>)
 	noURL?: boolean,
 	icon?: preact.ComponentChildren,
 	title?: string,
-	handleDrop?: (ev: DragEvent) => boolean | void,
+	handleDrop?: (ev: DragEvent) => boolean | Promise<boolean>,
 };
 
 /**
