@@ -4,7 +4,6 @@ setTimeout(() => {
 	if(window.DragDropTouch) {
 		console.log('Polyfill DragDropTouch');
 		window.DragDropTouch.enable(undefined, undefined, {
-			allowDragScroll: false,
 			isPressHoldMode: true,
 		});
 	}
