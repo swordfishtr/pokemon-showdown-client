@@ -236,10 +236,10 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 
 
 
-	// NOTE: We intentionally ignore possible team files dragged in from outside of PS.
-	// While Chromium allows us to deduce this information, Firefox doesn't, so for the sake
-	// of reducing complexity, we don't act on them.
 	handleDragEnter = (ev: DragEvent) => {
+		// NOTE: We intentionally ignore possible team files dragged in from outside of PS.
+		// While Chromium allows us to deduce this information, Firefox doesn't, so for the sake
+		// of reducing complexity, we don't act on them.
 		if(PS.dragging?.type !== 'team') return;
 		const enteringKey = (ev.currentTarget as HTMLElement)?.getAttribute('data-teamkey');
 		if(enteringKey === null) return;
@@ -251,26 +251,9 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		PS.dragging.index = index;
 		this.forceUpdate();
 	};
-	handleDragLeave = (ev: DragEvent) => {
-		if(PS.dragging?.type !== 'team') return;
-		const leavingKey = (ev.currentTarget as HTMLElement)?.getAttribute('data-teamkey');
-		if(leavingKey === null) return;
-		const team = PS.teams.byKey[leavingKey];
-		if(!team) return;
-		const index = PS.teams.list.indexOf(team);
-		if(index < 0) return;
-		console.log('dragleave\n', leavingKey, index, team);
-		// `dragenter` fires before `dragleave`.
-		// if `dragenter` hasn't changed `PS.dragging.index` to another team,
-		// that means we're not dragging over a team anymore.
-		if(index === PS.dragging.index) {
-			PS.dragging.index = null;
-		}
-		this.forceUpdate();
-	};
 	// Dropped on a folder in the folder list
 	static handleDropFolder = (ev: DragEvent) => {
-		const value = (ev.currentTarget as HTMLElement)?.getAttribute('data-value')!;
+		const value = (ev.currentTarget as HTMLElement)?.getAttribute('data-value');
 		const isValidFolder = ![
 			null, // a header or something else
 			'++', // (add folder) button
@@ -295,7 +278,11 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		}
 		else if(PS.dragging.type === 'team') {
 			// Dragging a teambuilder team HTMLAnchorElement.
-			({ team, index } = PS.dragging);
+			team = PS.dragging.team;
+			if((ev.currentTarget as HTMLElement)?.getAttribute('data-dragging')) {
+				// Dropped in the expected spot.
+				index = PS.dragging.index;
+			}
 		}
 
 		if(!team) return false;
@@ -588,7 +575,7 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 				) : !filteredTeams.length ? (
 					<li><em>you have no teams matching <code>{room.searchTerms.join(", ")}</code></em></li>
 				) : filteredTeams.map(team => team ? (
-					<li key={team.key} onDragEnter={this.handleDragEnter} onDragLeave={this.handleDragLeave} data-teamkey={team.key}>
+					<li key={team.key} onDragEnter={this.handleDragEnter} data-teamkey={team.key}>
 						<TeamBox team={team} onClick={this.handleClickTeam} /> {}
 						<button data-cmd={`/copyteam ${team.key}`} class="option">
 							<i class="fa fa-clone" aria-hidden></i>
@@ -598,11 +585,11 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 						</button>
 					</li>
 				) : isDragging ? (
-					<li key="dragging">
+					<li key="DRAGGING" data-dragging="1">
 						<div class="team"></div>
 					</li>
 				) : (
-					<li key="undelete">
+					<li key="UNDELETE">
 						<button data-cmd="/undeleteteam" class="option">
 							<i class="fa fa-undo" aria-hidden></i> Undo delete
 						</button>
