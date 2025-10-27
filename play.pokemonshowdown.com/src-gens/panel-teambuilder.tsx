@@ -279,6 +279,7 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		else if(PS.dragging.type === 'team') {
 			// Dragging a teambuilder team HTMLAnchorElement.
 			team = PS.dragging.team;
+			console.log(ev.currentTarget);
 			if((ev.currentTarget as HTMLElement)?.getAttribute('data-dragging')) {
 				// Dropped in the expected spot.
 				index = PS.dragging.index;
