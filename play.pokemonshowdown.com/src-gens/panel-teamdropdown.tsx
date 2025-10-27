@@ -96,10 +96,9 @@ export class PSTeambuilder {
 	}
 
 	static dragStart(ev: DragEvent) {
-		const key = (ev.currentTarget as HTMLAnchorElement)?.getAttribute('href')?.slice(5);
-		const team = key ? PS.teams.byKey[key] : null;
+		const href = (ev.currentTarget as HTMLAnchorElement)?.getAttribute('href');
+		const team = href ? PS.teams.byKey[href.slice(5)] : null;
 		if (!team) return;
-		const index = PS.teams.list.indexOf(team);
 
 		const dataTransfer = ev.dataTransfer;
 		if (dataTransfer) {
@@ -115,7 +114,16 @@ export class PSTeambuilder {
 			dataTransfer.setData("DownloadURL", downloadurl);
 		}
 
-		PS.dragging = { type: 'team', team, index };
+		PS.dragging = { type: 'team', team, folder: null };
+		// app.draggingRoom = this.id;
+		// app.draggingLoc = parseInt(e.currentTarget.dataset.value, 10);
+		// var elOffset = $(e.currentTarget).offset();
+		// app.draggingOffsetX = e.originalEvent.pageX - elOffset.left;
+		// app.draggingOffsetY = e.originalEvent.pageY - elOffset.top;
+		// this.finalOffset = null;
+		// setTimeout(function () {
+		// 	$(e.currentTarget).parent().addClass('dragging');
+		// }, 0);
 	}
 }
 
@@ -162,7 +170,7 @@ export function TeamBox(props: {
 	}
 	return <a
 		href={`team-${team ? team.key : ''}`} class={className} draggable onDragStart={PSTeambuilder.dragStart}
-		onClick={props.onClick} onContextMenu={(e) => e.preventDefault()}
+		onClick={props.onClick} onContextMenu={(e)=> e.preventDefault()}
 	>
 		{contents}
 	</a>;

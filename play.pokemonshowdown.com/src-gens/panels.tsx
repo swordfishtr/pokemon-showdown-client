@@ -576,16 +576,12 @@ export class PSView extends preact.Component {
 			}
 		});
 
-		window.addEventListener('dragenter', (ev) => {
-			PS.dragging ??= { type: '?' };
-		});
-
-		window.addEventListener('dragend', (ev) => {
+		window.addEventListener('dragend', ev => {
 			PS.dragging = null;
 			ev.preventDefault();
 		});
 
-		window.addEventListener('drop', async (ev) => {
+		window.addEventListener('drop', ev => {
 			console.log(`drop: ${ev.dataTransfer?.dropEffect}`);
 			const target = ev.target as HTMLElement;
 			if (PS.dragging?.type === 'room') {
@@ -610,7 +606,7 @@ export class PSView extends preact.Component {
 			ev.preventDefault();
 
 			for (const Panel of Object.values(PS.roomTypes)) {
-				if (await Panel!.handleDrop?.(ev)) {
+				if (Panel!.handleDrop?.(ev)) {
 					PS.dragging = null;
 					return;
 				}
