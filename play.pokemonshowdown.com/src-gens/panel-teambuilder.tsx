@@ -498,6 +498,7 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		if (PS.dragging?.type === 'team') {
 			isDragging = true;
 			if(PS.dragging.index !== null) {
+				teams.splice(PS.teams.list.indexOf(PS.dragging.team), 1);
 				teams.splice(PS.dragging.index, 0, null);
 			}
 		} else if (PS.teams.deletedTeams.length) {
