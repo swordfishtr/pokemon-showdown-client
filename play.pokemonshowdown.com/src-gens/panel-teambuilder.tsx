@@ -56,7 +56,7 @@ class TeambuilderRoom extends PSRoom {
 	 * - `"gen[NUMBER][ID]"` - format folder
 	 * - `"gen[NUMBER]"` - uncategorized gen folder
 	 * - `"[ID]/"` - folder
-	 * - `"/"` - not in folder
+	 * - `"/"` - not in any folder
 	 */
 	curFolder = '';
 	curFolderKeep = '';
@@ -239,22 +239,6 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		PS.teams.list.splice(iOver, 0, draggedTeam);
 		this.forceUpdate();
 	};
-	dragEnterFolder = (ev: DragEvent) => {
-		const value = (ev.currentTarget as HTMLElement)?.getAttribute('data-value') || null;
-		if (value === null || PS.dragging?.type !== 'team') return;
-		if (value === '++' || value === '') return;
-
-		PS.dragging.folder = value;
-		this.forceUpdate();
-	};
-	dragLeaveFolder = (ev: DragEvent) => {
-		const value = (ev.currentTarget as HTMLElement)?.getAttribute('data-value') || null;
-		if (value === null || PS.dragging?.type !== 'team') return;
-		if (value === '++' || value === '') return;
-
-		if (PS.dragging.folder === value) PS.dragging.folder = null;
-		this.forceUpdate();
-	};
 	static extractDraggedTeam(ev: DragEvent): Promise<Team | null> | null {
 		const file = ev.dataTransfer?.files?.[0];
 		if (!file) return null;
@@ -266,7 +250,7 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		}
 		name = name.slice(0, -4);
 
-		return file.text?.()?.then(result => {
+		return file.text().then(result => {
 			let sets;
 			try {
 				sets = Teams.import(result);
@@ -389,23 +373,18 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		// modern browsers don't seem to have these bugs, so we're going to make
 		// them buttons for now
 		const active = (PS.dragging as any)?.folder === value ? ' active' : '';
-		if (cur) {
-			return <div
-				class="folder cur" data-value={value}
-				onDragEnter={this.dragEnterFolder} onDragLeave={this.dragLeaveFolder} onDrop={this.dropFolder}
-			>
+		return cur ? (
+			<div class="folder cur" data-value={value} onDrop={this.dropFolder}>
 				<div class="folderhack3">
 					<div class="folderhack1"></div><div class="folderhack2"></div>
 					<button class={`selectFolder${active}`} data-value={value}>{children}</button>
 				</div>
-			</div>;
-		}
-		return <div
-			class="folder" data-value={value}
-			onDragEnter={this.dragEnterFolder} onDragLeave={this.dragLeaveFolder} onDrop={this.dropFolder}
-		>
-			<button class={`selectFolder${active}`} data-value={value}>{children}</button>
-		</div>;
+			</div>
+		) : (
+			<div class="folder" data-value={value} onDrop={this.dropFolder}>
+				<button class={`selectFolder${active}`} data-value={value}>{children}</button>
+			</div>
+		);
 	}
 	saveExport = (e: MouseEvent) => {
 		alert("Unimplemented");
