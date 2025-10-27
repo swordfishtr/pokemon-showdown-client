@@ -364,7 +364,7 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		// modern browsers don't seem to have these bugs, so we're going to make
 		// them buttons for now
 		const active = (PS.dragging as any)?.folder === value ? ' active' : '';
-		
+
 		return cur ? (
 			<div class="folder cur" data-value={value} onDrop={TeambuilderPanel.handleDropFolder}>
 				<div class="folderhack3">
