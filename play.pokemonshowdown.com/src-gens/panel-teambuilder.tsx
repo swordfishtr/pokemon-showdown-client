@@ -583,7 +583,7 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 						</button>
 					</li>
 				) : isDragging ? (
-					<li key="DRAGGING">
+					<li key="DRAGGING" class="dragging">
 						<div class="team"></div>
 					</li>
 				) : (
