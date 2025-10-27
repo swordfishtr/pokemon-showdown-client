@@ -266,7 +266,6 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		return this.tryInsertDrop(ev, null);
 	}
 	static tryInsertDrop = async (ev: DragEvent, folder: string | null) => {
-		console.log(0);
 		if(!PS.dragging) return false;
 		console.trace('tryInsertDrop\n', PS.dragging, ev);
 
@@ -282,7 +281,6 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 			({ team, index } = PS.dragging);
 		}
 
-		console.log(1);
 		if(!team) return false;
 
 		// If folder is unspecified, and if applicable, use current folder.
@@ -309,9 +307,9 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		}
 		PS.teams.save();
 
+		PS.dragging = null;
 		PS.join('teambuilder' as RoomID);
 		PS.update();
-		console.log(2);
 
 		ev.stopImmediatePropagation();
 		return true;
