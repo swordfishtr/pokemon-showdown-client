@@ -581,8 +581,9 @@ export class PSView extends preact.Component {
 		});
 
 		window.addEventListener('dragleave', (ev) => {
-			// TODO: can this ever fire?
-			PS.dragging = null;
+			if(ev.target === window) {
+				PS.dragging = null;
+			}
 		});
 
 		window.addEventListener('dragend', (ev) => {
