@@ -1157,6 +1157,7 @@ class BackgroundListPanel extends PSRoomPanel {
 			BackgroundListPanel.handleUploadedFiles(files);
 			return true;
 		}
+		return false;
 	}
 
 	declare state: { status?: string, bgUrl?: string };

@@ -607,7 +607,7 @@ export class PSView extends preact.Component {
 			}
 			if (!PS.dragging || PS.dragging.type === '?') {
 				// dragging text
-				if (!ev.dataTransfer?.files.length) return;
+				if (!ev.dataTransfer?.files?.length) return;
 			}
 
 			// The default file drop action for Firefox is to open the file as a
