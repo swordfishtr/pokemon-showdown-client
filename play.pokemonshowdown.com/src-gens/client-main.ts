@@ -1763,8 +1763,8 @@ export const PS = new class extends PSModel {
 	 * they are until they're dropped.
 	 */
 	dragging: { type: 'room', roomid: RoomID, foreground?: boolean } |
-		{ type: 'team', team: Team, index: number | null } |
-		{ type: '?' } |
+		{ type: 'team', team: Team | number, folder: string | null } |
+		{ type: '?' } | // browser preventing us from knowing what's being dragged
 		null = null;
 
 	/** Tracks whether or not to display the "Use arrow keys" hint */

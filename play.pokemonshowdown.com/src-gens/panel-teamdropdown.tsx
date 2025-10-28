@@ -115,7 +115,7 @@ export class PSTeambuilder {
 			dataTransfer.setData("DownloadURL", downloadurl);
 		}
 
-		PS.dragging = { type: 'team', team, index };
+		PS.dragging = { type: 'team', team, folder: null };
 	}
 }
 
