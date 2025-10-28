@@ -266,19 +266,20 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		return this.tryInsertDrop(ev, null);
 	}
 	static tryInsertDrop = async (ev: DragEvent, folder: string | null) => {
-		if(!PS.dragging) return false;
-		console.trace('tryInsertDrop\n', PS.dragging, ev);
+		const drag = PS.dragging;
+		if(!drag) return false;
+		console.trace('tryInsertDrop\n', drag, ev);
 
 		let team: Team | null = null;
 		let index: number | null = 0;
 
-		if(PS.dragging.type === '?') {
+		if(drag.type === '?') {
 			// Dragging something in from outside of PS.
 			team = await this.extractDraggedTeam(ev);
 		}
-		else if(PS.dragging.type === 'team') {
+		else if(drag.type === 'team') {
 			// Dragging a teambuilder team HTMLAnchorElement.
-			({ team, index } = PS.dragging);
+			({ team, index } = drag);
 		}
 
 		if(!team) return false;

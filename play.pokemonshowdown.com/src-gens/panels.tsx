@@ -580,8 +580,15 @@ export class PSView extends preact.Component {
 			PS.dragging ??= { type: '?' };
 		});
 
-		window.addEventListener('dragend', (ev) => {
+		window.addEventListener('dragleave', (ev) => {
+			// TODO: can this ever fire?
 			PS.dragging = null;
+		});
+
+		window.addEventListener('dragend', (ev) => {
+			setTimeout(() => {
+				PS.dragging = null;
+			}, 1);
 			ev.preventDefault();
 		});
 
