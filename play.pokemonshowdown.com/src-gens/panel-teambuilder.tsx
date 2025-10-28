@@ -494,13 +494,11 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		const room = this.props.room;
 
 		const teams: (Team | null)[] = PS.teams.list.slice();
-		let isDragging = false;
-		if (PS.dragging?.type === 'team') {
-			isDragging = true;
-			if(PS.dragging.index !== null) {
-				teams.splice(PS.teams.list.indexOf(PS.dragging.team), 1);
-				teams.splice(PS.dragging.index, 0, PS.dragging.team);
-			}
+		let draggedTeam: Team | null = null;
+		if (PS.dragging?.type === 'team' && PS.dragging.index !== null) {
+			draggedTeam = PS.dragging.team;
+			teams.splice(PS.teams.list.indexOf(PS.dragging.team), 1);
+			teams.splice(PS.dragging.index, 0, PS.dragging.team);
 		} else if (PS.teams.deletedTeams.length) {
 			const undeleteIndex = PS.teams.deletedTeams[PS.teams.deletedTeams.length - 1][1];
 			teams.splice(undeleteIndex, 0, null);
@@ -573,20 +571,22 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 				) : !filteredTeams.length ? (
 					<li><em>you have no teams matching <code>{room.searchTerms.join(", ")}</code></em></li>
 				) : filteredTeams.map(team => team ? (
-					<li key={team.key} onDragEnter={this.handleDragEnter} data-teamkey={team.key}>
-						<TeamBox team={team} onClick={this.handleClickTeam} /> {}
-						<button data-cmd={`/copyteam ${team.key}`} class="option">
-							<i class="fa fa-clone" aria-hidden></i>
-						</button> {}
-						<button data-cmd={`/deleteteam ${team.key}`} class="option">
-							<i class="fa fa-trash" aria-hidden></i> Delete
-						</button>
-					</li>
-				) : isDragging ? (
-					<li key="DRAGGING" class="dragging">
-						<div class="team"></div>
-					</li>
-				) : (
+					team === draggedTeam ? (
+						<li key={team.key} data-teamkey={team.key} class="dragging">
+							<TeamBox team={team} />
+						</li>
+					) : (
+						<li key={team.key} onDragEnter={this.handleDragEnter} data-teamkey={team.key}>
+							<TeamBox team={team} onClick={this.handleClickTeam} /> {}
+							<button data-cmd={`/copyteam ${team.key}`} class="option">
+								<i class="fa fa-clone" aria-hidden></i>
+							</button> {}
+							<button data-cmd={`/deleteteam ${team.key}`} class="option">
+								<i class="fa fa-trash" aria-hidden></i> Delete
+							</button>
+						</li>
+					)
+				) : !draggedTeam && (
 					<li key="UNDELETE">
 						<button data-cmd="/undeleteteam" class="option">
 							<i class="fa fa-undo" aria-hidden></i> Undo delete
