@@ -245,7 +245,15 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		if(enteringKey === null) return;
 		const team = PS.teams.byKey[enteringKey];
 		if(!team) return;
-		const index = PS.teams.list.indexOf(team);
+
+		// sync with UI
+		const teams = PS.teams.list.slice();
+		if(PS.dragging.index !== null) {
+			teams.splice(PS.teams.list.indexOf(PS.dragging.team), 1);
+			teams.splice(PS.dragging.index, 0, PS.dragging.team);
+		}
+
+		const index = teams.indexOf(team);
 		if(index < 0) return;
 		console.log('dragenter\n', enteringKey, index, team);
 		PS.dragging.index = index;

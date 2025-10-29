@@ -583,6 +583,7 @@ export class PSView extends preact.Component {
 		window.addEventListener('dragleave', (ev) => {
 			if(ev.target === window) {
 				PS.dragging = null;
+				PS.update();
 			}
 		});
 
