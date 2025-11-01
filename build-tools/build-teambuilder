@@ -766,10 +766,8 @@ for(const format of Dex.formats.all()) {
 	if(check.isScalemons(format.id)) gtt.scalemons = 1;
 
 	if(
-		(format.id.includes('35pokes') || format.id.includes('generationsdraft')) &&
-		![
-			'gen9nd35pokesperfectz1',
-		].includes(format.id)
+		(format.id.includes('35pokes') || format.id.includes('generationsdraft') || format.id === 'gen9test') &&
+		!['gen9nd35pokesperfectz1'].includes(format.id)
 	) {
 		const whitelist = (gtt.whitelist ??= {});
 
