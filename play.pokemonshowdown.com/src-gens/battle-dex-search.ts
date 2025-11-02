@@ -997,11 +997,11 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 		if(this.gtt.format.whitelist) {
 			results = results.filter(([type, id]) => (id in this.gtt.format.whitelist!));
 			// Custom species
-			// Can't use for..in here fsr??? blame Babel
-			for(const id of Object.keys(this.gtt.format.whitelist)) {
-				if(results.some(([type, id2]) => id === id2)) continue;
+			// Can't use for loops here fsr??? blame Babel
+			Object.keys(this.gtt.format.whitelist).forEach((id) => {
+				if(results.some(([type, id2]) => id === id2)) return;
 				results.unshift(['pokemon', id as ID]);
-			}
+			});
 		}
 
 		if(this.gtt.format.blacklist) {
