@@ -221,7 +221,7 @@ export class PSSearchResults extends preact.Component<{
 		}
 
 		const search = this.props.search;
-		const move = search.gtt.dex.moves.get(id);
+		const move = search.gtt.getFormatMove(id);
 		const entry = slot ? `move|${move.name}|${slot}` : `move|${move.name}`;
 		if (!move) return <li class="result">Unrecognized move</li>;
 

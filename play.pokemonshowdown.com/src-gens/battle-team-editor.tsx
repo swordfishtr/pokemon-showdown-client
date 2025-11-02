@@ -103,7 +103,7 @@ class TeamEditorState extends PSModel {
 		} else if (value) {
 			switch (type) {
 			case 'pokemon':
-				if (this.gtt.dex.species.get(value).exists) {
+				if (this.gtt.getFormatSpecies(value).exists) {
 					this.originalSpecies = value;
 					this.search.prependResults = [['pokemon', toID(value)]];
 					value = '';
@@ -182,7 +182,7 @@ class TeamEditorState extends PSModel {
 		return this.getResultValue(result);
 	}
 	changeSpecies(set: Dex.PokemonSet, speciesName: string, searchBoxValue?: string) {
-		const species = this.gtt.dex.species.get(speciesName);
+		const species = this.gtt.getFormatSpecies(speciesName);
 		if (set.item === this.getDefaultItem(set.species)) set.item = undefined;
 		if (set.name === set.species.split('-')[0]) delete set.name;
 		set.species = species.name;
@@ -319,7 +319,7 @@ class TeamEditorState extends PSModel {
 	getResultValue(result: SearchRow): string {
 		switch (result[0]) {
 		case 'pokemon':
-			return this.gtt.dex.species.get(result[1]).name;
+			return this.gtt.getFormatSpecies(result[1]).name;
 		case 'item':
 			return this.gtt.dex.items.get(result[1]).name;
 		case 'ability':
@@ -327,9 +327,9 @@ class TeamEditorState extends PSModel {
 		case 'move':
 			if (result[1].startsWith('_')) {
 				const [slot, moveid] = result[1].slice(1).split('_');
-				return this.gtt.dex.moves.get(moveid).name + '|' + slot;
+				return this.gtt.getFormatMove(moveid).name + '|' + slot;
 			}
-			return this.gtt.dex.moves.get(result[1]).name;
+			return this.gtt.getFormatMove(result[1]).name;
 		case 'html':
 		case 'header':
 			return '';
@@ -472,7 +472,7 @@ class TeamEditorState extends PSModel {
 		if (!set.moves.length) minAtk = false;
 		for (const moveName of set.moves) {
 			if (!moveName) continue;
-			const move = this.gtt.dex.moves.get(moveName);
+			const move = this.gtt.getFormatMove(moveName);
 			if (move.id === 'transform') {
 				const hasMoveBesidesTransform = set.moves.length > 1;
 				if (!hasMoveBesidesTransform) minAtk = false;
@@ -493,7 +493,7 @@ class TeamEditorState extends PSModel {
 		return { minAtk, minSpe };
 	}
 	getNickname(set: Dex.PokemonSet) {
-		return set.name || this.gtt.dex.species.get(set.species).baseSpecies || '';
+		return set.name || this.gtt.getFormatSpecies(set.species).baseSpecies || '';
 	}
 	canHyperTrain(set: Dex.PokemonSet) {
 		let format: string = this.gtt.formatid;
@@ -631,7 +631,7 @@ class TeamEditorState extends PSModel {
 	}
 	pokemonDefensiveCoverage(set: Dex.PokemonSet) {
 		const coverage: Record<string, number> = {};
-		const species = this.gtt.dex.species.get(set.species);
+		const species = this.gtt.getFormatSpecies(set.species);
 		const abilityid = toID(set.ability);
 		for (const type of this.gtt.dex.types.names()) {
 			coverage[type] = this.getWeakness(species.types, abilityid, type);
@@ -665,13 +665,13 @@ class TeamEditorState extends PSModel {
 	}
 	getDefaultAbility(set: Dex.PokemonSet) {
 		if (this.gtt.dex.gen < 3 || this.gtt.format.mod === 'gen7letsgo') return set.ability;
-		const species = this.gtt.dex.species.get(set.species);
+		const species = this.gtt.getFormatSpecies(set.species);
 		const abilities = Object.values(species.abilities);
 		if (abilities.length === 1) return abilities[0];
 		if (set.ability && abilities.includes(set.ability)) return set.ability;
 	}
 	getDefaultItem(speciesName: string) {
-		const species = this.gtt.dex.species.get(speciesName);
+		const species = this.gtt.getFormatSpecies(speciesName);
 		let items = species.requiredItems;
 		if (this.gtt.dex.gen !== 7 && !this.gtt.format.natdex) {
 			// Require plates on Arceus when Z crystals don't exist
@@ -1532,7 +1532,7 @@ class TeamTextbox extends preact.Component<{
 
 	renderDetails(set: Dex.PokemonSet, i: number) {
 		const editor = this.editor;
-		const species = editor.gtt.dex.species.get(set.species);
+		const species = editor.gtt.getFormatSpecies(set.species);
 
 		const GenderChart = {
 			'M': 'Male',
@@ -1623,7 +1623,7 @@ class TeamTextbox extends preact.Component<{
 						const set = editor.sets[i];
 						if (!set) return null;
 						const prevOffset = i === 0 ? 8 : this.setInfo[i - 1].bottomY;
-						const species = editor.gtt.dex.species.get(info.species);
+						const species = editor.gtt.getFormatSpecies(info.species);
 						const num = Dex.getPokemonIconNum(species.id);
 						if (!num) return null;
 
@@ -1805,7 +1805,7 @@ class TeamWizard extends preact.Component<{
 		const cur = (t: SelectionType) => (
 			editor.readonly || (editor.innerFocus?.type === t && editor.innerFocus.setIndex === i) ? ' cur' : ''
 		);
-		const species = editor.gtt.dex.species.get(set.species);
+		const species = editor.gtt.getFormatSpecies(set.species);
 		const isCur = TeamEditorState.clipboard?.teams?.[editor.team.key]?.sets[i] ? ' cur' : '';
 		return <div class={`set-button${isCur}`}>
 			<div style="text-align:right">
@@ -2400,7 +2400,7 @@ class StatForm extends preact.Component<{
 	}
 	smogdexLink(s: string) {
 		const { editor } = this.props;
-		const species = editor.gtt.dex.species.get(s);
+		const species = editor.gtt.getFormatSpecies(s);
 		let format: string = editor.gtt.formatid;
 		let smogdexid: string = toID(species.baseSpecies);
 
@@ -2838,7 +2838,7 @@ class DetailsForm extends preact.Component<{
 	changeTera = (ev: Event) => {
 		const target = ev.currentTarget as HTMLInputElement;
 		const { editor, set } = this.props;
-		const species = editor.gtt.dex.species.get(set.species);
+		const species = editor.gtt.getFormatSpecies(set.species);
 		if (!target.value || target.value === (species.requiredTeraType || species.types[0])) {
 			delete set.teraType;
 		} else {
@@ -2926,7 +2926,7 @@ class DetailsForm extends preact.Component<{
 	}
 	render() {
 		const { editor, set } = this.props;
-		const species = editor.gtt.dex.species.get(set.species);
+		const species = editor.gtt.getFormatSpecies(set.species);
 		return <div style="font-size:10pt" role="dialog" aria-label="Details">
 			<div class="resultheader"><h3>Details</h3></div>
 			<div class="pad">
@@ -3037,7 +3037,7 @@ class DetailsForm extends preact.Component<{
 							const baseId = toID(species.baseSpecies);
 							const forms = species.cosmeticFormes?.length ? [baseId, ...species.cosmeticFormes.map(toID)] : [baseId];
 							return forms.map(id => {
-								const sp = editor.gtt.dex.species.get(id);
+								const sp = editor.gtt.getFormatSpecies(id);
 								const isCur = toID(set.species) === id;
 								return <button
 									value={id} class={`button piconbtn${isCur ? ' cur' : ''}`}
@@ -3058,7 +3058,7 @@ class DetailsForm extends preact.Component<{
 		const target = ev.currentTarget as HTMLButtonElement;
 		const formId = target.value;
 		const { editor, set } = this.props;
-		const species = editor.gtt.dex.species.get(formId);
+		const species = editor.gtt.getFormatSpecies(formId);
 		if (!species.exists) return;
 		editor.changeSpecies(set, species.name);
 		this.props.onChange();

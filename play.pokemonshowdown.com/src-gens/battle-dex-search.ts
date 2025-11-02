@@ -12,7 +12,7 @@
  */
 
 import { Dex, type ModdedDex, toID, type ID, PSUtils } from "./battle-dex";
-import type { Species } from "./battle-dex-data";
+import { Move, Species, type Ability, type Item } from "./battle-dex-data";
 
 export type SearchType = (
 	'pokemon' | 'type' | 'tier' | 'move' | 'item' | 'ability' | 'egggroup' | 'category' | 'article'
@@ -71,12 +71,16 @@ interface GTTFormat {
 	},
 }
 
-/** Used for keeping dexsearch and teambuilder in sync. Includes related utilities. Throws if format doesn't exist. */
+/** Used for keeping dexsearch and teambuilder in sync. Includes related utilities. */
 export class GTTIndex {
 	formatid!: ID;
 	format!: GTTFormat;
 	mod!: GTTMod;
 	dex!: ModdedDex;
+	speciesCache!: { [species: ID]: Species | undefined };
+	moveCache!: { [move: ID]: Move | undefined };
+	abilityCache!: { [ability: ID]: Ability | undefined };
+	itemCache!: { [item: ID]: Item | undefined };
 	constructor(format = DexSearch.DEFAULT_FORMAT) {
 		this.setFormat(format);
 	}
@@ -94,47 +98,76 @@ export class GTTIndex {
 		this.mod = gttmod;
 
 		this.dex = Dex.mod(gttformat.mod);
+
+		this.speciesCache = {};
+		this.moveCache = {};
+		this.abilityCache = {};
+		this.itemCache = {};
 	}
 	/**
-	 * Returns species from the specified dex with any format specific overrides applied (slow in that case).
-	 * Note: Return value may not satisfy `instanceof Species`.
+	 * Returns species from the specified dex with any format specific overrides applied.
 	 */
 	getFormatSpecies(speciesName: string, dex = this.dex): Species {
+		const customDex = dex !== this.dex;
 		const speciesid = toID(speciesName)
-		const species = dex.species.get(speciesid);
-		let moddedSpecies: Species | null = null;
+		if(!customDex && this.speciesCache[speciesid]) return this.speciesCache[speciesid];
 
-		const formatOverrides = this.format.overrideSpeciesData;
-		if(formatOverrides && (speciesid in formatOverrides)) {
-			moddedSpecies ??= structuredClone(species);
-			Object.assign(moddedSpecies, formatOverrides[speciesid]);
+		const species = dex.species.get(speciesid);
+		const moddedData: AnyObject = {};
+
+		const formatOverrides = this.format.overrideSpeciesData?.[speciesid];
+		if(formatOverrides) {
+			for(const prop in formatOverrides) {
+				moddedData[prop] = formatOverrides[prop];
+			}
 		}
 
 		if(this.format.flipped) {
-			moddedSpecies ??= structuredClone(species);
-			const overrides: AnyObject = {};
-			const reversedNums = Object.values(moddedSpecies.baseStats).reverse();
-			Object.keys(moddedSpecies.baseStats).forEach((statName, i) => overrides[statName] = reversedNums[i]);
-			Object.assign(moddedSpecies.baseStats, overrides);
+			moddedData.baseStats ??= species.baseStats;
+			const override: AnyObject = {};
+			const reversedNums = Object.values(moddedData.baseStats).reverse();
+			Object.keys(moddedData.baseStats).forEach((statName, i) => override[statName] = reversedNums[i]);
+			moddedData.baseStats = override;
 		}
 
-		// TODO: check mod priority
 		if(this.format.scalemons) {
-			moddedSpecies ??= structuredClone(species);
-			const overrides: AnyObject = {};
-			let bst = moddedSpecies.baseStats.hp;
-			const bstWithoutHp = moddedSpecies.bst - moddedSpecies.baseStats.hp;
-			const scale = 600 - moddedSpecies.baseStats.hp;
-			for(const [statName, stat] of Object.entries(moddedSpecies.baseStats)) {
+			moddedData.baseStats ??= species.baseStats;
+			moddedData.bst ??= species.bst;
+			const override: AnyObject = {};
+			let overrideBST = override.hp = moddedData.baseStats.hp;
+			const bstWithoutHp = moddedData.bst - moddedData.baseStats.hp;
+			const scale = 600 - moddedData.baseStats.hp;
+			for(const [statName, stat] of (Object.entries(moddedData.baseStats) as any)) {
 				if (statName === 'hp') continue;
-				overrides[statName] = PSUtils.clampIntRange(stat * scale / bstWithoutHp, 1, 255);
-				bst += stat;
+				override[statName] = PSUtils.clampIntRange(stat * scale / bstWithoutHp, 1, 255);
+				overrideBST += stat;
 			}
-			Object.assign(moddedSpecies.baseStats, overrides);
-			Object.assign(moddedSpecies, { bst });
+			moddedData.baseStats = override;
+			moddedData.bst = overrideBST;
 		}
 
-		return moddedSpecies ?? species;
+		const result = PSUtils.isEmpty(moddedData) ? species : new Species(speciesid, speciesName, { ...species, ...moddedData });
+		if(!customDex) this.speciesCache[speciesid] = result
+		return result;
+	}
+	getFormatMove(moveName: string, dex = this.dex) {
+		const customDex = dex !== this.dex;
+		const moveid = toID(moveName)
+		if(this.moveCache[moveid]) return this.moveCache[moveid];
+
+		const move = dex.moves.get(moveid);
+		const moddedData: AnyObject = {};
+
+		const formatOverrides = this.format.overrideMoveData?.[moveid];
+		if(formatOverrides) {
+			for(const prop in formatOverrides) {
+				moddedData[prop] = formatOverrides[prop];
+			}
+		}
+
+		const result = PSUtils.isEmpty(moddedData) ? move : new Move(moveid, moveName, { ...move, ...moddedData });
+		if(!customDex) this.moveCache[moveid] = result
+		return result;
 	}
 }
 
@@ -607,7 +640,7 @@ export class DexSearch {
 				buf.push(['header', `${type}-type Pok\u00e9mon`]);
 				for (let id in BattlePokedex) {
 					if (!BattlePokedex[id].types) continue;
-					if (this.gtt.dex.species.get(id).types.includes(type)) {
+					if (this.gtt.getFormatSpecies(id).types.includes(type)) {
 						(illegal && id in illegal ? illegalBuf : buf).push(['pokemon', id as ID]);
 					}
 				}
@@ -800,7 +833,7 @@ abstract class BattleTypedSearch<T extends SearchType> {
 		const learnsets = this.gtt.format.learnsets ?? this.gtt.mod.learnsets ?? GensTeambuilderTable.learnsets;
 		if (speciesid in learnsets) return speciesid;
 
-		const species = this.gtt.dex.species.get(speciesid);
+		const species = this.gtt.getFormatSpecies(speciesid);
 		if (!species.exists) return '' as ID;
 
 		let baseLearnsetid = toID(species.baseSpecies);
@@ -814,7 +847,7 @@ abstract class BattleTypedSearch<T extends SearchType> {
 		if (learnsetid === 'lycanrocdusk' || (speciesid === 'rockruff' && learnsetid === 'rockruff')) {
 			return 'rockruffdusk' as ID;
 		}
-		const lsetSpecies = this.gtt.dex.species.get(learnsetid);
+		const lsetSpecies = this.gtt.getFormatSpecies(learnsetid);
 		if (!lsetSpecies.exists) return '' as ID;
 
 		if (lsetSpecies.id === 'gastrodoneast') return 'gastrodon' as ID;
@@ -826,10 +859,10 @@ abstract class BattleTypedSearch<T extends SearchType> {
 		if (next) return toID(next);
 
 		if (checkingMoves && !lsetSpecies.prevo && lsetSpecies.baseSpecies &&
-			this.gtt.dex.species.get(lsetSpecies.baseSpecies).prevo) {
-			let baseEvo = this.gtt.dex.species.get(lsetSpecies.baseSpecies);
+			this.gtt.getFormatSpecies(lsetSpecies.baseSpecies).prevo) {
+			let baseEvo = this.gtt.getFormatSpecies(lsetSpecies.baseSpecies);
 			while (baseEvo.prevo) {
-				baseEvo = this.gtt.dex.species.get(baseEvo.prevo);
+				baseEvo = this.gtt.getFormatSpecies(baseEvo.prevo);
 			}
 			return toID(baseEvo);
 		}
@@ -841,7 +874,7 @@ abstract class BattleTypedSearch<T extends SearchType> {
 		// Heavy rewrite; merge carefully.
 		// TODO: check that the results match the original
 
-		const move = this.gtt.dex.moves.get(moveid);
+		const move = this.gtt.getFormatMove(moveid);
 		if(this.gtt.format.natdex && move.isNonstandard && move.isNonstandard !== 'Past') {
 			return false;
 		}
@@ -890,7 +923,7 @@ abstract class BattleTypedSearch<T extends SearchType> {
 		return `${pokemon.num}`;
 	}
 	eggMovesOnly(child: ID, father: ID) {
-		if (this.gtt.dex.species.get(child).baseSpecies === this.gtt.dex.species.get(father).baseSpecies) return false;
+		if (this.gtt.getFormatSpecies(child).baseSpecies === this.gtt.getFormatSpecies(father).baseSpecies) return false;
 		const baseSpecies = father;
 		while (father) {
 			if (child === father) return false;
@@ -972,7 +1005,7 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 		// 35 Moves formats should come with customNumCol.
 		if(this.gtt.format.moves) {
 			results = results
-			.filter(([type, id]) => type === 'pokemon' && !['CAP', 'Custom'].includes(this.gtt.dex.species.get(id).isNonstandard as any))
+			.filter(([type, id]) => type === 'pokemon' && !['CAP', 'Custom'].includes(this.gtt.getFormatSpecies(id).isNonstandard as any))
 			.sort(([type1, id1], [type2, id2]) => (this.gtt.format.customNumCol![id1 as ID] ?? 0) - (this.gtt.format.customNumCol![id2 as ID] ?? 0))
 			.reverse();
 		}
@@ -982,7 +1015,7 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 	filter(row: SearchRow, filters: string[][]) {
 		if (!filters) return true;
 		if (row[0] !== 'pokemon') return true;
-		const species = this.gtt.dex.species.get(row[1]);
+		const species = this.gtt.getFormatSpecies(row[1]);
 		for (const [filterType, value] of filters) {
 			switch (filterType) {
 			case 'type':
@@ -1056,7 +1089,7 @@ class BattleAbilitySearch extends BattleTypedSearch<'ability'> {
 
 		if (species.isMega) {
 			abilitySet.unshift(['html', `Will be <strong>${species.abilities['0']}</strong> after Mega Evolving.`]);
-			species = dex.species.get(species.baseSpecies);
+			species = this.gtt.getFormatSpecies(species.baseSpecies, dex);
 		}
 		abilitySet.push(['ability', toID(species.abilities['0'])]);
 		if (species.abilities['1']) {
@@ -1155,7 +1188,7 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 	}
 	getBaseResults(): SearchRow[] {
 		if (!this.species) return this.getDefaultResults();
-		const speciesName = this.gtt.dex.species.get(this.species).name;
+		const speciesName = this.gtt.getFormatSpecies(this.species).name;
 		const results = this.getDefaultResults();
 		const speciesSpecific: SearchRow[] = [];
 		const abilitySpecific: SearchRow[] = [];
@@ -1189,7 +1222,7 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 		return results;
 	}
 	override defaultFilter(results: SearchRow[]) {
-		if (this.species && !this.gtt.dex.species.get(this.species).nfe) {
+		if (this.species && !this.gtt.getFormatSpecies(this.species).nfe) {
 			results.splice(results.findIndex(row => row[1] === 'eviolite'), 1);
 			return results;
 		}
@@ -1442,7 +1475,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 			return true;
 		}
 
-		const move = dex.moves.get(id);
+		const move = this.gtt.getFormatMove(id, dex);
 		if (!move.exists) return true;
 
 		// Sleep Moves Clause (add gttformat prop for it if ever needed)
@@ -1484,7 +1517,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 	getBaseResults() {
 		if (!this.species) return this.getDefaultResults();
 		const dex = this.gtt.format.natdex ? Dex.mod(this.gtt.format.natdex) : this.gtt.dex;
-		let species = dex.species.get(this.species);
+		let species = this.gtt.getFormatSpecies(this.species, dex);
 		//const format = this.format;
 		const isHackmons = !!this.gtt.format.hackmons;
 		const isSTABmons = !!this.gtt.format.stabmons;
@@ -1520,7 +1553,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 					) {
 						continue;
 					}
-					const move = dex.moves.get(moveid);
+					const move = this.gtt.getFormatMove(moveid, dex);
 					if (
 						!learnsetEntry.includes(gen) &&
 						(!isTradebacks ? true : !(move.gen <= dex.gen && learnsetEntry.includes(`${dex.gen + 1}`)))
@@ -1546,7 +1579,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 			if (isHackmons) moves = [];
 			for (let id in BattleMovedex) {
 				if (!this.gtt.format.cap && (['paleowave', 'shadowstrike'].includes(id))) continue;
-				const move = dex.moves.get(id);
+				const move = this.gtt.getFormatMove(id, dex);
 				if (move.gen > dex.gen) continue;
 				if (sketch) {
 					if (move.flags['nosketch'] || move.isMax || move.isZ) continue;
@@ -1566,7 +1599,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 
 		if (isSTABmons) {
 			for (let id in this.getTable()) {
-				const move = dex.moves.get(id);
+				const move = this.gtt.getFormatMove(id, dex);
 				if (moves.includes(move.id)) continue;
 				if (move.gen > dex.gen) continue;
 				if (move.isZ || move.isMax || (move.isNonstandard && move.isNonstandard !== 'Unobtainable')) continue;
@@ -1575,19 +1608,19 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 				const moveTypes: string[] = [];
 				for (let i = dex.gen; i >= species.gen && i >= move.gen; i--) {
 					const genDex = Dex.forGen(i);
-					moveTypes.push(genDex.moves.get(move.name).type);
+					moveTypes.push(this.gtt.getFormatMove(move.name, genDex).type);
 
-					const pokemon = genDex.species.get(species.name);
-					let baseSpecies = genDex.species.get(pokemon.changesFrom || pokemon.name);
+					const pokemon = this.gtt.getFormatSpecies(species.name, genDex);
+					let baseSpecies = this.gtt.getFormatSpecies(pokemon.changesFrom || pokemon.name, genDex);
 					if (!pokemon.battleOnly) speciesTypes.push(...pokemon.types);
 					let prevo = pokemon.prevo;
 					while (prevo) {
-						const prevoSpecies = genDex.species.get(prevo);
+						const prevoSpecies = this.gtt.getFormatSpecies(prevo, genDex);
 						speciesTypes.push(...prevoSpecies.types);
 						prevo = prevoSpecies.prevo;
 					}
 					if (pokemon.battleOnly && typeof pokemon.battleOnly === 'string') {
-						species = dex.species.get(pokemon.battleOnly);
+						species = this.gtt.getFormatSpecies(pokemon.battleOnly, dex);
 					}
 					const excludedForme = (s: Dex.Species) => [
 						'Alola', 'Alola-Totem', 'Galar', 'Galar-Zen', 'Hisui', 'Paldea', 'Paldea-Combat', 'Paldea-Blaze', 'Paldea-Aqua',
@@ -1595,7 +1628,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 					if (baseSpecies.otherFormes && !['Wormadam', 'Urshifu'].includes(baseSpecies.baseSpecies)) {
 						if (!excludedForme(species)) speciesTypes.push(...baseSpecies.types);
 						for (const formeName of baseSpecies.otherFormes) {
-							const forme = dex.species.get(formeName);
+							const forme = this.gtt.getFormatSpecies(formeName, dex);
 							if (!forme.battleOnly && !excludedForme(forme)) speciesTypes.push(...forme.types);
 						}
 					}
@@ -1659,7 +1692,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 	filter(row: SearchRow, filters: string[][]) {
 		if (!filters) return true;
 		if (row[0] !== 'move') return true;
-		const move = this.gtt.dex.moves.get(row[1]);
+		const move = this.gtt.getFormatMove(row[1]);
 		for (const [filterType, value] of filters) {
 			switch (filterType) {
 			case 'type':
@@ -1688,24 +1721,24 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 				fissure: 1500, horndrill: 1500, guillotine: 1500,
 			};
 			return results.sort(([rowType1, id1], [rowType2, id2]) => {
-				let move1 = this.gtt.dex.moves.get(id1);
-				let move2 = this.gtt.dex.moves.get(id2);
+				let move1 = this.gtt.getFormatMove(id1);
+				let move2 = this.gtt.getFormatMove(id2);
 				let pow1 = move1.basePower || powerTable[id1] || (move1.category === 'Status' ? -1 : 1400);
 				let pow2 = move2.basePower || powerTable[id2] || (move2.category === 'Status' ? -1 : 1400);
 				return (pow2 - pow1) * sortOrder;
 			});
 		case 'accuracy':
 			return results.sort(([rowType1, id1], [rowType2, id2]) => {
-				let accuracy1 = this.gtt.dex.moves.get(id1).accuracy || 0;
-				let accuracy2 = this.gtt.dex.moves.get(id2).accuracy || 0;
+				let accuracy1 = this.gtt.getFormatMove(id1).accuracy || 0;
+				let accuracy2 = this.gtt.getFormatMove(id2).accuracy || 0;
 				if (accuracy1 === true) accuracy1 = 101;
 				if (accuracy2 === true) accuracy2 = 101;
 				return (accuracy2 - accuracy1) * sortOrder;
 			});
 		case 'pp':
 			return results.sort(([rowType1, id1], [rowType2, id2]) => {
-				let pp1 = this.gtt.dex.moves.get(id1).pp || 0;
-				let pp2 = this.gtt.dex.moves.get(id2).pp || 0;
+				let pp1 = this.gtt.getFormatMove(id1).pp || 0;
+				let pp2 = this.gtt.getFormatMove(id2).pp || 0;
 				return (pp2 - pp1) * sortOrder;
 			});
 		case 'name':

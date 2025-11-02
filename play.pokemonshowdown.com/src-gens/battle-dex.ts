@@ -195,6 +195,13 @@ export const PSUtils = new class {
 		type Values = typeof o[Keys];
 		return Object.entries(o) as [Keys, Values][];
 	}
+
+	isEmpty(o: AnyObject) {
+		for(const x in o) {
+			return false;
+		}
+		return true;
+	}
 };
 
 /**
