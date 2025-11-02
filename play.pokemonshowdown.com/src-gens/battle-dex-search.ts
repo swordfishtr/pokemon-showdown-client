@@ -994,10 +994,11 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 
 		let results = this.getDefaultResults();
 
-		if(this.gtt.format.whitelist) {
-			results = results.filter(([type, id]) => (id in this.gtt.format.whitelist!));
+		const { whitelist } = this.gtt.format;
+		if(whitelist) {
+			results = results.filter(([type, id]) => (id in whitelist!));
 			// Custom species
-			for(const id in this.gtt.format.whitelist) {
+			for(const id in whitelist) {
 				if(results.some(([type, id2]) => id === id2)) continue;
 				results.unshift(['pokemon', id as ID]);
 			}
