@@ -825,6 +825,7 @@ export const Dex = new class implements ModdedDex {
 
 	getGensPokemonIconNum(id: ID, isFemale?: boolean) {
 		if(isFemale) id = `${id}f` as ID;
+		console.log(id);
 		const num = GensPokemonIconIndexes?.[id] ?? 0;
 		return num;
 	}
