@@ -947,6 +947,7 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 	getDefaultResults(): SearchRow[] {
 		let results: SearchRow[] = [];
 		for (let id in BattlePokedex) {
+			if(!BattlePokedex[id].exists) continue;
 			switch (id) {
 			case 'bulbasaur':
 				results.push(['header', "Generation 1"]);
