@@ -825,7 +825,6 @@ export const Dex = new class implements ModdedDex {
 
 	getGensPokemonIconNum(id: ID, isFemale?: boolean) {
 		if(isFemale) id = `${id}f` as ID;
-		console.log(id);
 		const num = GensPokemonIconIndexes?.[id] ?? 0;
 		return num;
 	}
@@ -853,7 +852,7 @@ export const Dex = new class implements ModdedDex {
 			id = toID(pokemon.volatiles.formechange[1]);
 		}
 
-		if(Dex.species.get(id).exists) {
+		if(!id || Dex.species.get(id).exists) {
 			// Regular species
 			const num = this.getPokemonIconNum(id, pokemon?.gender === 'F', facingLeft);
 			const top = Math.floor(num / 12) * 30;
@@ -866,7 +865,7 @@ export const Dex = new class implements ModdedDex {
 			// Generations custom species
 			const num = this.getGensPokemonIconNum(id, pokemon?.gender === 'F');
 			const top = Math.floor(num / 10) * 32;
-			const left = (num % 1) * 32;
+			const left = (num % 10) * 32;
 			const fainted = ((pokemon as Pokemon | ServerPokemon)?.fainted ?
 				`;opacity:.3;filter:grayscale(100%) brightness(.5)` : ``);
 			return `background:transparent url(${Dex.resourcePrefix}sprites/gens-pokemonicons-sheet.png?v18) no-repeat scroll -${left}px -${top}px${fainted}`;
