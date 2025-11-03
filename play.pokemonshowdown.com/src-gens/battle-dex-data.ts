@@ -740,6 +740,16 @@ export const BattlePokemonIconIndexesLeft: { [id: string]: number } = {
 	blacephalon: 1404 + 105,
 };
 
+export const GensPokemonIconIndexes: { [id: string]: number } = {
+	irongoro: 1,
+	ironsoke: 2,
+	beedrillg: 3,
+	butterfreeg: 4,
+	obsilix: 5,
+	valkaryia: 6,
+	porygone: 7,
+};
+
 export const BattleAvatarNumbers: { [k: string]: string } = {
 	1: 'lucas',
 	2: 'dawn',

@@ -22,6 +22,7 @@ import { Pokemon, type ServerPokemon } from "./battle";
 import {
 	BattleAvatarNumbers, BattleBaseSpeciesChart, BattlePokemonIconIndexes, BattlePokemonIconIndexesLeft,
 	Ability, Item, Move, Species, PureEffect, type ID, type Type,
+	GensPokemonIconIndexes,
 } from "./battle-dex-data";
 import type * as DexData from "./battle-dex-data";
 import { GensTeambuilderTable } from "./battle-dex-search";
@@ -822,6 +823,12 @@ export const Dex = new class implements ModdedDex {
 		return num;
 	}
 
+	getGensPokemonIconNum(id: ID, isFemale?: boolean) {
+		if(isFemale) id = `${id}f` as ID;
+		const num = GensPokemonIconIndexes?.[id] ?? 0;
+		return num;
+	}
+
 	getPokemonIcon(pokemon: string | Pokemon | ServerPokemon | Dex.PokemonSet | null, facingLeft?: boolean) {
 		if (pokemon === 'pokeball') {
 			return `background:transparent url(${Dex.resourcePrefix}sprites/pokemonicons-pokeball-sheet.png) no-repeat scroll -0px 4px`;
@@ -844,13 +851,25 @@ export const Dex = new class implements ModdedDex {
 			// @ts-expect-error safe, but too lazy to cast
 			id = toID(pokemon.volatiles.formechange[1]);
 		}
-		let num = this.getPokemonIconNum(id, pokemon?.gender === 'F', facingLeft);
 
-		let top = Math.floor(num / 12) * 30;
-		let left = (num % 12) * 40;
-		let fainted = ((pokemon as Pokemon | ServerPokemon)?.fainted ?
-			`;opacity:.3;filter:grayscale(100%) brightness(.5)` : ``);
-		return `background:transparent url(${Dex.resourcePrefix}sprites/pokemonicons-sheet.png?v18) no-repeat scroll -${left}px -${top}px${fainted}`;
+		if(Dex.species.get(id).exists) {
+			// Regular species
+			const num = this.getPokemonIconNum(id, pokemon?.gender === 'F', facingLeft);
+			const top = Math.floor(num / 12) * 30;
+			const left = (num % 12) * 40;
+			const fainted = ((pokemon as Pokemon | ServerPokemon)?.fainted ?
+				`;opacity:.3;filter:grayscale(100%) brightness(.5)` : ``);
+			return `background:transparent url(${Dex.resourcePrefix}sprites/pokemonicons-sheet.png?v18) no-repeat scroll -${left}px -${top}px${fainted}`;
+		}
+		else {
+			// Generations custom species
+			const num = this.getGensPokemonIconNum(id, pokemon?.gender === 'F');
+			const top = Math.floor(num / 10) * 32;
+			const left = (num % 1) * 32;
+			const fainted = ((pokemon as Pokemon | ServerPokemon)?.fainted ?
+				`;opacity:.3;filter:grayscale(100%) brightness(.5)` : ``);
+			return `background:transparent url(${Dex.resourcePrefix}sprites/gens-pokemonicons-sheet.png?v18) no-repeat scroll -${left}px -${top}px${fainted}`;
+		}
 	}
 
 	getTeambuilderSpriteData(pokemon: any, dex: ModdedDex = Dex): TeambuilderSpriteData {
