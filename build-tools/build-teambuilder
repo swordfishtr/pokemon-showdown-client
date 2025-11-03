@@ -765,31 +765,48 @@ for(const format of Dex.formats.all()) {
 
 	if(check.isScalemons(format.id)) gtt.scalemons = 1;
 
-	if(
-		(format.id.includes('35pokes') || format.id.includes('generationsdraft') || format.id === 'gen9test') &&
-		!['gen9nd35pokesperfectz1'].includes(format.id)
-	) {
-		const whitelist = (gtt.whitelist ??= {});
-
-		// Allow if not banned and not both of illegal and not unbanned
-		for(const mon of Dex.species.all()) {
-			if(
-				!ruleTable.isBannedSpecies(mon) &&
-				!(
-					(
-						mon.natDexTier === 'Illegal' ||
-						mon.natDexTier.includes('CAP')
-					) &&
-					!(
-						ruleTable.has(`+pokemon:${mon.id}`) ||
-						ruleTable.has(`+basepokemon:${toID(mon.baseSpecies)}`)
-					)
-				)
-			) {
-				whitelist[mon.id] = 1;
-			}
-		}
+	if([
+		'-pokemontag:ndlc', '-pokemontag:ndnfe', '-pokemontag:ndru', '-pokemontag:ndrubl', '-pokemontag:nduu',
+		'-pokemontag:nduubl', '-pokemontag:ndou', '-pokemontag:ndag', '-pokemontag:nduber',
+	].every((rule) => ruleTable.tagRules.includes(rule))) {
+		gtt.whitelist = Object.fromEntries(
+			[...ruleTable.keys()]
+			.flatMap((rule) =>
+				// This works for custom Pokemon, but for multi-formes you have to spell out all of them.
+				rule.startsWith('+pokemon:') ? rule.slice(9) :
+				rule.startsWith('+basepokemon:') ? Dex.species.get(rule.slice(13)).formeOrder?.map(toID) :
+				null
+			)
+			.filter((x) => x)
+			.map((id) => [id, 1])
+		);
 	}
+
+	// if(
+	// 	(format.id.includes('35pokes') || format.id.includes('generationsdraft') || format.id === 'gen9test') &&
+	// 	!['gen9nd35pokesperfectz1'].includes(format.id)
+	// ) {
+	// 	const whitelist = (gtt.whitelist ??= {});
+
+	// 	// Allow if not banned and not both of illegal and not unbanned
+	// 	for(const mon of Dex.species.all()) {
+	// 		if(
+	// 			!ruleTable.isBannedSpecies(mon) &&
+	// 			!(
+	// 				(
+	// 					mon.natDexTier === 'Illegal' ||
+	// 					mon.natDexTier.includes('CAP')
+	// 				) &&
+	// 				!(
+	// 					ruleTable.has(`+pokemon:${mon.id}`) ||
+	// 					ruleTable.has(`+basepokemon:${toID(mon.baseSpecies)}`)
+	// 				)
+	// 			)
+	// 		) {
+	// 			whitelist[mon.id] = 1;
+	// 		}
+	// 	}
+	// }
 
 	if(format.id.includes('35moves') || format.id === 'gen9nd35pokesperfectz1') {
 		const validator = new TeamValidator(format);
