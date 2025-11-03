@@ -865,11 +865,10 @@ export const Dex = new class implements ModdedDex {
 			// Generations custom species
 			const num = this.getGensPokemonIconNum(id, pokemon?.gender === 'F');
 			const top = Math.floor(num / 10) * 32;
-			let left = (num % 10) * 32;
-			if(!(top === 0 && left === 0)) left -= 4;
+			const left = (num % 10) * 32;
 			const fainted = ((pokemon as Pokemon | ServerPokemon)?.fainted ?
 				`;opacity:.3;filter:grayscale(100%) brightness(.5)` : ``);
-			return `background:transparent url(${Dex.resourcePrefix}sprites/gens-pokemonicons-sheet.png?v18) no-repeat scroll -${left}px -${top}px${fainted}; width:32px;`;
+			return `background:transparent url(${Dex.resourcePrefix}sprites/gens-pokemonicons-sheet.png?v18) no-repeat scroll -${left}px -${top}px${fainted}; width:32px; height: 32px; margin-left: 4px;`;
 		}
 	}
 
