@@ -491,13 +491,13 @@ for (const id in BDSPLearnsets) {
 // region OLD GENS OVERRIDE
 
 const overrideSpeciesKeys = [
-	'abilities', 'baseStats', 'cosmeticFormes', 'isNonstandard', 'requiredItems', 'types', 'unreleasedHidden',
+	'abilities', 'baseStats', 'cosmeticFormes', 'isNonstandard', 'name', 'requiredItems', 'types', 'unreleasedHidden',
 ];
 const overrideMoveKeys = [
 	'accuracy', 'basePower', 'category', 'desc', 'flags', 'isNonstandard', 'name', 'pp', 'priority', 'shortDesc', 'target', 'type',
 ];
-const overrideAbilityKeys = ['desc', 'flags', 'isNonstandard', 'rating', 'shortDesc'];
-const overrideItemKeys = ['desc', 'fling', 'isNonstandard', 'naturalGift', 'shortDesc'];
+const overrideAbilityKeys = ['desc', 'flags', 'isNonstandard', 'name', 'rating', 'shortDesc'];
+const overrideItemKeys = ['desc', 'fling', 'isNonstandard', 'name', 'naturalGift', 'shortDesc'];
 
 basemods.slice(0, -1).forEach((gen, index) => {
 	console.log(`Building overrides for ${gen} ...`);
