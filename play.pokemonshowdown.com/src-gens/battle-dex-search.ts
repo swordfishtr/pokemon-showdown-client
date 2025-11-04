@@ -966,7 +966,6 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 	getDefaultResults(): SearchRow[] {
 		let results: SearchRow[] = [];
 		for (let id in BattlePokedex) {
-			if(!BattlePokedex[id].exists) continue;
 			switch (id) {
 			case 'bulbasaur':
 				results.push(['header', "Generation 1"]);
@@ -996,11 +995,7 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 				results.push(['header', "Generation 9"]);
 				break;
 			case 'missingno':
-				results.push(['header', "Glitch"]);
-				break;
-			case 'syclar':
-				results.push(['header', "CAP"]);
-				break;
+				return results;
 			case 'pikachucosplay':
 				continue;
 			}
@@ -1009,12 +1004,7 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 		return results;
 	}
 	getBaseResults(): SearchRow[] {
-		// GENERATIONS
-		// Heavy rewrite; merge carefully.
-
 		let results = this.getDefaultResults();
-		
-		console.log(results[0], results[1]);
 
 		if(this.gtt.format.whitelist) {
 			results = results.filter(([type, id]) => (id in this.gtt.format.whitelist!));
@@ -1022,12 +1012,9 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 			// Can't use for loops here fsr??? blame Babel
 			Object.keys(this.gtt.format.whitelist).forEach((id) => {
 				if(results.some(([type, id2]) => id === id2)) return;
-				console.log(id);
 				results.unshift(['pokemon', id as ID]);
 			});
 		}
-
-		console.log(results[0], results[1]);
 
 		if(this.gtt.format.blacklist) {
 			results = results.filter(([type, id]) => !(id in this.gtt.format.blacklist!));
@@ -1040,8 +1027,6 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 			.sort(([type1, id1], [type2, id2]) => (this.gtt.format.customNumCol![id1 as ID] ?? 0) - (this.gtt.format.customNumCol![id2 as ID] ?? 0))
 			.reverse();
 		}
-
-		console.log(results[0], results[1]);
 
 		return results;
 	}

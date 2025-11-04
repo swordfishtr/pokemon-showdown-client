@@ -501,7 +501,7 @@ export const Dex = new class implements ModdedDex {
 			} else {
 				if (!data) data = { exists: false };
 				data.tier ??= '?';
-				data.nfe = data.id === 'dipplin' || !!(data as Species).evos?.some(evo => {
+				data.nfe = !!(data as Species).evos?.some(evo => {
 					const evoSpecies = this.species.get(evo);
 					return !evoSpecies.isNonstandard || evoSpecies.isNonstandard === data.isNonstandard ||
 						// Pokemon with Hisui evolutions
@@ -1151,7 +1151,7 @@ export class ModdedDex {
 			}
 
 			data.tier ??= '?';
-			data.nfe = data.id === 'dipplin' || !!data.evos?.some(evo => {
+			data.nfe = !!data.evos?.some(evo => {
 				const evoSpecies = this.species.get(evo);
 				return !evoSpecies.isNonstandard || evoSpecies.isNonstandard === data.isNonstandard ||
 					// Pokemon with Hisui evolutions
