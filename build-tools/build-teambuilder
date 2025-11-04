@@ -59,9 +59,9 @@ const gensmods = [
 	'perfectc1',
 	'perfectc2',
 	'perfectf1',
-	'perfectg1',
+	'regenerations1',
 ];
-const testmod = 'perfectg1';
+//const testmod = 'perfectg1';
 
 for(const mod of [...basemods, ...sidemods]) {
 	GensTeambuilderTable.mods[mod] = {};
@@ -853,7 +853,8 @@ function processDiffMon(mon) {
 
 for(const mod of gensmods) {
 	// Assuming gens mods are used by 1 format only.
-	const formatid = mod === testmod ? 'gen9test' : Object.keys(GensTeambuilderTable.formats).find((id) => id.includes(mod));
+	//const formatid = mod === testmod ? 'gen9test' : Object.keys(GensTeambuilderTable.formats).find((id) => id.includes(mod));
+	const formatid = Object.keys(GensTeambuilderTable.formats).find((id) => id.includes(mod));
 
 	buildFormatOverrides(mod, formatid);
 
