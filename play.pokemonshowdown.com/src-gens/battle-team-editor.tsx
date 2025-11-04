@@ -88,6 +88,7 @@ class TeamEditorState extends PSModel {
 		this.search.setGTT(format);
 	}
 	setSearchType(type: SearchType, i: number, value?: string) {
+		const id = toID(value);
 		const set = this.sets[i];
 		this.search.setType(type, set);
 		this.originalSpecies = null;
@@ -97,30 +98,30 @@ class TeamEditorState extends PSModel {
 			searchIndex = set.moves.findIndex((x) => !x);
 			if(searchIndex === -1) searchIndex = set.moves.length;
 			this.search.prependResults = this.getSearchMoves(set);
-			if (value && this.search.prependResults.some(row => row[1].split('_')[2] === toID(value))) {
+			if (value && this.search.prependResults.some(row => row[1].split('_')[2] === id)) {
 				value = '';
 			}
 		} else if (value) {
 			switch (type) {
 			case 'pokemon':
-				if (this.gtt.getFormatSpecies(value).exists) {
+				if (this.gtt.getFormatSpecies(id).exists || this.gtt.format.overrideSpeciesData?.[id]) {
 					this.originalSpecies = value;
-					this.search.prependResults = [['pokemon', toID(value)]];
+					this.search.prependResults = [['pokemon', id]];
 					value = '';
 				}
 				break;
 			case 'item':
-				if (toID(value) === 'noitem') value = '';
-				if (this.gtt.dex.items.get(value).exists) {
-					this.search.prependResults = [['item', toID(value)]];
+				if (id === 'noitem') value = '';
+				if (this.gtt.dex.items.get(id).exists || this.gtt.format.overrideItemData?.[id]) {
+					this.search.prependResults = [['item', id]];
 					value = '';
 				}
 				break;
 			case 'ability':
-				if (toID(value) === 'selectability') value = '';
-				if (toID(value) === 'noability') value = '';
-				if (this.gtt.dex.abilities.get(value).exists) {
-					this.search.prependResults = [['ability', toID(value)]];
+				if (id === 'selectability') value = '';
+				if (id === 'noability') value = '';
+				if (this.gtt.getFormatAbility(id).exists || this.gtt.format.overrideAbilityData?.[id]) {
+					this.search.prependResults = [['ability', id]];
 					value = '';
 				}
 				break;
@@ -323,7 +324,7 @@ class TeamEditorState extends PSModel {
 		case 'item':
 			return this.gtt.dex.items.get(result[1]).name;
 		case 'ability':
-			return this.gtt.dex.abilities.get(result[1]).name;
+			return this.gtt.getFormatAbility(result[1]).name;
 		case 'move':
 			if (result[1].startsWith('_')) {
 				const [slot, moveid] = result[1].slice(1).split('_');

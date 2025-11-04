@@ -491,7 +491,7 @@ for (const id in BDSPLearnsets) {
 // region OLD GENS OVERRIDE
 
 const overrideSpeciesKeys = [
-	'abilities', 'baseStats', 'cosmeticFormes', 'isNonstandard', 'name', 'requiredItems', 'types', 'unreleasedHidden',
+	'abilities', 'baseSpecies', 'baseStats', 'cosmeticFormes', 'isNonstandard', 'name', 'requiredItems', 'types', 'unreleasedHidden',
 ];
 const overrideMoveKeys = [
 	'accuracy', 'basePower', 'category', 'desc', 'flags', 'isNonstandard', 'name', 'pp', 'priority', 'shortDesc', 'target', 'type',

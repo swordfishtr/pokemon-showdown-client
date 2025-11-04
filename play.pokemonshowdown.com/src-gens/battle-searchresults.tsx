@@ -189,7 +189,7 @@ export class PSSearchResults extends preact.Component<{
 
 	renderAbilityRow(id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
 		const search = this.props.search;
-		const ability = search.gtt.dex.abilities.get(id);
+		const ability = search.gtt.getFormatAbility(id);
 		if (!ability) return <li class="result">Unrecognized ability</li>;
 
 		return <li class="result">

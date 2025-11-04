@@ -12,7 +12,7 @@
  */
 
 import { Dex, type ModdedDex, toID, type ID, PSUtils } from "./battle-dex";
-import { Move, Species, type Ability, type Item } from "./battle-dex-data";
+import { Ability, Move, Species, type Item } from "./battle-dex-data";
 
 export type SearchType = (
 	'pokemon' | 'type' | 'tier' | 'move' | 'item' | 'ability' | 'egggroup' | 'category' | 'article'
@@ -169,6 +169,25 @@ export class GTTIndex {
 		if(!customDex) this.moveCache[moveid] = result
 		return result;
 	}
+	getFormatAbility(abilityName: string, dex = this.dex) {
+		const customDex = dex !== this.dex;
+		const abilityid = toID(abilityName)
+		if(this.abilityCache[abilityid]) return this.abilityCache[abilityid];
+
+		const ability = dex.abilities.get(abilityid);
+		const moddedData: AnyObject = {};
+
+		const formatOverrides = this.format.overrideAbilityData?.[abilityid];
+		if(formatOverrides) {
+			for(const prop in formatOverrides) {
+				moddedData[prop] = formatOverrides[prop];
+			}
+		}
+
+		const result = PSUtils.isEmpty(moddedData) ? ability : new Ability(abilityid, abilityName, { ...ability, ...moddedData });
+		if(!customDex) this.abilityCache[abilityid] = result
+		return result;
+	}
 }
 
 /** ID, SearchType, index (if alias), offset (if offset alias) */
@@ -296,7 +315,7 @@ export class DexSearch {
 			if (!['type', 'move', 'ability', 'egggroup', 'tier'].includes(type)) return false;
 			if (type === 'type') entry[1] = this.capitalizeFirst(entry[1]);
 			if (type === 'move') entry[1] = toID(entry[1]);
-			if (type === 'ability') entry[1] = this.gtt.dex.abilities.get(entry[1]).name;
+			if (type === 'ability') entry[1] = this.gtt.getFormatAbility(entry[1]).name;
 			if (type === 'tier') {
 				// very hardcode
 				const tierTable: { [id: string]: string } = {
@@ -1124,7 +1143,7 @@ class BattleAbilitySearch extends BattleTypedSearch<'ability'> {
 		if (isAAA || isHackmons) {
 			let abilities: ID[] = [];
 			for (let i in this.getTable()) {
-				const ability = dex.abilities.get(i);
+				const ability = this.gtt.getFormatAbility(i, dex);
 				if (ability.isNonstandard) continue;
 				if (ability.gen > dex.gen) continue;
 				abilities.push(ability.id);
@@ -1133,7 +1152,7 @@ class BattleAbilitySearch extends BattleTypedSearch<'ability'> {
 			let goodAbilities: SearchRow[] = [['header', "Abilities"]];
 			let poorAbilities: SearchRow[] = [['header', "Situational Abilities"]];
 			let badAbilities: SearchRow[] = [['header', "Unviable Abilities"]];
-			for (const ability of abilities.sort().map(abil => dex.abilities.get(abil))) {
+			for (const ability of abilities.sort().map(abil => this.gtt.getFormatAbility(abil, dex))) {
 				let rating = ability.rating;
 				if (ability.id === 'normalize') rating = 3;
 				if (rating >= 3) {
@@ -1157,7 +1176,7 @@ class BattleAbilitySearch extends BattleTypedSearch<'ability'> {
 	filter(row: SearchRow, filters: string[][]) {
 		if (!filters) return true;
 		if (row[0] !== 'ability') return true;
-		const ability = this.gtt.dex.abilities.get(row[1]);
+		const ability = this.gtt.getFormatAbility(row[1]);
 		for (const [filterType, value] of filters) {
 			switch (filterType) {
 			case 'pokemon':
