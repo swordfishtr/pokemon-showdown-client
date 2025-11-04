@@ -1024,6 +1024,8 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 			});
 		}
 
+		console.log(results[0], results[1]);
+
 		if(this.gtt.format.blacklist) {
 			results = results.filter(([type, id]) => !(id in this.gtt.format.blacklist!));
 		}
@@ -1035,6 +1037,8 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 			.sort(([type1, id1], [type2, id2]) => (this.gtt.format.customNumCol![id1 as ID] ?? 0) - (this.gtt.format.customNumCol![id2 as ID] ?? 0))
 			.reverse();
 		}
+
+		console.log(results[0], results[1]);
 
 		return results;
 	}
