@@ -547,14 +547,8 @@ class TeamEditorState extends PSModel {
 		const supportsEVs = !team.format.includes('letsgo');
 		const supportsAVs = !supportsEVs;
 
-		// do this after setting set.evs because it's assumed to exist
-		// after getStat is run
-		const species = this.gtt.getFormatSpecies(set.species);
-		if (!species.exists) return 0;
-
 		const level = set.level || this.gtt.format.level;
-
-		const baseStat = species.baseStats[stat];
+		const baseStat = this.gtt.getFormatSpecies(set.species).baseStats[stat];
 		const iv = ivOverride;
 		const ev = evOverride ?? set.evs?.[stat] ?? (this.gtt.dex.gen > 2 ? 0 : 252);
 
