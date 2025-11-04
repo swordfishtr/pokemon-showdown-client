@@ -1013,6 +1013,8 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 		// Heavy rewrite; merge carefully.
 
 		let results = this.getDefaultResults();
+		
+		console.log(results[0], results[1]);
 
 		if(this.gtt.format.whitelist) {
 			results = results.filter(([type, id]) => (id in this.gtt.format.whitelist!));
@@ -1020,6 +1022,7 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 			// Can't use for loops here fsr??? blame Babel
 			Object.keys(this.gtt.format.whitelist).forEach((id) => {
 				if(results.some(([type, id2]) => id === id2)) return;
+				console.log(id);
 				results.unshift(['pokemon', id as ID]);
 			});
 		}
