@@ -1087,7 +1087,7 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 					class="battle-log hasuserlist" room={room} top={this.battleHeight} noSubscription
 				>
 					<div class="battle-controls" role="complementary" aria-label="Battle Controls">
-						{PSView.virtualKeyboard ? null : this.renderControls()}
+						{this.renderControls()}
 					</div>
 				</ChatLog>
 				<ChatTextEntry room={room} onMessage={this.send} onKey={this.onKey} left={0} />
@@ -1098,7 +1098,7 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 				>
 					Battle options
 				</button>
-				{(room.battle && !room.battle.ended && room.battle.atQueueEnd) &&
+				{(room.battle && !room.battle.ended && !room.battle.atQueueEnd) &&
 					<button class="button" data-cmd="/ffto end"
 						style={{ position: 'absolute', left: '50%', top: this.battleHeight, transform: 'translate(-50%)' }}
 					>Skip animation <i class="fa fa-fast-forward" aria-hidden></i></button>}

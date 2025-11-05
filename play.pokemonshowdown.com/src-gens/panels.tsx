@@ -318,7 +318,6 @@ export class PSView extends preact.Component {
 	static hasTapped = false;
 	/** mode where the tabbar is opened rather than always being there */
 	static narrowMode = false;
-	static virtualKeyboard = false;
 	static verticalHeaderWidth = VERTICAL_HEADER_WIDTH;
 	static setTextboxFocused(focused: boolean) {
 		if (!PSView.narrowMode) return;
@@ -638,12 +637,6 @@ export class PSView extends preact.Component {
 		window.addEventListener('touchstart', ev => {
 			BattleTooltips.hideTooltip();
 		});
-
-		if ("virtualKeyboard" in navigator) {
-			(navigator.virtualKeyboard as any).addEventListener("geometrychange", (event: any) => {
-				PSView.virtualKeyboard = event.target.boundingRect.height > 0;
-			});
-		}
 
 		const colorSchemeQuery = window.matchMedia?.('(prefers-color-scheme: dark)');
 		if (colorSchemeQuery?.media !== 'not all') {

@@ -1682,6 +1682,8 @@ pre.textbox.textbox-empty[placeholder]:before {
 	position: static;
 	width: auto;
 	padding-bottom: 24px;
+	/* Making it so the virtual keyboard hides battle controls */
+	max-height: max(calc(10000px - env(keyboard-inset-height, 0px) * 10000), 0px);
 }
 .battle-log .movecontrols, .battle-log .shiftcontrols, .battle-log .switchcontrols {
 	max-width: 330px;
