@@ -638,6 +638,10 @@ export class PSView extends preact.Component {
 			BattleTooltips.hideTooltip();
 		});
 
+		if(('navigator' in window) && ('virtualKeyboard' in window.navigator)) {
+			(window.navigator.virtualKeyboard as any).overlaysContent = true;
+		}
+
 		const colorSchemeQuery = window.matchMedia?.('(prefers-color-scheme: dark)');
 		if (colorSchemeQuery?.media !== 'not all') {
 			colorSchemeQuery.addEventListener('change', cs => {
