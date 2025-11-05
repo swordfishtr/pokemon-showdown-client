@@ -7,7 +7,7 @@
 
 import preact from "../js/lib/preact";
 import { PS, PSRoom, type RoomOptions, type RoomID, Config } from "./client-main";
-import { PSIcon, PSPanelWrapper, PSRoomPanel } from "./panels";
+import { PSIcon, PSPanelWrapper, PSRoomPanel, PSView } from "./panels";
 import { ChatLog, ChatRoom, ChatTextEntry, ChatUserList } from "./panel-chat";
 import { FormatDropdown } from "./panel-mainmenu";
 import { Battle, type Pokemon, type ServerPokemon } from "./battle";
@@ -897,18 +897,12 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 		}
 		return buf;
 	}
-	renderPlayerWaitingControls() {
-		return <div class="controls">
-			<div class="whatdo">
-				<button class="button" data-cmd="/ffto end">Skip animation <i class="fa fa-fast-forward" aria-hidden></i></button>
-			</div>
-			{this.renderTeamList()}
-		</div>;
-	}
 	renderPlayerControls(request: BattleRequest) {
 		const room = this.props.room;
 		const atEnd = room.battle.atQueueEnd;
-		if (!atEnd) return this.renderPlayerWaitingControls();
+		if (!atEnd) return <div class="controls">
+			{this.renderTeamList()}
+		</div>;
 
 		let choices = room.choices;
 		if (!choices) return 'Error: Missing BattleChoiceBuilder';
@@ -1093,17 +1087,21 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 					class="battle-log hasuserlist" room={room} top={this.battleHeight} noSubscription
 				>
 					<div class="battle-controls" role="complementary" aria-label="Battle Controls">
-						{this.renderControls()}
+						{PSView.virtualKeyboard ? null : this.renderControls()}
 					</div>
 				</ChatLog>
 				<ChatTextEntry room={room} onMessage={this.send} onKey={this.onKey} left={0} />
 				<ChatUserList room={room} top={this.battleHeight} minimized />
 				<button
 					data-href="battleoptions" class="button"
-					style={{ position: 'absolute', right: '75px', top: this.battleHeight }}
+					style={{ position: 'absolute', right: 0, top: this.battleHeight }}
 				>
 					Battle options
 				</button>
+				{(room.battle && !room.battle.ended && room.battle.atQueueEnd) &&
+					<button class="button" data-cmd="/ffto end"
+						style={{ position: 'absolute', left: '50%', top: this.battleHeight, transform: 'translate(-50%)' }}
+					>Skip animation <i class="fa fa-fast-forward" aria-hidden></i></button>}
 				{(room.battle && !room.battle.ended && room.request && room.battle.mySide.id === PS.user.userid) &&
 					<TimerButton room={room} />}
 				<div class="battle-controls-container"></div>

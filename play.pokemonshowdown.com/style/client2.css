@@ -1681,7 +1681,7 @@ pre.textbox.textbox-empty[placeholder]:before {
 	top: 0;
 	position: static;
 	width: auto;
-	padding-bottom: 6px;
+	padding-bottom: 24px;
 }
 .battle-log .movecontrols, .battle-log .shiftcontrols, .battle-log .switchcontrols {
 	max-width: 330px;
