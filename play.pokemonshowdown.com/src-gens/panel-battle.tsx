@@ -901,8 +901,11 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 		const room = this.props.room;
 		const atEnd = room.battle.atQueueEnd;
 		if (!atEnd) return <div class="controls">
+			{room.width >= 700 && <div class="whatdo">
+				<button class="button" data-cmd="/ffto end">Skip animation <i class="fa fa-fast-forward" aria-hidden></i></button>
+			</div>}
 			{this.renderTeamList()}
-		</div>;
+		</div>
 
 		let choices = room.choices;
 		if (!choices) return 'Error: Missing BattleChoiceBuilder';
