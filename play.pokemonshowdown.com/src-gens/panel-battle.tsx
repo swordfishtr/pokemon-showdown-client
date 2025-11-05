@@ -7,7 +7,7 @@
 
 import preact from "../js/lib/preact";
 import { PS, PSRoom, type RoomOptions, type RoomID, Config } from "./client-main";
-import { PSIcon, PSPanelWrapper, PSRoomPanel, PSView } from "./panels";
+import { PSIcon, PSPanelWrapper, PSRoomPanel } from "./panels";
 import { ChatLog, ChatRoom, ChatTextEntry, ChatUserList } from "./panel-chat";
 import { FormatDropdown } from "./panel-mainmenu";
 import { Battle, type Pokemon, type ServerPokemon } from "./battle";
