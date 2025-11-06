@@ -338,6 +338,7 @@ export interface FormatData {
 	effectType: 'Format';
 }
 
+window.BattleFormats ??= {};
 declare const BattleFormats: { [id: string]: FormatData };
 
 export type SelectType = 'teambuilder' | 'challenge' | 'search' | 'tournament';

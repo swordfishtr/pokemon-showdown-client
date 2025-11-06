@@ -359,7 +359,7 @@ export interface Team {
 	key: string;
 	isBox: boolean;
 }
-if (!window.BattleFormats) window.BattleFormats = {};
+window.BattleFormats ??= {};
 
 /**
  * This model tracks teams and formats, updating when either is updated.

@@ -226,7 +226,7 @@ export class MainMenuRoom extends PSRoom {
 		for (let i = 3; i <= 9; i += 2) {
 			window.NonBattleGames[`bestof${i}`] = `Best-of-${i}`;
 		}
-		window.BattleFormats = {};
+		window.BattleFormats ??= {};
 		for (let j = 1; j < formatsList.length; j++) {
 			const entry = formatsList[j];
 			if (entry === ',LL') continue;
