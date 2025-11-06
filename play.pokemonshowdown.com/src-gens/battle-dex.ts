@@ -904,9 +904,9 @@ export const Dex = new class implements ModdedDex {
 		if (pokemon.shiny) spriteData.shiny = true;
 
 		// Generations off-size fakemon sprites.
-		if(id === 'evisempra') {
-			spriteData.h = 96;
-		}
+		// if(id === 'evisempra') {
+		// 	spriteData.h = 96;
+		// }
 
 		if (Dex.prefs('nopastgens')) gen = 9;
 		if (Dex.prefs('bwgfx') && gen > 5) gen = 5;

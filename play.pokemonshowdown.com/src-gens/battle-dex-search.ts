@@ -12,7 +12,7 @@
  */
 
 import { Dex, type ModdedDex, toID, type ID, PSUtils } from "./battle-dex";
-import { Ability, Move, Species, type Item } from "./battle-dex-data";
+import { Ability, Item, Move, Species } from "./battle-dex-data";
 
 export type SearchType = (
 	'pokemon' | 'type' | 'tier' | 'move' | 'item' | 'ability' | 'egggroup' | 'category' | 'article'
@@ -186,6 +186,25 @@ export class GTTIndex {
 
 		const result = PSUtils.isEmpty(moddedData) ? ability : new Ability(abilityid, abilityName, { ...ability, ...moddedData });
 		if(!customDex) this.abilityCache[abilityid] = result
+		return result;
+	}
+	getFormatItem(itemName: string, dex = this.dex) {
+		const customDex = dex !== this.dex;
+		const itemid = toID(itemName)
+		if(this.itemCache[itemid]) return this.itemCache[itemid];
+
+		const item = dex.items.get(itemid);
+		const moddedData: AnyObject = {};
+
+		const formatOverrides = this.format.overrideItemData?.[itemid];
+		if(formatOverrides) {
+			for(const prop in formatOverrides) {
+				moddedData[prop] = formatOverrides[prop];
+			}
+		}
+
+		const result = PSUtils.isEmpty(moddedData) ? item : new Item(itemid, itemName, { ...item, ...moddedData });
+		if(!customDex) this.itemCache[itemid] = result
 		return result;
 	}
 }

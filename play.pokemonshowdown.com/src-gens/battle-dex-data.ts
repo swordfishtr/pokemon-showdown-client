@@ -745,7 +745,6 @@ export const GensPokemonIconIndexes: { [id: string]: number } = {
 	ironsoke: 2,
 	beedrillg: 3,
 	butterfreeg: 4,
-	obsilix: 5,
 	valkaryia: 6,
 	porygone: 7,
 };
