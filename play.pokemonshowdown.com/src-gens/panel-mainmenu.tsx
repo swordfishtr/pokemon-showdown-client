@@ -841,7 +841,8 @@ export class TeamForm extends preact.Component<{
 		}
 	};
 	render() {
-		window.teamform = this;
+		window.teamforms ??= {};
+		window.teamforms[this.props.class ?? ''] = this;
 		if (window.BattleFormats) {
 			const starredPrefs = PS.prefs.starredformats || {};
 			// .reverse() because the newest starred format should be the default one
