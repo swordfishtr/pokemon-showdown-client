@@ -43,7 +43,11 @@ export class ChatRoom extends PSRoom {
 	challengeMenuOpen = false;
 	initialSlash = false;
 	challenging: Challenge | null = null;
+	/** True during the period between challenge send and server acknowledgement. */
+	challengingSent: boolean = false;
 	challenged: Challenge | null = null;
+	/** True during the period between challenge accept and server acknowledgement. */
+	challengedSent: boolean = false;
 	/** n.b. this will be null outside of battle rooms */
 	battle: Battle | null = null;
 	log: BattleLog | null = null;
@@ -421,12 +425,14 @@ export class ChatRoom extends PSRoom {
 			}
 			// we are sending the challenge
 			this.challenging = challenge;
+			this.challengingSent = false;
 		} else {
 			if (!challenge && !this.challenged) {
 				// this is also used for rejecting challenges
 				this.challenging = null;
 			}
 			this.challenged = challenge;
+			this.challengedSent = false;
 			if (challenge) {
 				this.notify({
 					title: `Challenge from ${name}`,
@@ -1021,11 +1027,12 @@ class ChatPanel extends PSRoomPanel<ChatRoom> {
 		PS.send(`/utm ${packedTeam}`);
 		PS.send(`${privacy}/challenge ${room.pmTarget}, ${format}`);
 		room.challengeMenuOpen = false;
-		room.challenging = {
-			formatName: format,
-			teamFormat: format,
-		};
-		PS.mainmenu.lastChallenged = now;
+		// room.challenging = {
+		// 	formatName: format,
+		// 	teamFormat: format,
+		// };
+		// PS.mainmenu.lastChallenged = now;
+		room.challengingSent = true;
 		room.update(null);
 	};
 	acceptChallenge = (e: Event, format: string, team?: Team) => {
@@ -1034,7 +1041,8 @@ class ChatPanel extends PSRoomPanel<ChatRoom> {
 		if (!room.pmTarget) throw new Error("Not a PM room");
 		PS.send(`/utm ${packedTeam}`);
 		this.props.room.send(`/accept`);
-		room.challenged = null;
+		// room.challenged = null;
+		room.challengedSent = true;
 		room.update(null);
 	};
 
@@ -1042,9 +1050,9 @@ class ChatPanel extends PSRoomPanel<ChatRoom> {
 		const room = this.props.room;
 		const tinyLayout = room.width < 450;
 
-		const challengeTo = room.challenging ? <div class="challenge">
+		const challengeTo = (room.challengingSent || room.challenging) ? <div class="challenge">
 			<p>Waiting for {room.pmTarget}...</p>
-			<TeamForm format={room.challenging.formatName} teamFormat={room.challenging.teamFormat} onSubmit={null}>
+			<TeamForm format={room.challenging?.formatName} teamFormat={room.challenging?.teamFormat} onSubmit={null}>
 				<button data-cmd="/cancelchallenge" class="button">Cancel</button>
 			</TeamForm>
 		</div> : room.challengeMenuOpen ? <div class="challenge">
@@ -1058,16 +1066,16 @@ class ChatPanel extends PSRoomPanel<ChatRoom> {
 			</TeamForm>
 		</div> : null;
 
-		const challengeFrom = room.challenged ? <div class="challenge">
-			{!!room.challenged.message && <p>{room.challenged.message}</p>}
-			<TeamForm format={room.challenged.formatName} teamFormat={room.challenged.teamFormat} onSubmit={this.acceptChallenge}>
-				<button type="submit" class={room.challenged.formatName ? `button button-first` : `button`}>
-					<strong>{room.challenged.acceptButtonLabel || 'Accept'}</strong>
+		const challengeFrom = (room.challengedSent || room.challenged) ? <div class="challenge">
+			{!!room.challenged?.message && <p>{room.challenged.message}</p>}
+			<TeamForm format={room.challenged?.formatName} teamFormat={room.challenged?.teamFormat} onSubmit={this.acceptChallenge}>
+				<button type="submit" class={room.challenged?.formatName ? `button button-first` : `button`}>
+					<strong>{room.challenged?.acceptButtonLabel || 'Accept'}</strong>
 				</button>
-				{room.challenged.formatName && <button data-href="battleoptions" class="button button-last" aria-label="Battle options">
+				{room.challenged?.formatName && <button data-href="battleoptions" class="button button-last" aria-label="Battle options">
 					<i class="fa fa-caret-down" aria-hidden></i>
 				</button>} {}
-				<button data-cmd="/reject" class="button">{room.challenged.rejectButtonLabel || 'Reject'}</button>
+				<button data-cmd="/reject" class="button">{room.challenged?.rejectButtonLabel || 'Reject'}</button>
 			</TeamForm>
 		</div> : null;
 

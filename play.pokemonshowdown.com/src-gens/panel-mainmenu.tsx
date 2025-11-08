@@ -43,7 +43,7 @@ export class MainMenuRoom extends PSRoom {
 		sectionTitles?: string[],
 	} = {};
 	searchCountdown: { format: string, packedTeam: string, countdown: number, timer: number } | null = null;
-	/** used to track the moment between "search sent" and "server acknowledged search sent" */
+	/** True during the period between search start and server acknowledgement. */
 	searchSent = false;
 	search: { searching: string[], games: Record<RoomID, string> | null } = { searching: [], games: null };
 	disallowSpectators: boolean | null = PS.prefs.disallowspectators;
@@ -156,7 +156,6 @@ export class MainMenuRoom extends PSRoom {
 			this.handleQueryResponse(queryId as ID, JSON.parse(responseJSON));
 			return;
 		} case 'pm': {
-			console.log(args);
 			const [, user1, user2, message] = args;
 			this.handlePM(user1, user2, message);
 			let sideRoom = PS.rightPanel as ChatRoom;
@@ -167,6 +166,14 @@ export class MainMenuRoom extends PSRoom {
 			return;
 		} case 'popup': {
 			const [, message] = args;
+			this.searchSent = false;
+			for(const roomid in PS.rooms) {
+				const room = PS.rooms[roomid];
+				if(room instanceof ChatRoom) {
+					room.challengedSent = false;
+					room.challengingSent = false;
+				}
+			}
 			PS.alert(message.replace(/\|\|/g, '\n'));
 			return;
 		}
