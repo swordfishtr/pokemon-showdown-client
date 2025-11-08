@@ -46,7 +46,7 @@ export class ChatRoom extends PSRoom {
 	/** True during the period between challenge send and server acknowledgement. */
 	challengingSent: boolean = false;
 	challenged: Challenge | null = null;
-	/** True during the period between challenge accept and server acknowledgement. */
+	/** True during the period between challenge accept/reject and server acknowledgement. */
 	challengedSent: boolean = false;
 	/** n.b. this will be null outside of battle rooms */
 	battle: Battle | null = null;
@@ -420,8 +420,9 @@ export class ChatRoom extends PSRoom {
 
 		if (userid === PS.user.userid) {
 			if (!challenge && !this.challenging) {
-				// this is also used for canceling challenges
+				// this is also used for rejecting challenges
 				this.challenged = null;
+				this.challengedSent = false;
 			}
 			// we are sending the challenge
 			this.challenging = challenge;
@@ -430,7 +431,7 @@ export class ChatRoom extends PSRoom {
 			PS.mainmenu.lastChallenged = Date.now();
 		} else {
 			if (!challenge && !this.challenged) {
-				// this is also used for rejecting challenges
+				// this is also used for canceling challenges
 				this.challenging = null;
 			}
 			this.challenged = challenge;
