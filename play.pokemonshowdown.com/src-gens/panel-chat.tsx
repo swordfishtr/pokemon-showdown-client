@@ -426,6 +426,8 @@ export class ChatRoom extends PSRoom {
 			// we are sending the challenge
 			this.challenging = challenge;
 			this.challengingSent = false;
+			this.challengeMenuOpen = false;
+			PS.mainmenu.lastChallenged = Date.now();
 		} else {
 			if (!challenge && !this.challenged) {
 				// this is also used for rejecting challenges
@@ -1026,12 +1028,6 @@ class ChatPanel extends PSRoomPanel<ChatRoom> {
 		if (!room.pmTarget) throw new Error("Not a PM room");
 		PS.send(`/utm ${packedTeam}`);
 		PS.send(`${privacy}/challenge ${room.pmTarget}, ${format}`);
-		room.challengeMenuOpen = false;
-		// room.challenging = {
-		// 	formatName: format,
-		// 	teamFormat: format,
-		// };
-		// PS.mainmenu.lastChallenged = now;
 		room.challengingSent = true;
 		room.update(null);
 	};
