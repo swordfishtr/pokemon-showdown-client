@@ -156,6 +156,7 @@ export class MainMenuRoom extends PSRoom {
 			this.handleQueryResponse(queryId as ID, JSON.parse(responseJSON));
 			return;
 		} case 'pm': {
+			console.log(args);
 			const [, user1, user2, message] = args;
 			this.handlePM(user1, user2, message);
 			let sideRoom = PS.rightPanel as ChatRoom;
