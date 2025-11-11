@@ -10,7 +10,7 @@ import { LoginManager } from "./client-connection";
 import { Config, PS, PSRoom, type RoomID, type RoomOptions, type Team } from "./client-main";
 import { PSIcon, PSPanelWrapper, PSRoomPanel } from "./panels";
 import type { BattlesRoom } from "./panel-battle";
-import { ChatRoom } from "./panel-chat";
+import type { ChatRoom } from "./panel-chat";
 import type { LadderFormatRoom } from "./panel-ladder";
 import type { RoomsRoom } from "./panel-rooms";
 import { TeamBox, type SelectType } from "./panel-teamdropdown";
@@ -133,8 +133,8 @@ export class MainMenuRoom extends PSRoom {
 			const [, fullName, namedCode, avatar] = args;
 			if(toID(fullName) !== PS.user.userid) {
 				for(const roomid in PS.rooms) {
-					const room = PS.rooms[roomid];
-					if(room instanceof ChatRoom) {
+					const room = PS.rooms[roomid] as ChatRoom;
+					if(room.classType === 'chat') {
 						PS.send(`/cmd roomidentity ${room.id}`);
 					}
 				}
@@ -168,8 +168,8 @@ export class MainMenuRoom extends PSRoom {
 			const [, message] = args;
 			this.searchSent = false;
 			for(const roomid in PS.rooms) {
-				const room = PS.rooms[roomid];
-				if(room instanceof ChatRoom) {
+				const room = PS.rooms[roomid] as ChatRoom;
+				if(room.classType === 'chat') {
 					room.challengedSent = false;
 					room.challengingSent = false;
 				}
@@ -423,8 +423,8 @@ export class MainMenuRoom extends PSRoom {
 		// GENERATIONS
 		case 'roomidentity': {
 			const [roomid, identity] = response;
-			const room = PS.rooms[roomid];
-			if(!(room instanceof ChatRoom)) return;
+			const room = PS.rooms[roomid] as ChatRoom;
+			if(room?.classType !== 'chat' && room?.classType !== 'battle') return;
 			room.addUser(identity);
 			break;
 		}
