@@ -231,8 +231,15 @@ export class DexSearch {
 
 	typedSearch: BattleTypedSearch<SearchType> | null = null;
 
-	results: SearchRow[] | null = null;
+	private _results: SearchRow[] | null = null;
 	prependResults: SearchRow[] | null = null;
+
+	get results() {
+		if(!this._results) return null;
+		if(!this.filters && !this.sortCol && this.prependResults) return this.prependResults.concat(this._results);
+		return this._results.slice();
+	}
+
 	exactMatch = false;
 
 	static typeTable = {
@@ -284,7 +291,7 @@ export class DexSearch {
 
 	setType(searchType: SearchType | '', speciesOrSet: ID | Dex.PokemonSet = '' as ID) {
 		// invalidate caches
-		this.results = null;
+		this._results = null;
 
 		if (searchType !== this.typedSearch?.searchType) {
 			this.filters = null;
@@ -308,17 +315,14 @@ export class DexSearch {
 
 	find(query: string) {
 		query = toID(query);
-		if (this.query === query && this.results) {
+		if (this.query === query && this._results) {
 			return false;
 		}
 		this.query = query;
 		if (!query) {
-			this.results = this.typedSearch?.getResults(this.filters, this.sortCol, this.reverseSort) || [];
-			if (!this.filters && !this.sortCol && this.prependResults) {
-				this.results = [...this.prependResults, ...this.results];
-			}
+			this._results = this.typedSearch?.getResults(this.filters, this.sortCol, this.reverseSort) || [];
 		} else {
-			this.results = this.textSearch(query);
+			this._results = this.textSearch(query);
 		}
 		return true;
 	}
@@ -346,7 +350,7 @@ export class DexSearch {
 				entry[1] = tierTable[entry[1]] || entry[1].toUpperCase();
 			}
 			if (!this.filters) this.filters = [];
-			this.results = null;
+			this._results = null;
 			for (const filter of this.filters) {
 				if (filter[0] === type && filter[1] === entry[1]) {
 					return true;
@@ -362,7 +366,7 @@ export class DexSearch {
 			if (type === 'pokemon') entry[1] = toID(entry[1]);
 			if (!this.filters) this.filters = [];
 			this.filters.push(entry.slice(0, 2) as SearchFilter);
-			this.results = null;
+			this._results = null;
 			return true;
 		}
 		return false;
@@ -386,7 +390,7 @@ export class DexSearch {
 			this.filters.pop();
 		}
 		if (!this.filters.length) this.filters = null;
-		this.results = null;
+		this._results = null;
 		return true;
 	}
 
@@ -402,7 +406,7 @@ export class DexSearch {
 			this.sortCol = sortCol;
 			this.reverseSort = false;
 		}
-		this.results = null;
+		this._results = null;
 	}
 
 	filterLabel(filterType: string) {
@@ -664,8 +668,8 @@ export class DexSearch {
 			bufs.push(this.instafilter(searchType, instafilter[0], instafilter[1]));
 		}
 
-		this.results = Array.prototype.concat.apply(topbuf, bufs);
-		return this.results;
+		this._results = Array.prototype.concat.apply(topbuf, bufs);
+		return this._results;
 	}
 	private instafilter(searchType: SearchType | '', fType: SearchType, fId: ID): SearchRow[] {
 		let buf: SearchRow[] = [];

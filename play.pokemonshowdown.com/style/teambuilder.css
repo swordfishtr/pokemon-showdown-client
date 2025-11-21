@@ -708,10 +708,7 @@ you can't delete it by pressing Backspace */
 	font-size: 14px;
 }
 .searchboxwrapper .dexlist-filters {
-	float: left;
-	position: relative;
-	top: -21px;
-	left: 4px;
+	position: absolute;
 	list-style: none;
 }
 .searchboxwrapper .moveslot {
@@ -733,6 +730,9 @@ you can't delete it by pressing Backspace */
 .wizardsearchresults.belowset {
 	top: 230px;
 }
+.wizardsearchresults.belowmoves {
+	top: 300px;
+}
 .wizardsearchresults .dexlist, .searchresults .dexlist {
 	min-width: 624px;
 }
@@ -752,7 +752,7 @@ div.team-focus-editor.mobile > div.pad {
 div.team-focus-editor.mobile > div.wizardsearchresults {
 	overflow: unset;
 }
-/*****************************************/
+/***********/
 
 .sample-sets {
 	border: 1px solid #888;

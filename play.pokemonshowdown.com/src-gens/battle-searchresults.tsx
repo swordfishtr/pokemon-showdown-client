@@ -16,7 +16,7 @@ export class PSSearchResults extends preact.Component<{
 	search: DexSearch, windowing?: number | null, hideFilters?: boolean, resultIndex?: number,
 	/** type = '' means a filter was selected,
 	  * null means a sort was selected (clear not needed) */
-	onSelect?: (type: SearchType | '' | null, name: string, moveSlot?: string) => void,
+	onSelect?: (type: SearchType | '' | null, name: string) => void,
 }> {
 	readonly URL_ROOT = `//${Config.routes.dex}/`;
 	speciesId: ID = '' as ID;
@@ -207,22 +207,8 @@ export class PSSearchResults extends preact.Component<{
 	}
 
 	renderMoveRow(id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
-		let slot = null;
-		if (id.startsWith('_')) {
-			[slot, id] = id.slice(1).split('_') as [string, ID];
-			if (!id) {
-				return <li class="result"><a
-					href={`${this.URL_ROOT}moves/`} class="cur"
-					data-target="push" data-entry={`move||${slot}`}
-				>
-					<span class="col movenamecol"><i>(slot {slot} empty)</i></span>
-				</a></li>;
-			}
-		}
-
 		const search = this.props.search;
 		const move = search.gtt.getFormatMove(id);
-		const entry = slot ? `move|${move.name}|${slot}` : `move|${move.name}`;
 		if (!move) return <li class="result">Unrecognized move</li>;
 
 		const tagStart = (move.name.startsWith('Hidden Power') ? 12 : 0);
@@ -230,7 +216,7 @@ export class PSSearchResults extends preact.Component<{
 		if (errorMessage) {
 			return <li class="result"><a
 				href={`${this.URL_ROOT}moves/${id}`} class={this.moveIds.includes(id) ? 'cur' : ''}
-				data-target="push" data-entry={entry}
+				data-target="push" data-entry={`move|${move.name}`}
 			>
 				<span class="col movenamecol">{this.renderName(move.name, matchStart, matchEnd, tagStart)}</span>
 
@@ -242,7 +228,7 @@ export class PSSearchResults extends preact.Component<{
 		if (search.gtt.dex.gen < 3) pp = Math.min(61, pp);
 		return <li class="result"><a
 			href={`${this.URL_ROOT}moves/${id}`} class={this.moveIds.includes(id) ? 'cur' : ''}
-			data-target="push" data-entry={entry}
+			data-target="push" data-entry={`move|${move.name}`}
 		>
 			<span class="col movenamecol">{this.renderName(move.name, matchStart, matchEnd, tagStart)}</span>
 
@@ -431,7 +417,7 @@ export class PSSearchResults extends preact.Component<{
 			if (target.tagName === 'A') {
 				const entry = target.getAttribute('data-entry');
 				if (entry) {
-					const [type, name, slot] = entry.split('|');
+					const [type, name] = entry.split('|');
 					if (search.addFilter([type, name])) {
 						if (this.props.onSelect) {
 							this.props.onSelect('', '');
@@ -440,7 +426,7 @@ export class PSSearchResults extends preact.Component<{
 							this.forceUpdate();
 						}
 					} else {
-						this.props.onSelect?.(type as SearchType, name, slot);
+						this.props.onSelect?.(type as SearchType, name);
 					}
 					ev.preventDefault();
 					ev.stopImmediatePropagation();

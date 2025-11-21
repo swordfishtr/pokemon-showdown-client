@@ -28,6 +28,7 @@ export class PSRouter {
 	panelState = '';
 	constructor() {
 		this.subscribeHistory();
+		//this.subscribeHash();
 	}
 	extractRoomID(url: string | null) {
 		if (!url) return null;

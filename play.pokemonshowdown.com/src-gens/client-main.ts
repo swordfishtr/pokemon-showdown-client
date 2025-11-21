@@ -483,6 +483,18 @@ class PSTeams extends PSStreamModel<'team' | 'format'> {
 			isBox,
 		};
 	}
+	getUserSets(speciesid: ID, formatid: ID): Teams.PokemonSet[] {
+		const userSets: Teams.PokemonSet[] = [];
+		for(const team of this.list) {
+			if(!team.isBox || team.format !== formatid) continue;
+			const sets = Teams.unpack(team.packedTeam);
+			for(const set of sets) {
+				if(toID(set.species) !== speciesid) continue;
+				userSets.push(set);
+			}
+		}
+		return userSets;
+	}
 }
 
 /**********************************************************************

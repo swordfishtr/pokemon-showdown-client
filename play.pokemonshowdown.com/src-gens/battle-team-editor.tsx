@@ -7,7 +7,7 @@
  */
 
 import preact from "../js/lib/preact";
-import type { Team } from "./client-main";
+import { PS, type Team } from "./client-main";
 import { Dex, toID, type ID, PSUtils } from "./battle-dex";
 import { Teams } from './battle-teams';
 import { DexSearch, type SearchRow, type SearchType } from "./battle-dex-search";
@@ -20,106 +20,104 @@ import { PSIcon, PSView } from "./panels";
 
 type SelectionType = 'pokemon' | 'ability' | 'item' | 'move' | 'stats' | 'details';
 
-type SampleSets = {
-	[speciesName: string]: {
-		[setName: string]: Dex.PokemonSet,
-	},
-};
-type SampleSetsTable = { dex?: SampleSets, stats?: SampleSets };
-
 class TeamEditorState extends PSModel {
-	static clipboard: {
-		teams: {
-			[teamKey: string]: {
-				team: Team,
-				sets: { [index: number]: Dex.PokemonSet },
-				/** whether to delete the team itself when moving it */
-				entire: boolean,
-			},
-		} | null,
-		otherSets: Dex.PokemonSet[] | null,
-		readonly: boolean,
-	} | null = null;
+	static readonly clipboard: {
+		readonly sets: Dex.PokemonSet[],
+		index: number
+	} = {
+		sets: [],
+		index: 0,
+	};
 
 	readonly search = new DexSearch();
 	readonly gtt = this.search.gtt;
-	searchIndex = 0;
-	/**
-	 * Remembers the search index when searching moves to assign to the intended moveslot.
-	 * Non-null when `this.innerFocus?.type === 'move' && this.search.query`
-	 */
-	searchIndexTmp: number | null = null;
 
 	team: Team;
-	sets: Dex.PokemonSet[] = [];
-	lastPackedTeam = '';
+	sets: Dex.PokemonSet[];
+
 	deletedSet: {
 		set: Dex.PokemonSet,
 		index: number,
 	} | null = null;
-	originalSpecies: string | null = null;
-	narrow = false;
-	selectionTypeOrder: readonly SelectionType[] = [
+
+	static readonly selectionTypeOrder = [
 		'pokemon', 'ability', 'item', 'move', 'stats', 'details',
-	];
+	] as const satisfies SelectionType[];
+
 	innerFocus: {
 		setIndex: number,
 		type: SelectionType,
-		typeIndex?: number,
+		/** highlighted search entry index. default 0 */
+		index: number,
+		/** moveslot the user clicked on */
+		moveSlot: number,
 	} | null = null;
+
 	readonly = false;
-	fetching = false;
-	private userSetsCache: Record<ID, { [species: string]: { [setName: string]: Dex.PokemonSet } }> = {};
+
+	private readonly userSetsCache: {
+		[formatid: ID]: {
+			[speciesid: ID]: Dex.PokemonSet[],
+		},
+	} = {};
 	constructor(team: Team) {
 		super();
 		this.team = team;
-		this.updateTeam(false);
+		this.sets = Teams.unpack(this.team.packedTeam);
 		this.setFormat(team.format);
+		window.editor = this;
 	}
-	updateTeam(readonly: boolean) {
-		if (this.lastPackedTeam !== this.team.packedTeam) {
-			this.sets = Teams.unpack(this.team.packedTeam);
-			this.lastPackedTeam = this.team.packedTeam;
-		}
-		this.readonly = readonly;
-	}
+
+	/////
+
 	setFormat(format: string) {
 		this.team.format = toID(format);
 		this.search.setGTT(format);
 	}
-	setSearchType(type: SearchType, i: number, value?: string) {
-		const id = toID(value);
-		const set = this.sets[i];
-		this.search.setType(type, set);
-		this.originalSpecies = null;
+	getFirstSearchResultIndex(type: SearchType) {
+		if(!this.search.results) return 0;
+		const index = this.search.results.findIndex(([cur]) => cur === type);
+		if(index < 0) return 0;
+		return index;
+	}
+	updatePrependResults() {
+		// TODO: make gtt.getFormatX return with exists = true
+		let value = '';
+		if(!this.innerFocus) return value;
+		const set = this.sets[this.innerFocus.setIndex];
 		this.search.prependResults = null;
-		let searchIndex = 0;
-		if (type === 'move') {
-			searchIndex = set.moves.findIndex((x) => !x);
-			if(searchIndex === -1) searchIndex = set.moves.length;
-			this.search.prependResults = this.getSearchMoves(set);
-			if (value && this.search.prependResults.some(row => row[1].split('_')[2] === id)) {
-				value = '';
+		switch(this.innerFocus.type) {
+			case 'move': {
+				value = set?.moves[this.innerFocus.moveSlot] ?? '';
+				const id = toID(value);
+				if (this.gtt.getFormatMove(id).exists || this.gtt.format.overrideMoveData?.[id]) {
+					this.search.prependResults = [['move', id]];
+					value = '';
+				}
+				break;
 			}
-		} else if (value) {
-			switch (type) {
-			case 'pokemon':
+			case 'pokemon': {
+				value = set?.species;
+				const id = toID(value);
 				if (this.gtt.getFormatSpecies(id).exists || this.gtt.format.overrideSpeciesData?.[id]) {
-					this.originalSpecies = value;
 					this.search.prependResults = [['pokemon', id]];
 					value = '';
 				}
 				break;
-			case 'item':
-				if (id === 'noitem') value = '';
-				if (this.gtt.dex.items.get(id).exists || this.gtt.format.overrideItemData?.[id]) {
-					this.search.prependResults = [['item', id]];
+			}
+			case 'item': {
+				this.search.prependResults = [['item', '' as ID]];
+				if(set?.item && set.item !== 'noitem') value = set.item;
+				const id = toID(value);
+				if (this.gtt.getFormatItem(id).exists || this.gtt.format.overrideItemData?.[id]) {
+					this.search.prependResults.unshift(['item', id]);
 					value = '';
 				}
 				break;
-			case 'ability':
-				if (id === 'selectability') value = '';
-				if (id === 'noability') value = '';
+			}
+			case 'ability': {
+				if(set?.ability && set.ability !== 'noability') value = set.ability;
+				const id = toID(value);
 				if (this.gtt.getFormatAbility(id).exists || this.gtt.format.overrideAbilityData?.[id]) {
 					this.search.prependResults = [['ability', id]];
 					value = '';
@@ -127,82 +125,123 @@ class TeamEditorState extends PSModel {
 				break;
 			}
 		}
-
-		if (type === 'item') (this.search.prependResults ||= []).push(['item', '' as ID]);
-		this.search.find(value || '');
-
-		this.searchIndexTmp = null;
-		this.searchIndex = this.search.results ? (
-			this.search.results[searchIndex]?.[0] === 'header' ? searchIndex + 1 : searchIndex
-		) : 0;
+		return value;
 	}
-	updateSearchMoves(set: Dex.PokemonSet) {
-		this.search.prependResults = this.getSearchMoves(set);
-		this.search.results = null;
-		if (this.search.query) {
-			this.setSearchValue('');
-		} else {
-			this.search.find('');
-		}
-	}
-	getSearchMoves(set: Dex.PokemonSet) {
-		const searchMoves: SearchRow[] = [];
-		const lastMoveSlot = PSUtils.findLastIndex(set.moves, (x) => x) + 1;
-		const amount = lastMoveSlot <= 3 ? 4 : lastMoveSlot + 1;
-		for (let i = 0; i < amount; i++) {
-			searchMoves.push(['move', `_${i + 1}_${toID(set.moves[i])}` as ID]);
-		}
-		return searchMoves;
-	}
-	setSearchValue(value: string) {
-		if(value) {
-			if(this.innerFocus?.type === 'move' && this.searchIndexTmp === null) {
-				this.searchIndexTmp = this.searchIndex;
-			}
-			this.searchIndex = this.search.results?.[0]?.[0] === 'header' ? 1 : 0;
-		}
-		else {
-			if(this.innerFocus?.type === 'move' && this.searchIndexTmp !== null) {
-				this.searchIndex = this.searchIndexTmp;
-				this.searchIndexTmp = null;
-			}
-		}
+	/** user clicked on a part of the inner focus. */
+	updateSearchType() {
+		if(!this.innerFocus || this.innerFocus.type === 'details' || this.innerFocus.type === 'stats') return;
+		const set = this.sets[this.innerFocus.setIndex];
+		this.search.setType(this.innerFocus.type, set);
+		const value = this.updatePrependResults();
 		this.search.find(value);
+		this.innerFocus.index = this.getFirstSearchResultIndex(this.innerFocus.type);
 	}
+	/** user inputs on the search textbox. */
+	setSearchValue(value: string) {
+		if(!this.innerFocus || this.innerFocus.type === 'details' || this.innerFocus.type === 'stats') return;
+		this.search.find(value);
+		this.innerFocus.index = this.getFirstSearchResultIndex(this.innerFocus.type);
+	}
+	/** user clicks on a search result. could mean to add a search filter or to choose the result. */
 	selectSearchValue(): string | null {
-		let result = this.search.results?.[this.searchIndex];
-		if (result?.[0] === 'header') {
-			this.searchIndex++;
-			result = this.search.results?.[this.searchIndex];
-		}
-		if (!result) return null;
-		if (this.search.addFilter(result)) {
-			this.searchIndex = this.search.results?.[0]?.[0] === 'header' ? 1 : 0;
+		if(
+			!this.search.results || !this.innerFocus || this.innerFocus.type === 'details' ||
+			this.innerFocus.type === 'stats'
+		) return null;
+		const row = this.search.results[this.innerFocus.index];
+		if (this.search.addFilter(row)) {
+			this.innerFocus.index = this.getFirstSearchResultIndex(this.innerFocus.type);
 			return null;
 		}
-		return this.getResultValue(result);
+		return this.getResultValue(row);
 	}
-	changeSpecies(set: Dex.PokemonSet, speciesName: string, searchBoxValue?: string) {
-		const species = this.gtt.getFormatSpecies(speciesName);
-		if (set.item === this.getDefaultItem(set.species)) set.item = undefined;
-		if (set.name === set.species.split('-')[0]) delete set.name;
-		set.species = species.name;
-		set.ability = this.getDefaultAbility(set);
-		set.item = this.getDefaultItem(species.name) ?? set.item;
-
-		if (toID(searchBoxValue) === 'satanice') {
-			set.name = "Ice";
-			set.species = 'Regice';
-			set.level = 100;
-			set.gender = undefined;
-			set.item = 'Leftovers';
-			set.ability = 'Ice Body';
-			set.moves = ['Ice Beam', 'Substitute', 'Toxic', 'Snowscape'];
-			set.evs = { hp: 204, atk: 0, def: 148, spa: 12, spd: 56, spe: 88 };
-			set.ivs = { hp: 31, atk: 0, def: 31, spa: 31, spd: 31, spe: 31 };
-			set.nature = 'Bold';
+	/** simple SearchRow => string converter. */
+	getResultValue(result: SearchRow): string {
+		switch (result[0]) {
+		case 'pokemon':
+			return this.gtt.getFormatSpecies(result[1]).name;
+		case 'item':
+			return this.gtt.getFormatItem(result[1]).name;
+		case 'ability':
+			return this.gtt.getFormatAbility(result[1]).name;
+		case 'move':
+			return this.gtt.getFormatMove(result[1]).name;
+		case 'html':
+		case 'header':
+			return '';
+		default:
+			return result[1];
 		}
 	}
+
+	/////
+
+	/** user chose a species; apply species-specific changes. */
+	changeSpecies(set: Dex.PokemonSet, speciesName: string) {
+		const species = this.gtt.getFormatSpecies(speciesName);
+		set.species = species.name;
+		if(set.name === set.species.split('-')[0]) delete set.name;
+		this.setDefaultAbility(set);
+		this.setDefaultItem(set);
+		this.setDefaultTeraType(set);
+		this.setDefaultGender(set);
+	}
+	setDefaultAbility(set: Dex.PokemonSet) {
+		if(this.gtt.dex.gen < 3 || this.gtt.format.mod === 'gen7letsgo') {
+			delete set.ability;
+			return;
+		}
+		const species = this.gtt.getFormatSpecies(set.species);
+		const abilities = Object.values(species.abilities);
+		// requiredAbility would go here.
+		if(abilities.length === 1) set.ability = abilities[0];
+	}
+	setDefaultItem(set: Dex.PokemonSet) {
+		if(this.gtt.dex.gen < 2 || this.gtt.format.mod === 'gen7letsgo') {
+			delete set.item;
+			return;
+		}
+		const species = this.gtt.getFormatSpecies(set.species);
+		if(species.requiredItems) set.item = species.requiredItems[0];
+	}
+	setDefaultTeraType(set: Dex.PokemonSet) {
+		if(this.gtt.dex.gen !== 9) {
+			delete set.teraType;
+			return;
+		}
+		const species = this.gtt.getFormatSpecies(set.species);
+		if(species.requiredTeraType) set.teraType = species.requiredTeraType;
+	}
+	setDefaultGender(set: Dex.PokemonSet) {
+		if(this.gtt.dex.gen < 2) {
+			delete set.gender;
+			return;
+		}
+		const species = this.gtt.getFormatSpecies(set.species);
+		if(species.gender) set.gender = species.gender;
+	}
+	/** user searched and chose a species; check easter eggs. */
+	changeSpeciesEasterEgg(set: Dex.PokemonSet, input: string): boolean {
+		switch(toID(input)) {
+			case 'satanice': {
+				set.name = "Ice";
+				set.species = 'Regice';
+				set.level = 100;
+				delete set.gender;
+				set.item = 'Leftovers';
+				set.ability = 'Ice Body';
+				set.moves = ['Ice Beam', 'Substitute', 'Toxic', 'Snowscape'];
+				set.evs = { hp: 204, atk: 0, def: 148, spa: 12, spd: 56, spe: 88 };
+				set.ivs = { hp: 31, atk: 0, def: 31, spa: 31, spd: 31, spe: 31 };
+				set.nature = 'Bold';
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/////
+
 	deleteSet(index: number) {
 		if (this.sets.length <= index) return;
 		this.deletedSet = {
@@ -216,128 +255,51 @@ class TeamEditorState extends PSModel {
 		this.sets.splice(this.deletedSet.index, 0, this.deletedSet.set);
 		this.deletedSet = null;
 	}
-	copySet(index: number) {
-		if (this.sets.length <= index) return;
-
-		TeamEditorState.clipboard ||= {
-			teams: {},
-			otherSets: null,
-			readonly: false,
-		};
-		TeamEditorState.clipboard.teams ||= {};
-		TeamEditorState.clipboard.teams[this.team.key] ||= {
-			team: this.team, sets: {}, entire: false,
-		};
-		if (this.readonly) TeamEditorState.clipboard.readonly = true;
-
-		if (TeamEditorState.clipboard.teams[this.team.key].sets[index] === this.sets[index]) {
-			// remove
-			delete TeamEditorState.clipboard.teams[this.team.key].sets[index];
-			if (!Object.keys(TeamEditorState.clipboard.teams[this.team.key].sets).length) {
-				delete TeamEditorState.clipboard.teams[this.team.key];
-			}
-			if (!Object.keys(TeamEditorState.clipboard.teams).length) {
-				TeamEditorState.clipboard.teams = null;
-				if (!TeamEditorState.clipboard.otherSets) {
-					TeamEditorState.clipboard = null;
-				}
-			}
-			return;
-		}
-		TeamEditorState.clipboard.teams[this.team.key].sets[index] = this.sets[index];
+	copySet(index: number, cut: boolean) {
+		if(index >= this.sets.length) return;
+		const set = structuredClone(this.sets[index]);
+		TeamEditorState.clipboard.sets.unshift(set);
+		TeamEditorState.clipboard.index = 0;
+		if(cut && !this.readonly) this.sets.splice(index, 1);
 	}
-	pasteSet(index: number, isMove?: boolean) {
-		if (!TeamEditorState.clipboard) return;
-		if (this.readonly) return;
+	pasteSet(index: number) {
+		if(this.readonly) return;
+		const set = structuredClone(TeamEditorState.clipboard.sets[TeamEditorState.clipboard.index]);
+		if(!set) return;
+		index = Math.min(index, this.sets.length);
+		this.sets.splice(index, 0, set);
+	}
+	static clearClipboard() {
+		this.clipboard.sets.length = 0;
+		this.clipboard.index = 0;
+	}
 
-		if (isMove) {
-			if (TeamEditorState.clipboard.readonly) return;
+	/////
 
-			for (const key in TeamEditorState.clipboard.teams) {
-				const clipboardTeam = TeamEditorState.clipboard.teams[key];
-				const sources = Object.keys(clipboardTeam.sets).map(Number);
-				// descending order, so splices won't affect future indices
-				sources.sort((a, b) => -(a - b));
-				for (const source of sources) {
-					if (key === this.team.key) {
-						this.sets.splice(source, 1);
-						if (source < index) index--;
-					} else {
-						const team = clipboardTeam.team;
-						const sets = Teams.unpack(team.packedTeam);
-						sets.splice(source, 1);
-						team.packedTeam = Teams.pack(sets);
-					}
-				}
+	static readonly ignoreRows = ['header', 'sortpokemon', 'sortmove', 'html'];
+	downSearchValue(): boolean {
+		if(!this.innerFocus || !this.search.results) return false;
+		for(let i = this.innerFocus.index + 1; i < this.search.results.length; i++) {
+			if(!TeamEditorState.ignoreRows.includes(this.search.results[i][0])) {
+				this.innerFocus.index = i;
+				return true;
 			}
 		}
-
-		const sets: Dex.PokemonSet[] = [];
-		for (const key in TeamEditorState.clipboard.teams) {
-			const clipboardTeam = TeamEditorState.clipboard.teams[key];
-			for (const set of Object.values(clipboardTeam.sets)) {
-				sets.push(set);
+		return false;
+	}
+	upSearchValue(): boolean {
+		if(!this.innerFocus || !this.search.results) return false;
+		for(let i = this.innerFocus.index - 1; i >= 0; i--) {
+			if(!TeamEditorState.ignoreRows.includes(this.search.results[i][0])) {
+				this.innerFocus.index = i;
+				return true;
 			}
 		}
-		sets.push(...TeamEditorState.clipboard.otherSets || []);
+		return false
+	}
 
-		for (const set of sets) {
-			// not the most efficient way to deepclone but we don't need efficiency here
-			const newSet = JSON.parse(JSON.stringify(set)) as Dex.PokemonSet;
-			this.sets.splice(index, 0, newSet);
-			index++;
-		}
-		TeamEditorState.clipboard = null;
-	}
-	ignoreRows = ['header', 'sortpokemon', 'sortmove', 'html'];
-	downSearchValue() {
-		if (!this.search.results || this.searchIndex >= this.search.results.length - 1) return;
+	/////
 
-		this.searchIndex++;
-		if (this.ignoreRows.includes(this.search.results[this.searchIndex]?.[0])) {
-			if (this.searchIndex >= this.search.results.length - 1) return;
-			this.searchIndex++;
-		}
-		if (this.ignoreRows.includes(this.search.results[this.searchIndex]?.[0])) {
-			if (this.searchIndex >= this.search.results.length - 1) return;
-			this.searchIndex++;
-		}
-	}
-	upSearchValue() {
-		if (!this.search.results || this.searchIndex <= 0) return;
-
-		if (this.searchIndex <= 1 && this.ignoreRows.includes(this.search.results[0]?.[0])) return;
-		this.searchIndex--;
-		if (this.ignoreRows.includes(this.search.results[this.searchIndex]?.[0])) {
-			if (this.searchIndex <= 0) return;
-			this.searchIndex--;
-		}
-		if (this.ignoreRows.includes(this.search.results[this.searchIndex]?.[0])) {
-			if (this.searchIndex <= 0) return;
-			this.searchIndex--;
-		}
-	}
-	getResultValue(result: SearchRow): string {
-		switch (result[0]) {
-		case 'pokemon':
-			return this.gtt.getFormatSpecies(result[1]).name;
-		case 'item':
-			return this.gtt.dex.items.get(result[1]).name;
-		case 'ability':
-			return this.gtt.getFormatAbility(result[1]).name;
-		case 'move':
-			if (result[1].startsWith('_')) {
-				const [slot, moveid] = result[1].slice(1).split('_');
-				return this.gtt.getFormatMove(moveid).name + '|' + slot;
-			}
-			return this.gtt.getFormatMove(result[1]).name;
-		case 'html':
-		case 'header':
-			return '';
-		default:
-			return result[1];
-		}
-	}
 	canAdd(): boolean {
 		return this.sets.length < 6 || this.team.isBox;
 	}
@@ -658,120 +620,46 @@ class TeamEditorState extends PSModel {
 		}
 		return counters;
 	}
-	getDefaultAbility(set: Dex.PokemonSet) {
-		if (this.gtt.dex.gen < 3 || this.gtt.format.mod === 'gen7letsgo') return set.ability;
-		const species = this.gtt.getFormatSpecies(set.species);
-		const abilities = Object.values(species.abilities);
-		if (abilities.length === 1) return abilities[0];
-		if (set.ability && abilities.includes(set.ability)) return set.ability;
-	}
-	getDefaultItem(speciesName: string) {
-		const species = this.gtt.getFormatSpecies(speciesName);
-		let items = species.requiredItems;
-		if (this.gtt.dex.gen !== 7 && !this.gtt.format.natdex) {
-			// Require plates on Arceus when Z crystals don't exist
-			items = items.filter(i => !i.endsWith('ium Z'));
-		}
-		if (items.length === 1) return items[0];
-	}
 	save() {
 		this.team.packedTeam = Teams.pack(this.sets);
-		this.lastPackedTeam = this.team.packedTeam;
 		this.team.iconCache = null;
 	}
-
-	/** undefined: loading, null: unavailable */
-	static sampleSets: { [formatid: string]: SampleSetsTable | null } = {};
-	// not static for complicated reasons. either way leads to an obscure
-	// race condition if fetchSampleSets is called simultaneously from
-	// different TeamEditorState instances, but this way just means two
-	// network requests rather than the UI getting out of sync.
-	_sampleSetPromises: Record<string, Promise<void>> = {};
-	fetchSampleSets(formatid: ID) {
-		// TODO: ask council
-		TeamEditorState.sampleSets[formatid] = null;
-		// if (formatid in TeamEditorState.sampleSets) return;
-		// if (formatid.length <= 4) {
-		// 	TeamEditorState.sampleSets[formatid] = null;
-		// 	return;
-		// }
-		// if (!(formatid in this._sampleSetPromises)) {
-		// 	this._sampleSetPromises[formatid] = Net(
-		// 		`https://${Config.routes.client}/data/sets/${formatid}.json`
-		// 	).get().then(json => {
-		// 		const data = JSON.parse(json);
-		// 		TeamEditorState.sampleSets[formatid] = data;
-		// 		this.update();
-		// 	}).catch(() => {
-		// 		TeamEditorState.sampleSets[formatid] = null;
-		// 	});
-		// }
-	}
-	/** returns null if sample sets aren't done loading */
-	getSampleSets(set: Dex.PokemonSet): string[] | null {
-		return [];
-		// const d = TeamEditorState.sampleSets[this.gtt.formatid];
-		// if (d === undefined) {
-		// 	this.fetchSampleSets(this.gtt.formatid);
-		// 	return null;
-		// }
-		// if (!d?.dex) return [];
-		// const speciesid = toID(set.species);
-		// const all = {
-		// 	...d.dex[set.species],
-		// 	...d.dex[speciesid],
-		// 	...d.stats?.[set.species],
-		// 	...d.stats?.[speciesid],
-		// };
-		// return Object.keys(all);
-	}
-	/** returns null if no boxes exist, empty array if no sets for this species */
-	getUserSets(set: Dex.PokemonSet): { [setName: string]: Dex.PokemonSet } | null {
-		if (!this.userSetsCache[this.gtt.formatid]) {
-			const userSets: { [species: string]: { [setName: string]: Dex.PokemonSet } } = {};
-
-			for (const team of window.PS?.teams.list || []) {
-				if (team.format !== this.gtt.formatid || !team.isBox) continue;
-
-				const setList = Teams.unpack(team.packedTeam);
-				const duplicateNameIndices: Record<string, number> = {};
-
-				for (const boxSet of setList) {
-					let name = boxSet.name || boxSet.species;
-					if (duplicateNameIndices[name]) {
-						name += ` ${duplicateNameIndices[name]}`;
-					}
-					duplicateNameIndices[name] = (duplicateNameIndices[name] || 0) + 1;
-
-					userSets[boxSet.species] ??= {};
-					userSets[boxSet.species][name] = boxSet;
-				}
-			}
-
-			this.userSetsCache[this.gtt.formatid] = userSets;
+	/** counting only non-cosmetic species in boxes. */
+	getUserSets(speciesName: string): Teams.PokemonSet[] {
+		let species = this.gtt.getFormatSpecies(speciesName);
+		if(species.cosmeticFormes?.includes(species.name)) {
+			species = this.gtt.getFormatSpecies(species.baseSpecies);
 		}
-
-		const cachedSets = this.userSetsCache[this.gtt.formatid];
-		if (Object.keys(cachedSets).length === 0) return null;
-		return cachedSets[set.species] || {};
+		const cached = this.userSetsCache[this.gtt.formatid]?.[species.id];
+		if(cached) return cached;
+		const userSets = PS.teams.getUserSets(species.id, this.gtt.formatid);
+		this.userSetsCache[this.gtt.formatid] ??= {};
+		this.userSetsCache[this.gtt.formatid][species.id] = userSets;
+		return userSets;
 	}
 }
 
 export class TeamEditor extends preact.Component<{
-	team: Team, narrow?: boolean, onChange?: () => void, readOnly?: boolean,
-	children?: preact.ComponentChildren, resources?: preact.ComponentChildren,
+	team: Team, onChange?: () => void, resources?: preact.ComponentChildren,
 }> {
 	wizard = true;
-	editor!: TeamEditorState;
+	editor = new TeamEditorState(this.props.team);
+	static probablyMobile() {
+		return PSView.narrowMode || document.body.offsetWidth < 500;
+	}
+	constructor() {
+		super(...arguments);
+		this.editor.subscribe(() => {
+			this.forceUpdate();
+		});
+	}
+	forceUpdateBound = (callback?: () => void) => this.forceUpdate(callback);
 	setTab = (ev: Event) => {
 		const target = ev.currentTarget as HTMLButtonElement;
 		const wizard = target.value === 'wizard';
 		this.wizard = wizard;
 		this.forceUpdate();
 	};
-	static probablyMobile() {
-		return PSView.narrowMode || document.body.offsetWidth < 500;
-	}
 	renderDefensiveCoverage() {
 		const { editor } = this;
 		if (editor.team.isBox) return null;
@@ -807,73 +695,80 @@ export class TeamEditor extends preact.Component<{
 			<table class="table">{bad}{medium}{good}</table>
 		</details>;
 	}
-	cancelClipboard = () => {
-		TeamEditorState.clipboard = null;
+
+
+	setClipboard = (ev: Event) => {
+		const target = ev.currentTarget as HTMLButtonElement;
+		const index = Number(target.value);
+		if(Number.isNaN(index)) return;
+		TeamEditorState.clipboard.index = index;
 		this.forceUpdate();
-	};
-	update = () => {
+	}
+	clearClipboard = () => {
+		TeamEditorState.clearClipboard();
 		this.forceUpdate();
 	};
 	renderClipboard() {
-		if (!TeamEditorState.clipboard) return null;
+		if (!TeamEditorState.clipboard.sets.length) return null;
 
-		const renderSet = (set: Dex.PokemonSet) => <div class="set">
-			<small>
-				<PSIcon pokemon={set} /> {set.name || set.species}
-				{set.ability && ` [${set.ability}]`}{set.item && ` @ ${set.item}`}
-				{} - {set.moves.join(' / ') || '(No moves)'}
-			</small>
-		</div>;
-		return <div class="infobox">
-			Clipboard
-			{Object.values(TeamEditorState.clipboard.teams || {})?.map(clipboardTeam => (
-				Object.values(clipboardTeam.sets).map(set => renderSet(set))
-			))}
-			{TeamEditorState.clipboard.otherSets?.map(set => renderSet(set))}
-			<button class="button" onClick={this.cancelClipboard}>
-				<i class="fa fa-times" aria-hidden></i> Cancel
-			</button>
-		</div>;
+		const renderSet = (set: Dex.PokemonSet, index: number) => (
+			<li>
+				<button
+					class={`button${TeamEditorState.clipboard.index === index ? ' notifying' : ''}`}
+					style={{ width: '100%' }} value={index} onClick={this.setClipboard}
+				>
+					<small>
+						<PSIcon pokemon={set} /> {set.name || set.species}
+						{set.ability && ` [${set.ability}]`}{set.item && ` @ ${set.item}`}
+						{} - {set.moves.join(' / ') || '(No moves)'}
+					</small>
+				</button>
+			</li>
+		);
+
+		return (
+			<div class="infobox">
+				Clipboard
+				<button class="button" style={{ float: 'right' }} onClick={this.clearClipboard}>
+					Clear
+				</button>
+				<ul style={{ margin: 0, padding: 0, "list-style": "none" }}>
+					{TeamEditorState.clipboard.sets.map(renderSet)}
+				</ul>
+			</div>
+		);
 	}
 	override render() {
-		if (!this.editor) {
-			this.editor = new TeamEditorState(this.props.team);
-			this.editor.subscribe(() => {
-				this.forceUpdate();
-			});
-		}
-		const editor = this.editor;
-		window.editor = editor; // debug
-		editor.updateTeam(!!this.props.readOnly);
-		editor.narrow = this.props.narrow ?? document.body.offsetWidth < 500;
-		if (this.props.team.format !== editor.search.gtt.formatid) {
-			editor.setFormat(this.props.team.format);
-		}
-
-		return <div class="teameditor">
-			<ul class="tabbar">
-				<li><button onClick={this.setTab} value="wizard" class={`button${this.wizard ? ' cur' : ''}`}>
-					Builder
-				</button></li>
-				<li><button onClick={this.setTab} value="import" class={`button${!this.wizard ? ' cur' : ''}`}>
-					Import/Export
-				</button></li>
-			</ul>
-			{this.renderClipboard()}
-			{this.wizard ? (
-				<TeamWizard editor={editor} onChange={this.props.onChange} onUpdate={this.update} />
-			) : (
-				<TeamTextbox editor={editor} onChange={this.props.onChange} onUpdate={this.update} />
-			)}
-			{!this.editor.innerFocus && <>
-				{this.props.children}
-				<div class="team-resources">
-					<br /><hr /><br />
-					{this.renderDefensiveCoverage()}
-					{this.props.resources}
-				</div>
-			</>}
-		</div>;
+		// if (this.props.team.format !== this.editor.search.gtt.formatid) {
+		// 	this.editor.setFormat(this.props.team.format);
+		// }
+		return (
+			<div class="teameditor">
+				<ul class="tabbar">
+					<li><button onClick={this.setTab} value="wizard" class={`button${this.wizard ? ' cur' : ''}`}>
+						Builder
+					</button></li>
+					<li><button onClick={this.setTab} value="import" class={`button${!this.wizard ? ' cur' : ''}`}>
+						Import/Export
+					</button></li>
+				</ul>
+				{this.renderClipboard()}
+				{this.wizard ? (
+					<TeamWizard editor={this.editor} onChange={this.props.onChange} onUpdate={this.forceUpdateBound} />
+				) : 'Work in progress!'}
+				{!this.editor.innerFocus && <>
+					{this.props.children}
+					<div class="team-resources">
+						<br /><hr /><br />
+						{this.renderDefensiveCoverage()}
+						{this.props.resources}
+					</div>
+				</>}
+			</div>
+		);
+		// (
+		// 	<TeamTextbox editor={this.editor} onChange={this.props.onChange} onUpdate={this.forceUpdate} />
+		// )
 	}
 }
 
@@ -1265,7 +1160,7 @@ class TeamTextbox extends preact.Component<{
 		}
 
 		const value = this.textbox.value.slice(focus.range[0], focus.range[1]);
-		editor.setSearchType(focus.type, focus.setIndex, value);
+		editor.updateSearchType();
 		this.resetScroll();
 		this.textbox.setSelectionRange(focus.range[0], focus.range[1]);
 		this.forceUpdate();
@@ -1684,27 +1579,61 @@ class TeamTextbox extends preact.Component<{
 }
 
 class TeamWizard extends preact.Component<{
-	editor: TeamEditorState, onChange?: () => void, onUpdate: () => void,
+	editor: TeamEditorState, onChange?: () => void, onUpdate: (callback?: () => void) => void,
 }> {
-	setSearchBox: string | null = null;
+	//setSearchBox: string | null = null;
 	windowing = true;
-	setFocus = (ev: Event) => {
+	readonly PREFIX_SEARCHBOX = 'innerfocus-searchbox-';
+	constructor() {
+		super(...arguments);
+		window.wizard = this;
+	}
+	getSearchBox(index = this.props.editor.innerFocus?.moveSlot ?? 0): HTMLInputElement | null {
+		return this.base!.querySelector(`#${this.PREFIX_SEARCHBOX}${index}`);
+	}
+	populateSearchBox() {
 		const { editor } = this.props;
-		if (editor.readonly) return;
-		const target = ev.currentTarget as HTMLButtonElement;
-		if (!target.value) {
-			this.changeFocus(null);
-			return;
+		if(!editor.innerFocus) return;
+		switch(editor.innerFocus.type) {
+			case 'move': {
+				for(let i = 0; i < 4; i++) {
+					const searchbox = this.getSearchBox(i);
+					if(!searchbox) continue;
+					searchbox.value = editor.sets[editor.innerFocus.setIndex]?.moves[i] ?? '';
+					if(i === editor.innerFocus.moveSlot) {
+						searchbox.focus();
+						searchbox.select();
+					}
+				}
+				return;
+			}
+			case 'ability': {
+				const searchbox = this.getSearchBox(0);
+				if(!searchbox) return;
+				searchbox.value = editor.sets[editor.innerFocus.setIndex]?.ability ?? '';
+				searchbox.focus();
+				searchbox.select();
+				return;
+			}
+			case 'item': {
+				const searchbox = this.getSearchBox(0);
+				if(!searchbox) return;
+				searchbox.value = editor.sets[editor.innerFocus.setIndex]?.item ?? '';
+				searchbox.focus();
+				searchbox.select();
+				return;
+			}
+			case 'pokemon': {
+				const searchbox = this.getSearchBox(0);
+				if(!searchbox) return;
+				searchbox.value = editor.sets[editor.innerFocus.setIndex]?.species ?? '';
+				searchbox.focus();
+				searchbox.select();
+				return;
+			}
 		}
-		const [rawType, i] = (target.value || '').split('|');
-		const setIndex = parseInt(i);
-		const type = rawType as SelectionType;
-		this.changeFocus({
-			setIndex,
-			type,
-		});
-	};
-	deleteSet = (ev: Event) => {
+	}
+	handleDeleteSet = (ev: Event) => {
 		const target = ev.currentTarget as HTMLButtonElement;
 		const i = parseInt(target.value);
 		const { editor } = this.props;
@@ -1718,103 +1647,50 @@ class TeamWizard extends preact.Component<{
 		this.handleSetChange();
 		ev.preventDefault();
 	};
-	copySet = (ev: Event) => {
-		const target = ev.currentTarget as HTMLButtonElement;
-		const i = parseInt(target.value);
+	copySet(index: number, cut: boolean) {
 		const { editor } = this.props;
-		editor.copySet(i);
+		editor.copySet(index, cut);
 		editor.innerFocus = null;
 		this.props.onUpdate();
-		window.PS?.update();
-		ev.preventDefault();
-	};
-	undeleteSet = (ev: Event) => {
-		const { editor } = this.props;
-		const setIndex = editor.deletedSet?.index;
-		editor.undeleteSet();
-		if (editor.innerFocus && setIndex !== undefined) {
-			this.changeFocus({
-				setIndex,
-				type: 'pokemon',
-			});
-		}
-		this.handleSetChange();
-		ev.preventDefault();
-	};
-	pasteSet = (ev: Event) => {
+		PS.update();
+	}
+	handleCopySet = (ev: Event) => {
 		const target = ev.currentTarget as HTMLButtonElement;
 		const i = parseInt(target.value);
-		const { editor } = this.props;
-		editor.pasteSet(i);
-		this.handleSetChange();
-		window.PS?.update();
+		if(Number.isNaN(i)) return;
+		this.copySet(i, false);
 		ev.preventDefault();
 	};
-	moveSet = (ev: Event) => {
+	handleCutSet = (ev: Event) => {
 		const target = ev.currentTarget as HTMLButtonElement;
 		const i = parseInt(target.value);
-		const { editor } = this.props;
-		editor.pasteSet(i, true);
-		this.handleSetChange();
+		if(Number.isNaN(i)) return;
+		this.copySet(i, true);
 		ev.preventDefault();
-	};
-	changeFocus(focus: TeamEditorState['innerFocus']) {
-		const { editor } = this.props;
-		editor.innerFocus = focus;
-		if (!focus) {
-			this.props.onUpdate();
-			return;
-		}
-
-		const set = editor.sets[focus.setIndex];
-		if (focus.type === 'details') {
-			this.setSearchBox = set.name || '';
-		} else if (focus.type !== 'stats') {
-			let value;
-			if (focus.type === 'pokemon') value = set?.species || '';
-			else if (focus.type === 'item') value = set.item;
-			else if (focus.type === 'ability') value = set.ability;
-			editor.setSearchType(focus.type, focus.setIndex, value);
-			this.resetScroll();
-			this.setSearchBox = value || '';
-		}
-		this.props.onUpdate();
 	}
 	renderSet(set: Dex.PokemonSet | undefined, i: number) {
 		const { editor } = this.props;
+		if (!set) return null;
 		const sprite = Dex.getTeambuilderSprite(set, editor.gtt.dex);
-		if (!set) {
-			return <div class="set-button">
-				<div style="text-align:right">
-					{editor.deletedSet ? (
-						<button onClick={this.undeleteSet} class="option"><i class="fa fa-undo" aria-hidden></i> Undo delete</button>
-					) : (
-						<button class="option" style="visibility:hidden"><i class="fa fa-trash" aria-hidden></i> Delete</button>
-					)}
-				</div>
-			</div>;
-		}
 		while (set.moves.length < 4) set.moves.push('');
 		const overfull = set.moves.length > 4 ? ' overfull' : '';
+		const readOnlyClass = editor.readonly ? ' message-error' : '';
 
 		const cur = (t: SelectionType) => (
 			editor.readonly || (editor.innerFocus?.type === t && editor.innerFocus.setIndex === i) ? ' cur' : ''
 		);
 		const species = editor.gtt.getFormatSpecies(set.species);
-		const isCur = TeamEditorState.clipboard?.teams?.[editor.team.key]?.sets[i] ? ' cur' : '';
-		return <div class={`set-button${isCur}`}>
+		return <div class="set-button">
 			<div style="text-align:right">
-				<button class="option" onClick={this.copySet} value={i}>
-					<i class="fa fa-copy" aria-hidden></i> {
-						isCur ? "Remove from clipboard" :
-						TeamEditorState.clipboard ? "Add to clipboard" :
-						editor.readonly ? "Copy" :
-						"Copy/Move"
-					}
+				<button class="option" onClick={this.handleCopySet} value={i}>
+					<i class="fa fa-copy" aria-hidden></i> Copy
 				</button> {}
-				{!(TeamEditorState.clipboard || editor.readonly) && <button class="option" onClick={this.deleteSet} value={i}>
+				<button class={`option${readOnlyClass}`} onClick={this.handleCutSet} value={i}>
+					<i class="fa fa-cut" aria-hidden></i> Cut
+				</button> {}
+				<button class={`option${readOnlyClass}`} onClick={this.handleDeleteSet} value={i}>
 					<i class="fa fa-trash" aria-hidden></i> Delete
-				</button>}
+				</button>
 			</div>
 			<table>
 				<tr>
@@ -1835,16 +1711,16 @@ class TeamWizard extends preact.Component<{
 							<span class="detailcell">
 								<strong class="label">Level</strong> {}
 								{set.level || editor.gtt.format.level}
-								{editor.narrow && set.shiny && <><br />
+								{PSView.narrowMode && set.shiny && <><br />
 									<img src={`${Dex.resourcePrefix}sprites/misc/shiny.png`} width={22} height={22} alt="Shiny" />
 								</>}
-								{!editor.narrow && set.gender && set.gender !== 'N' && <>
+								{!PSView.narrowMode && set.gender && set.gender !== 'N' && <>
 									<br /><img
 										src={`${Dex.fxPrefix}gender-${set.gender.toLowerCase()}.png`} alt={set.gender} width="7" height="10" class="pixelated"
 									/>
 								</>}
 							</span>
-							{!!(!editor.narrow && (set.shiny || editor.gtt.dex.gen >= 2)) && <span class="detailcell">
+							{!!(!PSView.narrowMode && (set.shiny || editor.gtt.dex.gen >= 2)) && <span class="detailcell">
 								<strong class="label">Shiny</strong> {}
 								{set.shiny ? <img src={`${Dex.resourcePrefix}sprites/misc/shiny.png`} width={22} height={22} alt="Yes" /> : '\u2014'}
 							</span>}
@@ -1862,8 +1738,8 @@ class TeamWizard extends preact.Component<{
 						<button class={`button button-middle${cur('move')}${overfull}`} onClick={this.setFocus} value={`move|${i}`}>
 							<strong class="label">Moves</strong> {}
 							{set.moves.map((move, mi) => <div>
-								{!editor.narrow && <small class="gray">&bull;</small>}
-								{mi >= 4 ? <span class="message-error">{move || (editor.narrow && '-') || ''}</span> : move || (editor.narrow && '-')}
+								{!PSView.narrowMode && <small class="gray">&bull;</small>}
+								{mi >= 4 ? <span class="message-error">{move || (PSView.narrowMode && '-') || ''}</span> : move || (PSView.narrowMode && '-')}
 							</div>)}
 							{!set.moves.length && <em>(no moves)</em>}
 						</button>
@@ -1906,17 +1782,17 @@ class TeamWizard extends preact.Component<{
 		this.props.onChange?.();
 		this.forceUpdate();
 	};
-	clearSearchBox() {
-		const searchBox = this.base!.querySelector<HTMLInputElement>('input[name=value]');
-		if (searchBox) {
-			searchBox.value = '';
-			if (!TeamEditor.probablyMobile()) searchBox.focus();
-		}
-	}
-	selectResult = (type: string | null, name: string, slot?: string, reverse?: boolean) => {
+	// clearSearchBox() {
+	// 	const searchBox = this.getSearchBox();
+	// 	if (searchBox) {
+	// 		searchBox.value = '';
+	// 		if (!TeamEditor.probablyMobile()) searchBox.focus();
+	// 	}
+	// }
+	selectResult = (type: string | null, name: string, reverse?: boolean) => {
 		const { editor } = this.props;
-		const searchBoxValue = this.base!.querySelector<HTMLInputElement>('input[name=value]')?.value;
-		this.clearSearchBox();
+		if(!editor.innerFocus) return;
+		const searchbox = this.getSearchBox();
 		if (type === null) {
 			this.resetScroll();
 			this.forceUpdate();
@@ -1925,18 +1801,20 @@ class TeamWizard extends preact.Component<{
 			this.resetScroll();
 			this.forceUpdate();
 		} else {
-			const setIndex = editor.innerFocus!.setIndex;
+			const setIndex = editor.innerFocus.setIndex;
 			const set = (editor.sets[setIndex] ||= { species: '', moves: [] });
 			switch (type) {
 			case 'pokemon':
-				editor.changeSpecies(set, name, searchBoxValue);
+				if(!(searchbox?.value && editor.changeSpeciesEasterEgg(set, searchbox.value))) {
+					editor.changeSpecies(set, name);
+				}
 				this.changeFocus({
 					setIndex,
 					type: reverse ? 'details' : 'ability',
 				});
 				break;
 			case 'ability':
-				if (name === 'No Ability' && editor.gtt.dex.gen <= 2) name = '';
+				if (toID(name) === 'noability' || editor.gtt.dex.gen < 3) name = '';
 				set.ability = name;
 				this.changeFocus({
 					setIndex,
@@ -1944,6 +1822,7 @@ class TeamWizard extends preact.Component<{
 				});
 				break;
 			case 'item':
+				if (toID(name) === 'noitem' || editor.gtt.dex.gen < 2) name = '';
 				set.item = name;
 				this.changeFocus({
 					setIndex,
@@ -1951,55 +1830,29 @@ class TeamWizard extends preact.Component<{
 				});
 				break;
 			case 'move':
-				// GENERATIONS
-				// We gave the teambuilding experience a little more love.
-				// Merge carefully.
-
-				// clicked one of the set's moves
-				if (slot) {
-					const newIndex = parseInt(slot) - 1;
-
-					// selected another moveslot
-					if(editor.searchIndex !== newIndex) {
-						editor.searchIndex = newIndex;
+				set.moves[editor.innerFocus.moveSlot] = name;
+				let nextSlot = -1;
+				for(let i = 0; i < 4; i++) {
+					if(!set.moves[i]) {
+						nextSlot = i;
 						break;
 					}
-
-					// selected current moveslot - delete the move
-					set.moves[newIndex] = '';
-
-					// push extra lower moves upwards into empty spaces
-					for(let i = set.moves.length - 1; set.moves.length > 4 && set.moves.includes(''); i--) {
-						if(set.moves[i] === '') {
-							set.moves.splice(i, 1);
-						}
-					}
-
-					editor.updateSearchMoves(set);
 				}
-
-				// clicked a learnset move
+				if(nextSlot < 0) {
+					this.changeFocus({
+						setIndex,
+						type: reverse ? 'item' : 'stats',
+					});
+				}
 				else {
-					if(editor.searchIndexTmp) {
-						set.moves[editor.searchIndexTmp] = name;
-						editor.searchIndexTmp++;
+					editor.innerFocus.moveSlot = nextSlot;
+					if (editor.search.query) {
+						this.resetScroll();
 					}
-					else {
-						set.moves[editor.searchIndex] = name;
-						editor.searchIndex++;
-					}
-
-					if (set.moves.length === 4 && set.moves.every(Boolean)) {
-						this.changeFocus({
-							setIndex,
-							type: reverse ? 'item' : 'stats',
-						});
-					} else {
-						if (editor.search.query) {
-							this.resetScroll();
-						}
-						editor.updateSearchMoves(set);
-					}
+					editor.setSearchValue('');
+					this.props.onUpdate(() => {
+						this.populateSearchBox();
+					});
 				}
 				break;
 			}
@@ -2008,51 +1861,20 @@ class TeamWizard extends preact.Component<{
 			this.forceUpdate();
 		}
 	};
-	loadSampleSet = (setName: string) => {
-		const { editor } = this.props;
-		const setIndex = editor.innerFocus!.setIndex;
-		const set = editor.sets[setIndex];
-		if (!set?.species) return;
 
-		const data = TeamEditorState.sampleSets?.[editor.gtt.formatid];
-		const sid = toID(set.species);
-		const setTemplate = data?.dex?.[set.species]?.[setName] ?? data?.dex?.[sid]?.[setName] ??
-			data?.stats?.[set.species]?.[setName] ?? data?.stats?.[sid]?.[setName];
-		if (!setTemplate) return;
-
-		const applied: Partial<Dex.PokemonSet> = JSON.parse(JSON.stringify(setTemplate));
-		Object.assign(set, applied);
-
-		editor.save();
-		this.props.onUpdate?.();
-		this.forceUpdate();
-	};
-	handleLoadUserSet = (ev: Event) => {
-		const setName = (ev.target as HTMLButtonElement).value;
-		this.loadUserSet(setName);
-	};
-	loadUserSet = (setName: string) => {
-		const { editor } = this.props;
-		const setIndex = editor.innerFocus!.setIndex;
-		const set = editor.sets[setIndex];
-		if (!set?.species) return;
-
-		const userSets = editor.getUserSets(set);
-		const setTemplate = userSets?.[setName];
-		if (!setTemplate) return;
-
-		const applied: Partial<Dex.PokemonSet> = JSON.parse(JSON.stringify(setTemplate));
-		delete applied.name;
-		Object.assign(set, applied);
-
-		editor.save();
-		this.props.onUpdate?.();
-		this.forceUpdate();
-	};
 	updateSearch = (ev: Event) => {
-		const searchBox = ev.currentTarget as HTMLInputElement;
-		this.props.editor.setSearchValue(searchBox.value);
+		const searchbox = ev.currentTarget as HTMLInputElement;
+		const { editor } = this.props;
+		editor.setSearchValue(searchbox.value);
 		this.resetScroll();
+		if(!searchbox.value && editor.innerFocus) {
+			const set = editor.sets[editor.innerFocus.setIndex];
+			if(set) {
+				set.moves[editor.innerFocus.moveSlot] = '';
+				editor.save();
+				this.props.onChange?.();
+			}
+		}
 		this.forceUpdate();
 	};
 	handleClickFilters = (ev: Event) => {
@@ -2063,7 +1885,7 @@ class TeamWizard extends preact.Component<{
 				const filter = target.getAttribute('data-filter');
 				if (filter) {
 					editor.search.removeFilter(filter.split(':') as any);
-					const searchBox = this.base!.querySelector<HTMLInputElement>('input[name=value]');
+					const searchBox = this.getSearchBox();
 					editor.setSearchValue(searchBox?.value || '');
 					if (!TeamEditor.probablyMobile()) searchBox?.select();
 					this.forceUpdate();
@@ -2089,19 +1911,19 @@ class TeamWizard extends preact.Component<{
 			}
 			break;
 		case 38: // up
-			editor.upSearchValue();
+			if(!editor.upSearchValue()) break;
 			const resultsUp = this.base!.querySelector('.wizardsearchresults');
 			if (resultsUp) {
-				resultsUp.scrollTop = Math.max(0, editor.searchIndex * 33 - Math.trunc((window.innerHeight - 300) / 2));
+				resultsUp.scrollTop = Math.max(0, editor.innerFocus!.index * 33 - Math.trunc((window.innerHeight - 300) / 2));
 			}
 			this.forceUpdate();
 			ev.preventDefault();
 			break;
 		case 40: // down
-			editor.downSearchValue();
+			if(!editor.downSearchValue()) break;
 			const resultsDown = this.base!.querySelector('.wizardsearchresults');
 			if (resultsDown) {
-				resultsDown.scrollTop = Math.max(0, editor.searchIndex * 33 - Math.trunc((window.innerHeight - 300) / 2));
+				resultsDown.scrollTop = Math.max(0, editor.innerFocus!.index * 33 - Math.trunc((window.innerHeight - 300) / 2));
 			}
 			this.forceUpdate();
 			ev.preventDefault();
@@ -2124,11 +1946,10 @@ class TeamWizard extends preact.Component<{
 						type: ev.shiftKey ? 'item' : 'stats',
 					});
 				} else {
-					const [name, moveSlot] = value.split('|');
-					this.selectResult(editor.innerFocus?.type || '', name, moveSlot, ev.keyCode === 9 && ev.shiftKey);
+					this.selectResult(editor.innerFocus?.type || '', value, ev.keyCode === 9 && ev.shiftKey);
 				}
 			} else {
-				this.clearSearchBox();
+				//this.clearSearchBox();
 				editor.setSearchValue('');
 				this.resetScroll();
 				this.forceUpdate();
@@ -2137,6 +1958,153 @@ class TeamWizard extends preact.Component<{
 			break;
 		}
 	};
+
+	// override componentDidUpdate() {
+	// 	const searchBox = this.base!.querySelector<HTMLInputElement>('input[name=value], input[name=nickname]');
+	// 	if (this.setSearchBox !== null) {
+	// 		if (searchBox) {
+	// 			searchBox.value = this.setSearchBox;
+	// 			if (!TeamEditor.probablyMobile()) searchBox.select();
+	// 		}
+	// 		this.setSearchBox = null;
+	// 	}
+	// 	const filters = this.base!.querySelector('.dexlist-filters');
+	// 	if (searchBox && searchBox.name === 'value') {
+	// 		if (filters) {
+	// 			const { width } = filters.getBoundingClientRect();
+	// 			searchBox.style.paddingLeft = `${width + 5}px`;
+	// 		} else {
+	// 			searchBox.style.paddingLeft = `3px`;
+	// 		}
+	// 	}
+	// }
+
+	handleLoadUserSet = (ev: Event) => {
+		const index = parseInt((ev.target as HTMLButtonElement).value);
+		if(Number.isNaN(index)) return;
+		this.loadUserSet(index);
+	};
+	loadUserSet = (index: number) => {
+		const { editor } = this.props;
+		const { setIndex } = editor.innerFocus!;
+		const activeSet = editor.sets[setIndex];
+		const userSets = editor.getUserSets(activeSet.species);
+		const selectedSet = structuredClone(userSets[index]);
+		if(!selectedSet) return;
+		editor.sets[setIndex] = selectedSet;
+		editor.save();
+		this.props.onUpdate();
+	}
+	focusSearchBox = (ev: Event) => {
+		const { editor } = this.props;
+		const { innerFocus } = editor;
+		if(!innerFocus) return;
+		const el = ev.currentTarget as HTMLElement;
+		const index = parseInt(el.id.split('-').pop()!);
+		if(Number.isNaN(index)) return;
+		if(innerFocus.moveSlot === index) return;
+		innerFocus.moveSlot = index;
+		const value = editor.updatePrependResults();
+		editor.setSearchValue(value);
+		this.props.onUpdate(() => {
+			this.populateSearchBox();
+		});
+	}
+	renderSearchBox(type: SelectionType) {
+		const { editor } = this.props;
+		const out: (JSX.Element | null)[] = [];
+		const amount = type === 'move' ? 4 : 1;
+		for(let i = 0; i < amount; i++) {
+			const cur = editor.innerFocus!.moveSlot === i;
+			if(cur){
+				out.push(PSSearchResults.renderFilters(editor.search));
+				out.push(<span class="searchbox-current-mark"></span>);
+			}
+			out.push(
+				<input
+					id={`${this.PREFIX_SEARCHBOX}${i}`} autocomplete="off"
+					type="search" class="textbox" placeholder="Search or filter"
+					onInput={this.updateSearch} onKeyDown={this.keyDownSearch} onFocus={this.focusSearchBox}
+				/>
+			);
+		}
+		return out;
+	}
+	renderInnerFocus() {
+		const { editor } = this.props;
+		const { setIndex, type, index } = editor.innerFocus!;
+		const set = editor.sets[setIndex];
+		const cur = (i: number) => setIndex === i ? ' cur' : '';
+		const userSets = (set && type === 'ability') ? editor.getUserSets(set.species) : null;
+		const mobileClass = TeamEditor.probablyMobile() ? ' mobile' : '';
+		const scrollResultsMobile = mobileClass ? this.scrollResults : undefined;
+		const belowSetClass = set ? (type === 'move' ? ' belowmoves' : ' belowset') : '';
+
+		return <div class={`team-focus-editor${mobileClass}`} onScroll={scrollResultsMobile}>
+
+			<ul class="tabbar">
+				<li class="home-li"><button class="button" onClick={this.setFocus}>
+					<i class="fa fa-chevron-left" aria-hidden></i> Back
+				</button></li>
+				{editor.sets.map((curSet, i) => <li><button
+					class={`button picontab${cur(i)}`} onClick={this.setFocus} value={`|${i}`}
+				>
+					<PSIcon pokemon={curSet} /><br />
+					{editor.getNickname(curSet)}
+				</button></li>)}
+				{editor.canAdd() && <li><button
+					class={`button picontab${cur(editor.sets.length)}`} onClick={this.setFocus} value={`pokemon|${editor.sets.length}`}
+				>
+					<i class="fa fa-plus"></i>
+				</button></li>}
+			</ul>
+
+			<div class="pad" style={{ "padding-top": 0 }}>{this.renderSet(set, setIndex)}</div>
+
+			{set && type === 'stats' ? (
+				<StatForm editor={editor} set={set} onChange={this.handleSetChange} />
+			) : set && type === 'details' ? (
+				<DetailsForm editor={editor} set={set} onChange={this.handleSetChange} />
+			) : (
+				<>
+					<div class="searchboxwrapper pad" onClick={this.handleClickFilters}>
+						{this.renderSearchBox(type)}
+					</div>
+					<div class={`wizardsearchresults${belowSetClass}`} onScroll={this.scrollResults}>
+						<PSSearchResults
+							search={editor.search} hideFilters resultIndex={index}
+							onSelect={this.selectResult} windowing={this.windowResults()}
+						/>
+						{userSets && (
+							<div class="sample-sets">
+								<h3>Box sets</h3>
+								{userSets.length > 0 ? (
+									<div>
+										{userSets.map((set, i) => (
+											<button class="button" value={i} style={{ width: '100%' }} onClick={this.handleLoadUserSet}>
+												<small>
+													<PSIcon pokemon={set} /> {set.name || set.species}
+													{set.ability && ` [${set.ability}]`}{set.item && ` @ ${set.item}`}
+													{} - {set.moves.join(' / ') || '(No moves)'}
+												</small>
+											</button>
+										))}
+									</div>
+								) : (
+									<div>No {set.species} sets found in boxes</div>
+								)}
+							</div>
+						)}
+					</div>
+				</>
+			)}
+
+		</div>
+	}
+
+	/////
+	// these make it so only visible search results get rendered.
+
 	scrollResults = (ev: Event) => {
 		if (!(ev.currentTarget as HTMLElement).scrollTop) return;
 		this.windowing = false;
@@ -2157,145 +2125,101 @@ class TeamWizard extends preact.Component<{
 		return null;
 	}
 
-	override componentDidUpdate() {
-		const searchBox = this.base!.querySelector<HTMLInputElement>('input[name=value], input[name=nickname]');
-		if (this.setSearchBox !== null) {
-			if (searchBox) {
-				searchBox.value = this.setSearchBox;
-				if (!TeamEditor.probablyMobile()) searchBox.select();
-			}
-			this.setSearchBox = null;
-		}
-		const filters = this.base!.querySelector('.dexlist-filters');
-		if (searchBox && searchBox.name === 'value') {
-			if (filters) {
-				const { width } = filters.getBoundingClientRect();
-				searchBox.style.paddingLeft = `${width + 5}px`;
-			} else {
-				searchBox.style.paddingLeft = `3px`;
-			}
-		}
-	}
-	renderInnerFocus() {
-		const { editor } = this.props;
-		if (!editor.innerFocus) return null;
-		const { type, setIndex } = editor.innerFocus;
-		const set = this.props.editor.sets[setIndex] as Dex.PokemonSet | undefined;
-		const cur = (i: number) => setIndex === i ? ' cur' : '';
-		const sampleSets = type === 'ability' ? editor.getSampleSets(set!) : [];
-		const userSets = type === 'ability' ? editor.getUserSets(set!) : null;
-		const isMobile = TeamEditor.probablyMobile() ? ' mobile' : '';
-		return <div class={`team-focus-editor${isMobile}`} onScroll={isMobile ? this.scrollResults : undefined}>
-			<ul class="tabbar">
-				<li class="home-li"><button class="button" onClick={this.setFocus}>
-					<i class="fa fa-chevron-left" aria-hidden></i> Back
-				</button></li>
-				{editor.sets.map((curSet, i) => <li><button
-					class={`button picontab${cur(i)}`} onClick={this.setFocus} value={`${type}|${i}`}
-				>
-					<PSIcon pokemon={curSet} /><br />
-					{editor.getNickname(curSet)}
-				</button></li>)}
-				{editor.canAdd() && <li><button
-					class={`button picontab${cur(editor.sets.length)}`} onClick={this.setFocus} value={`pokemon|${editor.sets.length}`}
-				>
-					<i class="fa fa-plus"></i>
-				</button></li>}
-			</ul>
-			<div class="pad" style="padding-top:0">{this.renderSet(set, setIndex)}</div>
-			{type === 'stats' ? (
-				<StatForm editor={editor} set={set!} onChange={this.handleSetChange} />
-			) : type === 'details' ? (
-				<DetailsForm editor={editor} set={set!} onChange={this.handleSetChange} />
-			) : (
-				<>
-					<div class="searchboxwrapper pad" onClick={this.handleClickFilters}>
-						<input
-							type="search" name="value" class="textbox" placeholder="Search or filter"
-							onInput={this.updateSearch} onKeyDown={this.keyDownSearch} autocomplete="off"
-						/>
-						{PSSearchResults.renderFilters(editor.search)}
-					</div>
-					<div class={`wizardsearchresults${set ? ' belowset' : ''}`} onScroll={isMobile ? undefined : this.scrollResults}>
-						<PSSearchResults
-							search={editor.search} hideFilters resultIndex={editor.searchIndex}
-							onSelect={this.selectResult} windowing={this.windowResults()}
-						/>
-						{sampleSets?.length !== 0 && (
-							<div class="sample-sets">
-								<h3>Sample sets</h3>
-								{sampleSets ? (
-									<div>
-										{sampleSets.map(setName => <>
-											<button class="button" onClick={() => this.loadSampleSet(setName)}>
-												{setName}
-											</button> {}
-										</>)}
-									</div>
-								) : (
-									<div>Loading...</div>
-								)}
-							</div>
-						)}
-						{userSets !== null && (
-							<div class="sample-sets">
-								<h3>Box sets</h3>
-								{Object.keys(userSets).length > 0 ? (
-									<div>
-										{Object.keys(userSets).map(setName => <>
-											<button class="button" value={setName} onClick={this.handleLoadUserSet}>
-												{setName}
-											</button> {}
-										</>)}
-									</div>
-								) : (
-									<div>No {set!.species} sets found in boxes</div>
-								)}
-							</div>
-						)}
-					</div>
-				</>
-			)}
-		</div>;
-	}
-	override render() {
-		window.wizard = this; // debug
-		const { editor } = this.props;
-		if (editor.innerFocus) return this.renderInnerFocus();
-		if (editor.fetching) {
-			return <div class="teameditor">Fetching Paste...</div>;
-		}
+	/////
 
-		const clipboard = TeamEditorState.clipboard;
-		const willNotMove = (i: number) => (
-			clipboard?.teams && !clipboard.otherSets && clipboard.teams[editor.team.key] &&
-			Object.keys(clipboard.teams[editor.team.key]?.sets).length === 1 &&
-			!!(clipboard.teams[editor.team.key]?.sets[i] || clipboard.teams[editor.team.key]?.sets[i - 1])
-		);
-		const pasteControls = (i: number) => editor.readonly ? (
-			null
-		) : clipboard ? <p>
+	changeFocus(input: Partial<TeamEditorState['innerFocus']>) {
+		const { editor } = this.props;
+		if(!input) {
+			editor.innerFocus = null;
+			this.props.onUpdate();
+			return;
+		}
+		const cur = editor.innerFocus ?? {
+			setIndex: 0,
+			type: 'pokemon',
+			index: 0,
+			moveSlot: 0,
+		};
+		editor.innerFocus = {
+			setIndex: input.setIndex ?? cur.setIndex,
+			type: input.type ?? cur.type,
+			index: input.index ?? cur.index,
+			moveSlot: input.moveSlot ?? cur.moveSlot,
+		};
+		editor.updateSearchType();
+		this.resetScroll();
+		this.props.onUpdate(() => {
+			this.populateSearchBox();
+		});
+	}
+	/**
+	 * Protocol for button value: `${SelectionType | ''}|${number}`
+	 * If the first part is omitted, current type is used.
+	 */
+	setFocus = (ev: Event) => {
+		const { editor } = this.props;
+		if (editor.readonly) return;
+		const target = ev.currentTarget as HTMLButtonElement;
+		if (!target.value) {
+			this.changeFocus(null);
+			return;
+		}
+		const [rawType, i] = target.value.split('|');
+		const setIndex = parseInt(i);
+		if(Number.isNaN(setIndex)) return;
+		const type = (rawType as SelectionType) || undefined;
+		this.changeFocus({
+			setIndex,
+			type,
+		});
+	};
+	pasteSet = (ev: Event) => {
+		const target = ev.currentTarget as HTMLButtonElement;
+		const i = parseInt(target.value);
+		if(Number.isNaN(i)) return;
+		this.props.editor.pasteSet(i);
+		this.handleSetChange();
+		ev.preventDefault();
+	};
+	undeleteSet = (ev: Event) => {
+		this.props.editor.undeleteSet();
+		this.handleSetChange();
+		ev.preventDefault();
+	};
+	renderSetMiscButtons(i: number) {
+		const { editor } = this.props;
+		if(editor.readonly) return null;
+		const pasteHere = !!TeamEditorState.clipboard.sets.length && (
 			<button class="button notifying" onClick={this.pasteSet} value={i}>
 				<i class="fa fa-clipboard" aria-hidden></i> Paste copy here
-			</button> {}
-			{!willNotMove(i) && <button class="button notifying" onClick={this.moveSet} value={i} disabled={clipboard.readonly}>
-				<i class="fa fa-arrow-right" aria-hidden></i> Move here
-			</button>}
-		</p> : editor.deletedSet?.index === i ? <p style="text-align:right">
-			<button class="button" onClick={this.undeleteSet}>
+			</button>
+		);
+		const undoDelete = (editor.deletedSet?.index === i) && (
+			<button class="button notifying" onClick={this.undeleteSet}>
 				<i class="fa fa-undo" aria-hidden></i> Undo delete
 			</button>
-		</p> : null;
+		);
+		if(!pasteHere && !undoDelete) return null;
+		return (
+			<p style={{ display: 'flex', 'justify-content': 'space-between' }}>
+				{pasteHere || (<span></span>)}
+				{undoDelete || (<span></span>)}
+			</p>
+		);
+	}
+	override render() {
+		const { editor } = this.props;
+		if (editor.innerFocus) return this.renderInnerFocus();
 		return <div class="teameditor">
 			{editor.sets.map((set, i) => [
-				pasteControls(i),
+				this.renderSetMiscButtons(i),
 				this.renderSet(set, i),
 			])}
-			{pasteControls(editor.sets.length)}
+			{this.renderSetMiscButtons(editor.sets.length)}
 			{editor.canAdd() && <p><button class="button big" onClick={this.setFocus} value={`pokemon|${editor.sets.length}`}>
 				<i class="fa fa-plus" aria-hidden></i> Add Pok&eacute;mon
 			</button></p>}
-		</div>;
+		</div>
 	}
 }
 
