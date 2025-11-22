@@ -644,7 +644,6 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 	}
 	renderMoveControls(active: BattleRequestActivePokemon, choices: BattleChoiceBuilder) {
 		const battle = this.props.room.battle;
-		const dex = battle.dex;
 		const pokemonIndex = choices.index();
 		const activeIndex = battle.mySide.n > 1 ? pokemonIndex + battle.pokemonControlled : pokemonIndex;
 		const serverPokemon = choices.request.side!.pokemon[pokemonIndex];
@@ -655,9 +654,9 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 			if (!active.maxMoves) {
 				return <div class="message-error">Maxed with no max moves</div>;
 			}
-			const gmax = active.gigantamax && dex.moves.get(active.gigantamax);
+			const gmax = active.gigantamax && battle.gtt.getFormatMove(active.gigantamax);
 			return active.moves.map((moveData, i) => {
-				const move = dex.moves.get(moveData.name);
+				const move = battle.gtt.getFormatMove(moveData.name);
 				const moveType = tooltips.getMoveType(move, valueTracker, gmax || true)[0];
 				let maxMoveData: { name: string, id: ID } = active.maxMoves![i];
 				if (maxMoveData.name !== 'Max Guard') {
@@ -684,8 +683,8 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 				if (!zMoveData) {
 					return this.renderMoveButton(null);
 				}
-				const specialMove = dex.moves.get(zMoveData.name);
-				const move = specialMove.exists ? specialMove : dex.moves.get(moveData.name);
+				const specialMove = battle.gtt.getFormatMove(zMoveData.name);
+				const move = specialMove.exists ? specialMove : battle.gtt.getFormatMove(moveData.name);
 				const moveType = tooltips.getMoveType(move, valueTracker)[0];
 				const tooltip = `zmove|${moveData.name}|${pokemonIndex}`;
 				return this.renderMoveButton({
@@ -700,7 +699,7 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 
 		const special = choices.moveSpecial(choices.current);
 		return active.moves.map((moveData, i) => {
-			const move = dex.moves.get(moveData.name);
+			const move = battle.gtt.getFormatMove(moveData.name);
 			const moveType = tooltips.getMoveType(move, valueTracker)[0];
 			const tooltip = `move|${moveData.name}|${pokemonIndex}`;
 			return this.renderMoveButton({
@@ -1046,7 +1045,7 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 					<button class="button" data-cmd="/close">
 						<strong>Main menu</strong><br /><small>(closes this battle)</small>
 					</button> {}
-					<button class="button" data-cmd={`/closeand /challenge ${room.battle.farSide.id},${room.battle.tier}`}>
+					<button class="button" data-cmd={`/closeand /challenge ${room.battle.farSide.id},${room.battle.gtt.format.name}`}>
 						<strong>Rematch</strong><br /><small>(closes this battle)</small>
 					</button>
 				</p>
@@ -1062,7 +1061,7 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 		let room = this.props.room;
 		const target = e.currentTarget as HTMLAnchorElement;
 		// download replay
-		let filename = (room.battle.tier || 'Battle').replace(/[^A-Za-z0-9]/g, '');
+		let filename = (room.battle.gtt.format.name || 'Battle').replace(/[^A-Za-z0-9]/g, '');
 		let date = new Date();
 		filename += `-${date.getFullYear()}`;
 		filename += `-${date.getMonth() >= 9 ? '' : '0'}${date.getMonth() + 1}`;
