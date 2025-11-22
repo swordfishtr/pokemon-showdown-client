@@ -823,10 +823,8 @@ export const Dex = new class implements ModdedDex {
 		return num;
 	}
 
-	getGensPokemonIconNum(id: ID, isFemale?: boolean) {
-		if(isFemale) id = `${id}f` as ID;
-		const num = window.GensPokemonIconIndexes?.[id] ?? 0;
-		return num;
+	getGensPokemonIconNum(id: ID) {
+		return window.GensPokemonIconIndexes?.[id] ?? 0;
 	}
 
 	getPokemonIcon(pokemon: string | Pokemon | ServerPokemon | Dex.PokemonSet | null, facingLeft?: boolean) {
@@ -863,7 +861,7 @@ export const Dex = new class implements ModdedDex {
 		}
 		else {
 			// Generations custom species
-			const num = this.getGensPokemonIconNum(id, pokemon?.gender === 'F');
+			const num = this.getGensPokemonIconNum(id);
 			const top = Math.floor(num / 10) * 32;
 			const left = (num % 10) * 32;
 			const fainted = ((pokemon as Pokemon | ServerPokemon)?.fainted ?
