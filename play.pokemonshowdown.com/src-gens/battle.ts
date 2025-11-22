@@ -3432,6 +3432,7 @@ export class Battle {
 				this.messageFadeTime = 40;
 				this.isBlitz = true;
 			}
+			this.scene.updateGen();
 			this.log(args);
 			break;
 		}
