@@ -163,6 +163,11 @@ if (!compileOpts.ignore) {
 		'play.pokemonshowdown.com/data/graphics.js',
 		compileOpts
 	);
+	compiledFiles += compiler.compileToFile(
+		['play.pokemonshowdown.com/src-gens/battle-animations.ts', 'play.pokemonshowdown.com/src-gens/battle-animations-moves.ts'],
+		'play.pokemonshowdown.com/data/graphics-gens.js',
+		compileOpts
+	);
 }
 
 const diff = process.hrtime(compileStartTime);
