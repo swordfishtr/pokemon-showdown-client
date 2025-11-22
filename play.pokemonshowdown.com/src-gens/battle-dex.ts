@@ -25,7 +25,7 @@ import {
 	GensPokemonIconIndexes,
 } from "./battle-dex-data";
 import type * as DexData from "./battle-dex-data";
-import { GensTeambuilderTable } from "./battle-dex-search";
+import { GensTeambuilderTable, GTTIndex } from "./battle-dex-search";
 import type { Teams } from "./battle-teams";
 import { Config } from "./client-main";
 
@@ -852,7 +852,7 @@ export const Dex = new class implements ModdedDex {
 			id = toID(pokemon.volatiles.formechange[1]);
 		}
 
-		if(!id || Dex.species.get(id).exists) {
+		if(!id || !GensPokemonIconIndexes[id]) {
 			// Regular species
 			const num = this.getPokemonIconNum(id, pokemon?.gender === 'F', facingLeft);
 			const top = Math.floor(num / 12) * 30;
@@ -872,10 +872,11 @@ export const Dex = new class implements ModdedDex {
 		}
 	}
 
-	getTeambuilderSpriteData(pokemon: any, dex: ModdedDex = Dex): TeambuilderSpriteData {
-		let gen = dex.gen;
-		let id = toID(pokemon.species || pokemon);
-		let species = Dex.species.get(id);
+	getTeambuilderSpriteData(pokemon: any, gtt: GTTIndex): TeambuilderSpriteData {
+		// TODO: 1st param to be teambuilder set; return shiny and -f sprite if applicable.
+		let gen = gtt.dex.gen;
+		let id = toID(pokemon?.species || pokemon);
+		let species = gtt.getFormatSpecies(id);
 		let spriteid: string;
 		if (typeof pokemon === 'string') {
 			spriteid = species.spriteid || id;
@@ -885,7 +886,12 @@ export const Dex = new class implements ModdedDex {
 				spriteid = species.spriteid || id;
 			}
 		}
-		if (!species.exists && !(id in GensPokemonIconIndexes)) return { spriteDir: 'sprites/gen5', spriteid: '0', x: 10, y: 5 };
+
+		if(id in GensPokemonIconIndexes) {
+			return { spriteDir: 'sprites/gen5', spriteid, x: 20, y: 4 };
+		}
+
+		if (!species.exists) return { spriteDir: 'sprites/gen5', spriteid: '0', x: 10, y: 5 };
 		if (Dex.afdMode) {
 			return {
 				spriteid,
@@ -903,18 +909,13 @@ export const Dex = new class implements ModdedDex {
 		};
 		if (pokemon.shiny) spriteData.shiny = true;
 
-		// Generations off-size fakemon sprites.
-		// if(id === 'evisempra') {
-		// 	spriteData.h = 96;
-		// }
-
 		if (Dex.prefs('nopastgens')) gen = 9;
 		if (Dex.prefs('bwgfx') && gen > 5) gen = 5;
 		let homeExists = (!species.isNonstandard || !['CAP', 'Custom'].includes(species.isNonstandard) ||
 			species.id === "xerneasneutral") && ![
 			"floetteeternal", "pichuspikyeared", "pikachubelle", "pikachucosplay", "pikachulibre", "pikachuphd", "pikachupopstar", "pikachurockstar",
 		].includes(species.id);
-		if ((gen >= 8 || dex.modid === 'gen7letsgo') && homeExists) {
+		if ((gen >= 8 || gtt.dex.modid === 'gen7letsgo') && homeExists) {
 			spriteData.spriteDir = 'sprites/home-centered';
 			spriteData.x = 8;
 			spriteData.y = 10;
@@ -951,9 +952,9 @@ export const Dex = new class implements ModdedDex {
 		return spriteData;
 	}
 
-	getTeambuilderSprite(pokemon: any, dex?: ModdedDex, xOffset = 0, yOffset = 0) {
+	getTeambuilderSprite(pokemon: any, gtt: GTTIndex, xOffset = 0, yOffset = 0) {
 		if (!pokemon) return '';
-		const data = this.getTeambuilderSpriteData(pokemon, dex);
+		const data = this.getTeambuilderSpriteData(pokemon, gtt);
 		const shiny = (data.shiny ? '-shiny' : '');
 		let buf = `background-image:url(${Dex.resourcePrefix}${data.spriteDir}${shiny}/${data.spriteid}.png);background-position:${data.x + xOffset}px ${data.y + yOffset}px;background-repeat:no-repeat;`;
 		if(data.h) buf += `background-size:${data.h}px;`;

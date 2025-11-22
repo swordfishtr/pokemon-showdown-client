@@ -868,7 +868,7 @@ class TeamTextbox extends preact.Component<{
 				editor.upSearchValue();
 				const resultsUp = this.base!.querySelector('.searchresults');
 				if (resultsUp) {
-					resultsUp.scrollTop = Math.max(0, editor.searchIndex * 33 - Math.trunc((window.innerHeight - 100) * 0.4));
+					resultsUp.scrollTop = Math.max(0, editor.innerFocus!.index * 33 - Math.trunc((window.innerHeight - 100) * 0.4));
 				}
 				this.forceUpdate();
 				ev.preventDefault();
@@ -879,7 +879,7 @@ class TeamTextbox extends preact.Component<{
 				editor.downSearchValue();
 				const resultsDown = this.base!.querySelector('.searchresults');
 				if (resultsDown) {
-					resultsDown.scrollTop = Math.max(0, editor.searchIndex * 33 - Math.trunc((window.innerHeight - 100) * 0.4));
+					resultsDown.scrollTop = Math.max(0, editor.innerFocus!.index * 33 - Math.trunc((window.innerHeight - 100) * 0.4));
 				}
 				this.forceUpdate();
 				ev.preventDefault();
@@ -1528,7 +1528,7 @@ class TeamTextbox extends preact.Component<{
 							style={
 								`top:${prevOffset - 7}px;left:0;position:absolute;text-align:right;` +
 								`width:94px;padding:103px 5px 0 0;min-height:24px;pointer-events:none;` +
-								Dex.getTeambuilderSprite(set, editor.gtt.dex)
+								Dex.getTeambuilderSprite(set, editor.gtt)
 							}
 						>
 							<div>{species.types.map(type => <PSIcon type={type} />)}<PSIcon item={set.item || null} /></div>
@@ -1671,7 +1671,7 @@ class TeamWizard extends preact.Component<{
 	renderSet(set: Dex.PokemonSet | undefined, i: number) {
 		const { editor } = this.props;
 		if (!set) return null;
-		const sprite = Dex.getTeambuilderSprite(set, editor.gtt.dex);
+		const sprite = Dex.getTeambuilderSprite(set, editor.gtt);
 		while (set.moves.length < 4) set.moves.push('');
 		const overfull = set.moves.length > 4 ? ' overfull' : '';
 		const readOnlyClass = editor.readonly ? ' message-error' : '';
@@ -2405,6 +2405,7 @@ class StatForm extends preact.Component<{
 		set.evs = optimized.evs;
 		this.plus = optimized.plus || null;
 		this.minus = optimized.minus || null;
+		this.updateNatureFromPlusMinus();
 		this.props.onChange();
 	};
 	renderSpreadGuesser() {
@@ -2978,7 +2979,6 @@ class DetailsForm extends preact.Component<{
 		const formId = target.value;
 		const { editor, set } = this.props;
 		const species = editor.gtt.getFormatSpecies(formId);
-		if (!species.exists) return;
 		editor.changeSpecies(set, species.name);
 		this.props.onChange();
 		this.forceUpdate();

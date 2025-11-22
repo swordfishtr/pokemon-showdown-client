@@ -745,8 +745,9 @@ export const GensPokemonIconIndexes: { [id: string]: number } = {
 	ironsoke: 2,
 	beedrillg: 3,
 	butterfreeg: 4,
+	trembler: 5,
 	valkaryia: 6,
-	porygone: 7,
+	usurperr: 7,
 };
 
 export const BattleAvatarNumbers: { [k: string]: string } = {

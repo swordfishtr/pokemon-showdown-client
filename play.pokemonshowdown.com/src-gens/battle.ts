@@ -34,6 +34,7 @@ import { BattleScene, type PokemonSprite, BattleStatusAnims } from './battle-ani
 import { Dex, toID, toUserid, type ID, type ModdedDex } from './battle-dex';
 import { BattleTextParser, type Args, type KWArgs, type SideID } from './battle-text-parser';
 import { Teams } from './battle-teams';
+import { GTTIndex } from './battle-dex-search';
 declare const app: { user: AnyObject, rooms: AnyObject, ignore?: AnyObject } | undefined;
 
 /** [id, element?, ...misc] */
@@ -383,7 +384,7 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 		}
 		if (this.boosts[boostStat] > 6) this.boosts[boostStat] = 6;
 		if (this.boosts[boostStat] < -6) this.boosts[boostStat] = -6;
-		const isRBY = this.side.battle.gen <= 1 && !this.side.battle.tier.includes('Stadium');
+		const isRBY = this.side.battle.gtt.dex.gen <= 1 && !this.side.battle.gtt.format.name.includes('Stadium');
 		if (!isRBY && (boostStat === 'accuracy' || boostStat === 'evasion')) {
 			if (this.boosts[boostStat] > 0) {
 				let goodBoostTable = [
@@ -433,7 +434,7 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 		// this.lastMove = '';
 		this.statusStage = 0;
 		this.statusData.toxicTurns = 0;
-		if (this.side.battle.gen === 5) this.statusData.sleepTurns = 0;
+		if (this.side.battle.gtt.dex.gen === 5) this.statusData.sleepTurns = 0;
 	}
 	/**
 	 * copyAll = false means Baton Pass,
@@ -500,7 +501,7 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 		const battle = this.side.battle;
 		if (battle.hasPseudoWeather('Gravity')) {
 			return true;
-		} else if (this.volatiles['ingrain'] && battle.gen >= 4) {
+		} else if (this.volatiles['ingrain'] && battle.gtt.dex.gen >= 4) {
 			return true;
 		} else if (this.volatiles['smackdown']) {
 			return true;
@@ -527,7 +528,7 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 		return !this.getTypeList(serverPokemon).includes('Flying');
 	}
 	effectiveAbility(serverPokemon?: ServerPokemon) {
-		const ability = this.side.battle.dex.abilities.get(
+		const ability = this.side.battle.gtt.getFormatAbility(
 			serverPokemon?.ability || this.ability || serverPokemon?.baseAbility || ''
 		);
 		if (
@@ -548,10 +549,10 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 			(serverPokemon ? serverPokemon.speciesForme : this.speciesForme);
 	}
 	getSpecies(serverPokemon?: ServerPokemon) {
-		return this.side.battle.dex.species.get(this.getSpeciesForme(serverPokemon));
+		return this.side.battle.gtt.getFormatSpecies(this.getSpeciesForme(serverPokemon));
 	}
 	getBaseSpecies() {
-		return this.side.battle.dex.species.get(this.speciesForme);
+		return this.side.battle.gtt.getFormatSpecies(this.speciesForme);
 	}
 	reset() {
 		this.clearVolatile();
@@ -697,19 +698,19 @@ export class Side {
 			this.sideConditions[condition] = [effect.name, 1, 5, 8];
 			break;
 		case 'reflect':
-			this.sideConditions[condition] = [effect.name, 1, 5, this.battle.gen >= 4 ? 8 : 0];
+			this.sideConditions[condition] = [effect.name, 1, 5, this.battle.gtt.dex.gen >= 4 ? 8 : 0];
 			break;
 		case 'safeguard':
 			this.sideConditions[condition] = [effect.name, 1, persist ? 7 : 5, 0];
 			break;
 		case 'lightscreen':
-			this.sideConditions[condition] = [effect.name, 1, 5, this.battle.gen >= 4 ? 8 : 0];
+			this.sideConditions[condition] = [effect.name, 1, 5, this.battle.gtt.dex.gen >= 4 ? 8 : 0];
 			break;
 		case 'mist':
 			this.sideConditions[condition] = [effect.name, 1, 5, 0];
 			break;
 		case 'tailwind':
-			this.sideConditions[condition] = [effect.name, 1, this.battle.gen >= 5 ? persist ? 6 : 4 : persist ? 5 : 3, 0];
+			this.sideConditions[condition] = [effect.name, 1, this.battle.gtt.dex.gen >= 5 ? persist ? 6 : 4 : persist ? 5 : 3, 0];
 			break;
 		case 'luckychant':
 			this.sideConditions[condition] = [effect.name, 1, 5, 0];
@@ -843,7 +844,7 @@ export class Side {
 		const effect = Dex.getEffect(kwArgs.from);
 		if (['batonpass', 'zbatonpass', 'shedtail'].includes(effect.id)) {
 			pokemon.copyVolatileFrom(this.lastPokemon!, effect.id === 'shedtail' ? 'shedtail' : false);
-		} else if (this.battle.tier.includes(`Relay Race`) && !effect.id) {
+		} else if (this.battle.gtt.format.name.includes(`Relay Race`) && !effect.id) {
 			if (this.lastPokemon && !this.lastPokemon.fainted) pokemon.copyVolatileFrom(this.lastPokemon, false);
 		}
 
@@ -901,18 +902,18 @@ export class Side {
 	switchOut(pokemon: Pokemon, kwArgs: KWArgs, slot = pokemon.slot) {
 		const effect = Dex.getEffect(kwArgs.from);
 		if (!['batonpass', 'zbatonpass', 'shedtail'].includes(effect.id) &&
-			!(this.battle.tier.includes(`Relay Race`) && !effect.id)) {
+			!(this.battle.gtt.format.name.includes(`Relay Race`) && !effect.id)) {
 			pokemon.clearVolatile();
 		} else {
 			pokemon.removeVolatile('transform' as ID);
 			pokemon.removeVolatile('formechange' as ID);
 		}
 		if (!['batonpass', 'zbatonpass', 'shedtail', 'teleport'].includes(effect.id) &&
-			!(this.battle.tier.includes(`Relay Race`) && !effect.id)) {
+			!(this.battle.gtt.format.name.includes(`Relay Race`) && !effect.id)) {
 			this.battle.log(['switchout', pokemon.ident], { from: effect.id });
 		}
 		pokemon.statusData.toxicTurns = 0;
-		if (this.battle.gen === 5) pokemon.statusData.sleepTurns = 0;
+		if (this.battle.gtt.dex.gen === 5) pokemon.statusData.sleepTurns = 0;
 		this.lastPokemon = pokemon;
 		this.active[slot] = null;
 
@@ -1098,11 +1099,9 @@ export class Battle {
 	myAllyPokemon: ServerPokemon[] | null = null;
 	lastMove = '';
 
-	gen = 8;
-	dex: ModdedDex = Dex;
+	readonly gtt = new GTTIndex({ throwInvalid: true });
 	teamPreviewCount = 0;
 	speciesClause = false;
-	tier = '';
 	gameType: 'singles' | 'doubles' | 'triples' | 'multi' | 'freeforall' | 'rotation' = 'singles';
 	compatMode = true;
 	rated: string | boolean = false;
@@ -1420,14 +1419,14 @@ export class Battle {
 				if (ability) {
 					this.activateAbility(poke, ability.name);
 				}
-				this.weatherTimeLeft = (this.gen <= 5 || isExtremeWeather) ? 0 : 8;
-				this.weatherMinTimeLeft = (this.gen <= 5 || isExtremeWeather) ? 0 : 5;
+				this.weatherTimeLeft = (this.gtt.dex.gen <= 5 || isExtremeWeather) ? 0 : 8;
+				this.weatherMinTimeLeft = (this.gtt.dex.gen <= 5 || isExtremeWeather) ? 0 : 5;
 			} else if (isExtremeWeather) {
 				this.weatherTimeLeft = 0;
 				this.weatherMinTimeLeft = 0;
 			} else {
-				this.weatherTimeLeft = (this.gen <= 3 ? 5 : 8);
-				this.weatherMinTimeLeft = (this.gen <= 3 ? 0 : 5);
+				this.weatherTimeLeft = (this.gtt.dex.gen <= 3 ? 5 : 8);
+				this.weatherMinTimeLeft = (this.gtt.dex.gen <= 3 ? 0 : 5);
 			}
 		}
 		this.weather = weather;
@@ -1549,7 +1548,7 @@ export class Battle {
 					for (const active of this.getAllActive()) {
 						if (active === pokemon) continue;
 						// Pressure affects allies in gen 3 and 4
-						if (this.gen <= 4 || (active.side !== pokemon.side && active.side.ally !== pokemon.side)) {
+						if (this.gtt.dex.gen <= 4 || (active.side !== pokemon.side && active.side.ally !== pokemon.side)) {
 							foeTargets.push(active);
 						}
 					}
@@ -1757,7 +1756,7 @@ export class Battle {
 					break;
 				}
 			} else {
-				if (this.dex.moves.get(this.lastMove).category !== 'Status') {
+				if (this.gtt.getFormatMove(this.lastMove).category !== 'Status') {
 					poke.timesAttacked++;
 				}
 				let damageinfo = '' + Pokemon.getFormattedRange(range, damage[1] === 100 ? 0 : 1, '\u2013');
@@ -1842,8 +1841,8 @@ export class Battle {
 		case '-boost': {
 			let poke = this.getPokemon(args[1])!;
 			let stat = args[2] as Dex.BoostStatName;
-			if (this.gen === 1 && stat === 'spd') break;
-			if (this.gen === 1 && stat === 'spa') stat = 'spc';
+			if (this.gtt.dex.gen === 1 && stat === 'spd') break;
+			if (this.gtt.dex.gen === 1 && stat === 'spa') stat = 'spc';
 			let amount = parseInt(args[3], 10);
 			if (amount === 0) {
 				this.scene.resultAnim(poke, 'already ' + poke.getBoost(stat), 'neutral');
@@ -1869,8 +1868,8 @@ export class Battle {
 		case '-unboost': {
 			let poke = this.getPokemon(args[1])!;
 			let stat = args[2] as Dex.BoostStatName;
-			if (this.gen === 1 && stat === 'spd') break;
-			if (this.gen === 1 && stat === 'spa') stat = 'spc';
+			if (this.gtt.dex.gen === 1 && stat === 'spd') break;
+			if (this.gtt.dex.gen === 1 && stat === 'spa') stat = 'spc';
 			let amount = parseInt(args[3], 10);
 			if (amount === 0) {
 				this.scene.resultAnim(poke, 'already ' + poke.getBoost(stat), 'neutral');
@@ -1959,7 +1958,7 @@ export class Battle {
 				poke.boosts[stat] = frompoke.boosts[stat];
 				if (!poke.boosts[stat]) delete poke.boosts[stat];
 			}
-			if (this.gen >= 6) {
+			if (this.gtt.dex.gen >= 6) {
 				const volatilesToCopy = ['focusenergy', 'gmaxchistrike', 'laserfocus'];
 				for (const volatile of volatilesToCopy) {
 					if (frompoke.volatiles[volatile]) {
@@ -2343,7 +2342,7 @@ export class Battle {
 			let poke = this.getPokemon(args[1])!;
 			let item = Dex.items.get(args[2]);
 			let effect = Dex.getEffect(kwArgs.from);
-			if (this.gen > 4 || effect.id !== 'knockoff') {
+			if (this.gtt.dex.gen > 4 || effect.id !== 'knockoff') {
 				poke.item = '';
 				poke.itemEffect = '';
 				poke.prevItem = item.name;
@@ -2364,7 +2363,7 @@ export class Battle {
 					poke.prevItemEffect = 'flung';
 					break;
 				case 'knockoff':
-					if (this.gen <= 4) {
+					if (this.gtt.dex.gen <= 4) {
 						poke.itemEffect = 'knocked off';
 					} else {
 						poke.prevItemEffect = 'knocked off';
@@ -2470,13 +2469,13 @@ export class Battle {
 				}
 				newSpeciesForme = args[2].substr(0, commaIndex);
 			}
-			let species = this.dex.species.get(newSpeciesForme);
+			let species = this.gtt.getFormatSpecies(newSpeciesForme);
 			if (nextArgs) {
 				if (nextArgs[0] === '-mega') {
-					species = this.dex.species.get(this.dex.items.get(nextArgs[3]).megaStone);
+					species = this.gtt.getFormatSpecies(this.gtt.getFormatItem(nextArgs[3]).megaStone);
 				} else if (nextArgs[0] === '-primal' && nextArgs.length > 2) {
-					if (nextArgs[2] === 'Red Orb') species = this.dex.species.get('Groudon-Primal');
-					if (nextArgs[2] === 'Blue Orb') species = this.dex.species.get('Kyogre-Primal');
+					if (nextArgs[2] === 'Red Orb') species = this.gtt.getFormatSpecies('Groudon-Primal');
+					if (nextArgs[2] === 'Blue Orb') species = this.gtt.getFormatSpecies('Kyogre-Primal');
 				}
 			}
 
@@ -2527,7 +2526,7 @@ export class Battle {
 			if (!poke.getSpeciesForme().endsWith('-Gmax') && !species.name.endsWith('-Gmax')) {
 				poke.removeVolatile('typeadd' as ID);
 				poke.removeVolatile('typechange' as ID);
-				if (this.gen >= 6) poke.removeVolatile('autotomize' as ID);
+				if (this.gtt.dex.gen >= 6) poke.removeVolatile('autotomize' as ID);
 			}
 
 			if (!kwArgs.silent) {
@@ -2981,7 +2980,7 @@ export class Battle {
 				this.scene.anim(poke, { time: 100 });
 				break;
 			case 'skillswap': case 'wanderingspirit':
-				if (this.gen <= 4) break;
+				if (this.gtt.dex.gen <= 4) break;
 				let pokeability = Dex.sanitizeName(kwArgs.ability) || target!.ability;
 				let targetability = Dex.sanitizeName(kwArgs.ability2) || poke.ability;
 				if (pokeability) {
@@ -3114,7 +3113,7 @@ export class Battle {
 						continue;
 					}
 				}
-				if (this.gen > 6) maxTimeLeft = 8;
+				if (this.gtt.dex.gen > 6) maxTimeLeft = 8;
 			}
 			if (kwArgs.persistent) minTimeLeft += 2;
 			this.addPseudoWeather(effect.name, minTimeLeft, maxTimeLeft);
@@ -3425,19 +3424,13 @@ export class Battle {
 			break;
 		}
 		case 'tier': {
-			this.tier = args[1];
-			if (this.tier.endsWith('Random Battle')) {
+			this.gtt.setFormat(args[1]);
+			if(this.gtt.formatid.endsWith('factory')) {
 				this.speciesClause = true;
 			}
-			if (this.tier.endsWith(' (Blitz)')) {
+			if(this.gtt.format.blitz) {
 				this.messageFadeTime = 40;
 				this.isBlitz = true;
-			}
-			if (this.tier.includes(`Let's Go`)) {
-				this.dex = Dex.mod('gen7letsgo' as ID);
-			}
-			if (this.tier.includes('Super Staff Bros')) {
-				this.dex = Dex.mod('gen9ssb' as ID);
 			}
 			this.log(args);
 			break;
@@ -3736,8 +3729,8 @@ export class Battle {
 			break;
 		}
 		case 'gen': {
-			this.gen = parseInt(args[1], 10);
-			this.dex = Dex.forGen(this.gen);
+			const gen = parseInt(args[1], 10);
+			this.gtt.dex = Dex.forGen(gen);
 			this.scene.updateGen();
 			this.log(args);
 			break;

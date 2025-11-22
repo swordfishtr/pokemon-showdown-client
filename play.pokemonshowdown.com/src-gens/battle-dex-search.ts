@@ -40,10 +40,12 @@ interface GTTMod {
 }
 
 interface GTTFormat {
+	name: string,
 	mod: ID, // keyof GTT.mods
 	natdex: ID | null, // keyof GTT.mods
 	level: 5 | 50 | 100,
 
+	blitz?: 1, // not in use yet
 	doubles?: 1,
 	cap?: 1 // not in use yet
 	tradebacks?: 1, // not in use yet
@@ -77,16 +79,29 @@ export class GTTIndex {
 	format!: GTTFormat;
 	mod!: GTTMod;
 	dex!: ModdedDex;
-	speciesCache!: { [species: ID]: Species | undefined };
-	moveCache!: { [move: ID]: Move | undefined };
-	abilityCache!: { [ability: ID]: Ability | undefined };
-	itemCache!: { [item: ID]: Item | undefined };
-	constructor(format = DexSearch.DEFAULT_FORMAT) {
-		this.setFormat(format);
+
+	throwInvalid: boolean;
+
+	private speciesCache!: { [species: ID]: Species | undefined };
+	private moveCache!: { [move: ID]: Move | undefined };
+	private abilityCache!: { [ability: ID]: Ability | undefined };
+	private itemCache!: { [item: ID]: Item | undefined };
+	constructor(options: {
+		/** Defaults to `DexSearch.DEFAULT_FORMAT` */
+		format?: string,
+		/** Whether to throw when a format is specified but invalid. */
+		throwInvalid?: boolean,
+	} = {}) {
+		this.throwInvalid = !!options.throwInvalid;
+		this.setFormat(options.format);
 	}
-	setFormat(formatName: string) {
+	/** Omit `formatName` to reset to `DexSearch.DEFAULT_FORMAT` */
+	setFormat(formatName: string = DexSearch.DEFAULT_FORMAT) {
 		let formatid = toID(formatName);
-		if(!(formatid in GensTeambuilderTable.formats)) formatid = DexSearch.DEFAULT_FORMAT;
+		if(!(formatid in GensTeambuilderTable.formats)) {
+			if(this.throwInvalid) throw new Error(`Unknown format: ${formatName}`);
+			formatid = DexSearch.DEFAULT_FORMAT;
+		}
 
 		if(formatid === this.formatid) return;
 		this.formatid = formatid;
@@ -281,7 +296,7 @@ export class DexSearch {
 	filters: SearchFilter[] | null = null;
 
 	constructor(searchType: SearchType | '' = '', formatid = DexSearch.DEFAULT_FORMAT as ID, species = '' as ID) {
-		this.gtt = new GTTIndex(formatid);
+		this.gtt = new GTTIndex({ format: formatid });
 		this.setType(searchType, species);
 	}
 

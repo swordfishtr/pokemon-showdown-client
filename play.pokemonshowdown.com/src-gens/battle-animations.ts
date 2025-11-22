@@ -532,7 +532,7 @@ export class BattleScene implements BattleSceneStub {
 		let animEntry = BattleMoveAnims[moveid];
 		if (this.acceleration >= 3) {
 			const targetsSelf = !participants[1] || participants[0] === participants[1];
-			const isSpecial = !targetsSelf && this.battle.dex.moves.get(moveid).category === 'Special';
+			const isSpecial = !targetsSelf && this.battle.gtt.getFormatMove(moveid).category === 'Special';
 			animEntry = BattleOtherAnims[targetsSelf ? 'fastanimself' : isSpecial ? 'fastanimspecial' : 'fastanimattack'];
 		} else if (!animEntry) {
 			animEntry = BattleMoveAnims['tackle'];
@@ -563,9 +563,15 @@ export class BattleScene implements BattleSceneStub {
 	}
 
 	updateGen() {
-		let gen = this.battle.gen;
+		let gen = this.battle.gtt.dex.gen;
 		if (Dex.prefs('nopastgens')) gen = 6;
 		if (Dex.prefs('bwgfx') && gen > 5) gen = 5;
+		if([
+			'gen9regenerations10',
+		].includes(this.battle.gtt.formatid)) {
+			// Hardcoded to match custom sprites
+			gen = 5;
+		}
 		this.gen = gen;
 		this.activeCount = this.battle.nearSide?.active.length || 1;
 
@@ -625,7 +631,7 @@ export class BattleScene implements BattleSceneStub {
 		return BattleLog.escapeHTML(name);
 	}
 	getSidebarHTML(side: Side, posStr: string): string {
-		let noShow = this.battle.hardcoreMode && this.battle.gen < 7;
+		let noShow = this.battle.hardcoreMode && this.battle.gtt.dex.gen < 7;
 
 		let speciesOverage = this.battle.speciesClause ? Infinity : Math.max(side.pokemon.length - side.totalPokemon, 0);
 		const sidebarIcons: (
@@ -920,7 +926,7 @@ export class BattleScene implements BattleSceneStub {
 			pWeather[1] = pWeather[2];
 			pWeather[2] = 0;
 		}
-		if (this.battle.gen < 7 && this.battle.hardcoreMode) return buf;
+		if (this.battle.gtt.dex.gen < 7 && this.battle.hardcoreMode) return buf;
 		if (pWeather[2]) {
 			return `${buf} <small>(${pWeather[1]} or ${pWeather[2]} turns)</small>`;
 		}
@@ -932,7 +938,7 @@ export class BattleScene implements BattleSceneStub {
 	sideConditionLeft(cond: Side['sideConditions'][string], isFoe: boolean, all?: boolean) {
 		if (!cond[2] && !cond[3] && !all) return '';
 		let buf = `<br />${isFoe && !all ? "Foe's " : ""}${Dex.moves.get(cond[0]).name}`;
-		if (this.battle.gen < 7 && this.battle.hardcoreMode) return buf;
+		if (this.battle.gtt.dex.gen < 7 && this.battle.hardcoreMode) return buf;
 
 		if (!cond[2] && !cond[3]) return buf;
 		if (!cond[2] && cond[3]) {
@@ -945,7 +951,7 @@ export class BattleScene implements BattleSceneStub {
 		return `${buf} <small>(${cond[2]} or ${cond[3]} turns)</small>`;
 	}
 	weatherLeft() {
-		if (this.battle.gen < 7 && this.battle.hardcoreMode) return '';
+		if (this.battle.gtt.dex.gen < 7 && this.battle.hardcoreMode) return '';
 
 		let weatherhtml = ``;
 
