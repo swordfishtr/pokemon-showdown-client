@@ -570,7 +570,6 @@ export class BattleScene implements BattleSceneStub {
 			'gen9regenerations10',
 		].includes(this.battle.gtt.formatid)) {
 			// Hardcoded to match custom sprites
-			console.log('BattleScene hardcode activated');
 			gen = 5;
 		}
 		this.gen = gen;

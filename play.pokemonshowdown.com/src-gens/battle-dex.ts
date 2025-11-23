@@ -621,20 +621,6 @@ export const Dex = new class implements ModdedDex {
 			pokemon = pokemon.getSpeciesForme() + (isGigantamax ? '-Gmax' : '');
 		}
 		const species = Dex.species.get(pokemon);
-
-		// Custom pokemon sprites, but no back side yet.
-		if([
-			'irongoro',
-			'ironsoke',
-			'beedrillg',
-			'butterfreeg',
-			'trembler',
-			'valkaryia',
-			'usurperr',
-		].includes(species.id)) {
-			isFront = true;
-		}
-
 		// Gmax sprites are already extremely large, so we don't need to double.
 		if (species.name.endsWith('-Gmax')) isDynamax = false;
 		let spriteData = {
