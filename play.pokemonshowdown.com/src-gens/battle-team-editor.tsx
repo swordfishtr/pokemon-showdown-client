@@ -739,9 +739,9 @@ export class TeamEditor extends preact.Component<{
 		);
 	}
 	override render() {
-		// if (this.props.team.format !== this.editor.search.gtt.formatid) {
-		// 	this.editor.setFormat(this.props.team.format);
-		// }
+		if (this.props.team.format !== this.editor.search.gtt.formatid) {
+			this.editor.setFormat(this.props.team.format);
+		}
 		return (
 			<div class="teameditor">
 				<ul class="tabbar">
@@ -2018,26 +2018,6 @@ class TeamWizard extends preact.Component<{
 			break;
 		}
 	};
-
-	// override componentDidUpdate() {
-	// 	const searchBox = this.base!.querySelector<HTMLInputElement>('input[name=value], input[name=nickname]');
-	// 	if (this.setSearchBox !== null) {
-	// 		if (searchBox) {
-	// 			searchBox.value = this.setSearchBox;
-	// 			if (!TeamEditor.probablyMobile()) searchBox.select();
-	// 		}
-	// 		this.setSearchBox = null;
-	// 	}
-	// 	const filters = this.base!.querySelector('.dexlist-filters');
-	// 	if (searchBox && searchBox.name === 'value') {
-	// 		if (filters) {
-	// 			const { width } = filters.getBoundingClientRect();
-	// 			searchBox.style.paddingLeft = `${width + 5}px`;
-	// 		} else {
-	// 			searchBox.style.paddingLeft = `3px`;
-	// 		}
-	// 	}
-	// }
 
 	handleLoadUserSet = (ev: Event) => {
 		const index = parseInt((ev.target as HTMLButtonElement).value);
