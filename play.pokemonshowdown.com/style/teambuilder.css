@@ -669,6 +669,7 @@ you can't delete it by pressing Backspace */
 	right: 0;
 	bottom: 0;
 	overflow: auto;
+	overflow-anchor: none;
 	-webkit-overflow-scrolling: touch;
 }
 .team-focus-editor .tabbar {
@@ -724,6 +725,7 @@ you can't delete it by pressing Backspace */
 	right: 0;
 	bottom: 0;
 	overflow: auto;
+	overflow-anchor: none;
 	-webkit-overflow-scrolling: touch;
 	overscroll-behavior-block: contain;
 }

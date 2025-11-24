@@ -1581,13 +1581,69 @@ class TeamTextbox extends preact.Component<{
 class TeamWizard extends preact.Component<{
 	editor: TeamEditorState, onChange?: () => void, onUpdate: (callback?: () => void) => void,
 }> {
-	//setSearchBox: string | null = null;
-	windowing = true;
 	readonly PREFIX_SEARCHBOX = 'innerfocus-searchbox-';
 	constructor() {
 		super(...arguments);
 		window.wizard = this;
 	}
+	readonly resultSlice: { start: number, end: number } = {
+		start: 0,
+		end: Math.ceil(window.innerHeight / 33),
+	}
+	/** Scroll event fires repeatedly and very fast, which causes lag if not throttled. */
+	scrollThrottler = {
+		ms: 50,
+		throttling: null as number | null,
+		runAfterThrottling: false,
+		throttle() {
+			this.throttling = setTimeout(() => {
+				this.throttling = null;
+				if(this.runAfterThrottling) {
+					this.runAfterThrottling = false;
+					this.throttle();
+					this.run();
+				}
+			}, this.ms);
+		},
+		tryRun() {
+			if(!this.throttling) {
+				this.throttle();
+				this.run();
+			}
+			else {
+				this.runAfterThrottling = true;
+			}
+		},
+		run: () => {
+			let start: number, end: number;
+			if(TeamEditor.probablyMobile()) {
+				const el = this.base!;
+				const { editor } = this.props;
+				if(!editor.innerFocus) return;
+				const { setIndex, type } = editor.innerFocus;
+				const set = editor.sets[setIndex];
+
+				// Mobile layout things
+				const shift = set ? (type === 'move' ? 7 : 5) : 2;
+				start = Math.floor(el.scrollTop / 33) - shift;
+				end = Math.ceil(el.clientHeight / 33) + start;
+			}
+			else {
+				const el = this.base!.querySelector('.wizardsearchresults');
+				if(!el) return;
+
+				start = Math.floor(el.scrollTop / 33);
+				end = Math.ceil(el.clientHeight / 33) + start;
+			}
+			start -= 4;
+			if(start < 0) start = 0;
+			end += 4;
+			if(end < 0) end = 0;
+			this.resultSlice.start = start;
+			this.resultSlice.end = end;
+			this.forceUpdate();
+		}
+	};
 	getSearchBox(index = this.props.editor.innerFocus?.moveSlot ?? 0): HTMLInputElement | null {
 		return this.base!.querySelector(`#${this.PREFIX_SEARCHBOX}${index}`);
 	}
@@ -1796,7 +1852,11 @@ class TeamWizard extends preact.Component<{
 		if (type === null) {
 			this.resetScroll();
 			this.forceUpdate();
-		} if (!type) {
+		} else if (!type) {
+			if(searchbox) {
+				searchbox.value = '';
+				searchbox.focus();
+			}
 			editor.setSearchValue('');
 			this.resetScroll();
 			this.forceUpdate();
@@ -2015,9 +2075,7 @@ class TeamWizard extends preact.Component<{
 		const out: (JSX.Element | null)[] = [];
 		const amount = type === 'move' ? 4 : 1;
 		for(let i = 0; i < amount; i++) {
-			const cur = editor.innerFocus!.moveSlot === i;
-			if(cur){
-				out.push(PSSearchResults.renderFilters(editor.search));
+			if(editor.innerFocus!.moveSlot === i) {
 				out.push(<span class="searchbox-current-mark"></span>);
 			}
 			out.push(
@@ -2037,6 +2095,7 @@ class TeamWizard extends preact.Component<{
 		const cur = (i: number) => setIndex === i ? ' cur' : '';
 		const userSets = (set && type === 'ability') ? editor.getUserSets(set.species) : null;
 		const mobileClass = TeamEditor.probablyMobile() ? ' mobile' : '';
+		const scrollResultsDesktop = mobileClass ? undefined: this.scrollResults;
 		const scrollResultsMobile = mobileClass ? this.scrollResults : undefined;
 		const belowSetClass = set ? (type === 'move' ? ' belowmoves' : ' belowset') : '';
 
@@ -2070,10 +2129,10 @@ class TeamWizard extends preact.Component<{
 					<div class="searchboxwrapper pad" onClick={this.handleClickFilters}>
 						{this.renderSearchBox(type)}
 					</div>
-					<div class={`wizardsearchresults${belowSetClass}`} onScroll={this.scrollResults}>
+					<div class={`wizardsearchresults${belowSetClass}`} onScroll={scrollResultsDesktop}>
 						<PSSearchResults
-							search={editor.search} hideFilters resultIndex={index}
-							onSelect={this.selectResult} windowing={this.windowResults()}
+							search={editor.search} resultIndex={index} resultSlice={this.resultSlice}
+							onSelect={this.selectResult}
 						/>
 						{userSets && (
 							<div class="sample-sets">
@@ -2102,30 +2161,12 @@ class TeamWizard extends preact.Component<{
 		</div>
 	}
 
-	/////
-	// these make it so only visible search results get rendered.
-
-	scrollResults = (ev: Event) => {
-		if (!(ev.currentTarget as HTMLElement).scrollTop) return;
-		this.windowing = false;
-		if (document.documentElement.clientWidth === document.documentElement.scrollWidth) {
-			(ev.currentTarget as any).scrollIntoViewIfNeeded?.();
-		}
-		this.forceUpdate();
-	};
+	scrollResults = (ev: Event) => void this.scrollThrottler.tryRun();
 	resetScroll() {
-		this.windowing = true;
 		const searchResults = this.base!.querySelector('.wizardsearchresults');
 		if (searchResults) searchResults.scrollTop = 0;
+		this.scrollThrottler.tryRun();
 	}
-	windowResults() {
-		if (this.windowing) {
-			return Math.ceil(window.innerHeight / 33);
-		}
-		return null;
-	}
-
-	/////
 
 	changeFocus(input: Partial<TeamEditorState['innerFocus']>) {
 		const { editor } = this.props;
@@ -2147,8 +2188,8 @@ class TeamWizard extends preact.Component<{
 			moveSlot: input.moveSlot ?? cur.moveSlot,
 		};
 		editor.updateSearchType();
-		this.resetScroll();
 		this.props.onUpdate(() => {
+			this.resetScroll();
 			this.populateSearchBox();
 		});
 	}

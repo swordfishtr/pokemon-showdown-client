@@ -13,7 +13,10 @@ import type { DexSearch, SearchRow, SearchType } from "./battle-dex-search";
 import { Config } from "./client-main";
 
 export class PSSearchResults extends preact.Component<{
-	search: DexSearch, windowing?: number | null, hideFilters?: boolean, resultIndex?: number,
+	search: DexSearch,
+	resultIndex?: number,
+	/** Applied to search results. The slice of rows to render. */
+	resultSlice?: { start: number, end: number },
 	/** type = '' means a filter was selected,
 	  * null means a sort was selected (clear not needed) */
 	onSelect?: (type: SearchType | '' | null, name: string) => void,
@@ -25,10 +28,10 @@ export class PSSearchResults extends preact.Component<{
 	moveIds: ID[] = [];
 	resultIndex = -1;
 
-	renderPokemonSortRow() {
+	renderPokemonSortRow(index: number) {
 		const search = this.props.search;
 		const sortCol = search.sortCol;
-		return <li class="result"><div class="sortrow">
+		return <li key={index} class="result"><div class="sortrow">
 			<button class={`sortcol numsortcol${!sortCol ? ' cur' : ''}`}>{!sortCol ? 'Sort: ' : search.firstPokemonColumn}</button>
 			<button class={`sortcol pnamesortcol${sortCol === 'name' ? ' cur' : ''}`} data-sort="name">Name</button>
 			<button class={`sortcol typesortcol${sortCol === 'type' ? ' cur' : ''}`} data-sort="type">Types</button>
@@ -43,9 +46,9 @@ export class PSSearchResults extends preact.Component<{
 		</div></li>;
 	}
 
-	renderMoveSortRow() {
+	renderMoveSortRow(index: number) {
 		const sortCol = this.props.search.sortCol;
-		return <li class="result"><div class="sortrow">
+		return <li key={index} class="result"><div class="sortrow">
 			<button class={`sortcol movenamesortcol${sortCol === 'name' ? ' cur' : ''}`} data-sort="name">Name</button>
 			<button class={`sortcol movetypesortcol${sortCol === 'type' ? ' cur' : ''}`} data-sort="type">Type</button>
 			<button class={`sortcol movetypesortcol${sortCol === 'category' ? ' cur' : ''}`} data-sort="category">Cat</button>
@@ -55,16 +58,20 @@ export class PSSearchResults extends preact.Component<{
 		</div></li>;
 	}
 
-	renderPokemonRow(id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
+	renderPokemonRow(index: number, id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
 		const search = this.props.search;
 		const pokemon = search.gtt.getFormatSpecies(id);
-		if (!pokemon) return <li class="result">Unrecognized pokemon</li>;
+		const cur = this.speciesId === id ? 'cur' : '';
+		const hover = this.resultIndex === index ? 'hover' : '';
+		const classes = `${cur} ${hover}`.trim();
+
+		if (!pokemon) return <li key={index} class="result">Unrecognized pokemon</li>;
 
 		let tagStart = (pokemon.forme ? pokemon.name.length - pokemon.forme.length - 1 : 0);
 
 		if (errorMessage) {
-			return <li class="result"><a
-				href={`${this.URL_ROOT}pokemon/${id}`} class={id === this.speciesId ? 'cur' : ''}
+			return <li key={index} class="result"><a
+				href={`${this.URL_ROOT}pokemon/${id}`} class={classes}
 				data-target="push" data-entry={`pokemon|${pokemon.name}`}
 			>
 				<span class="col numcol">{search.getNumCol(pokemon)}</span>
@@ -85,9 +92,9 @@ export class PSSearchResults extends preact.Component<{
 		for (const stat of Object.values(stats)) bst += stat;
 		if (search.gtt.dex.gen < 2) bst -= stats['spd'];
 
-		return <li class="result">
+		return <li key={index} class="result">
 			<a
-				href={`${this.URL_ROOT}pokemon/${id}`} class={id === this.speciesId ? 'cur' : ''}
+				href={`${this.URL_ROOT}pokemon/${id}`} class={classes}
 				data-target="push" data-entry={`pokemon|${pokemon.name}`}
 			>
 				<span class="col numcol">{search.getNumCol(pokemon)}</span>
@@ -166,13 +173,17 @@ export class PSSearchResults extends preact.Component<{
 		return output;
 	}
 
-	renderItemRow(id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
+	renderItemRow(index: number, id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
 		const search = this.props.search;
 		const item = search.gtt.dex.items.get(id);
-		if (!item) return <li class="result">Unrecognized item</li>;
+		const cur = this.itemId === id ? 'cur' : '';
+		const hover = this.resultIndex === index ? 'hover' : '';
+		const classes = `${cur} ${hover}`.trim();
 
-		return <li class="result"><a
-			href={`${this.URL_ROOT}items/${id}`} class={id === this.itemId ? 'cur' : ''}
+		if (!item) return <li key={index} class="result">Unrecognized item</li>;
+
+		return <li key={index} class="result"><a
+			href={`${this.URL_ROOT}items/${id}`} class={classes}
 			data-target="push" data-entry={`item|${item.name}`}
 		>
 			<span class="col itemiconcol">
@@ -187,14 +198,18 @@ export class PSSearchResults extends preact.Component<{
 		</a></li>;
 	}
 
-	renderAbilityRow(id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
+	renderAbilityRow(index: number, id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
 		const search = this.props.search;
 		const ability = search.gtt.getFormatAbility(id);
-		if (!ability) return <li class="result">Unrecognized ability</li>;
+		const cur = this.abilityId === id ? 'cur' : '';
+		const hover = this.resultIndex === index ? 'hover' : '';
+		const classes = `${cur} ${hover}`.trim();
 
-		return <li class="result">
+		if (!ability) return <li key={index} class="result">Unrecognized ability</li>;
+
+		return <li key={index} class="result">
 			<a
-				href={`${this.URL_ROOT}abilities/${id}`} class={id === this.abilityId ? 'cur' : ''}
+				href={`${this.URL_ROOT}abilities/${id}`} class={classes}
 				data-target="push" data-entry={`ability|${ability.name}`}
 			>
 				<span class="col namecol">{id ? this.renderName(ability.name, matchStart, matchEnd) : <i>(no ability)</i>}</span>
@@ -206,16 +221,20 @@ export class PSSearchResults extends preact.Component<{
 		</li>;
 	}
 
-	renderMoveRow(id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
+	renderMoveRow(index: number, id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
 		const search = this.props.search;
 		const move = search.gtt.getFormatMove(id);
-		if (!move) return <li class="result">Unrecognized move</li>;
+		const cur = this.moveIds.includes(id) ? 'cur' : '';
+		const hover = this.resultIndex === index ? 'hover' : '';
+		const classes = `${cur} ${hover}`.trim();
+
+		if (!move) return <li key={index} class="result">Unrecognized move</li>;
 
 		const tagStart = (move.name.startsWith('Hidden Power') ? 12 : 0);
 
 		if (errorMessage) {
-			return <li class="result"><a
-				href={`${this.URL_ROOT}moves/${id}`} class={this.moveIds.includes(id) ? 'cur' : ''}
+			return <li key={index} class="result"><a
+				href={`${this.URL_ROOT}moves/${id}`} class={classes}
 				data-target="push" data-entry={`move|${move.name}`}
 			>
 				<span class="col movenamecol">{this.renderName(move.name, matchStart, matchEnd, tagStart)}</span>
@@ -226,8 +245,8 @@ export class PSSearchResults extends preact.Component<{
 
 		let pp = (move.pp === 1 || move.noPPBoosts ? move.pp : move.pp * 8 / 5);
 		if (search.gtt.dex.gen < 3) pp = Math.min(61, pp);
-		return <li class="result"><a
-			href={`${this.URL_ROOT}moves/${id}`} class={this.moveIds.includes(id) ? 'cur' : ''}
+		return <li key={index} class="result"><a
+			href={`${this.URL_ROOT}moves/${id}`} class={classes}
 			data-target="push" data-entry={`move|${move.name}`}
 		>
 			<span class="col movenamecol">{this.renderName(move.name, matchStart, matchEnd, tagStart)}</span>
@@ -258,28 +277,32 @@ export class PSSearchResults extends preact.Component<{
 		</a></li>;
 	}
 
-	renderTypeRow(id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
+	renderTypeRow(index: number, id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
 		const name = id.charAt(0).toUpperCase() + id.slice(1);
+		const hover = this.resultIndex === index ? 'hover' : '';
 
-		return <li class="result"><a href={`${this.URL_ROOT}types/${id}`} data-target="push" data-entry={`type|${name}`}>
-			<span class="col namecol">{this.renderName(name, matchStart, matchEnd)}</span>
+		return <li key={index} class="result">
+			<a href={`${this.URL_ROOT}types/${id}`} class={hover} data-target="push" data-entry={`type|${name}`}>
+				<span class="col namecol">{this.renderName(name, matchStart, matchEnd)}</span>
 
-			<span class="col typecol">
-				<img
-					src={`${Dex.resourcePrefix}sprites/types/${encodeURIComponent(name)}.png`}
-					alt={name} height="14" width="32" class="pixelated"
-				/>
-			</span>
+				<span class="col typecol">
+					<img
+						src={`${Dex.resourcePrefix}sprites/types/${encodeURIComponent(name)}.png`}
+						alt={name} height="14" width="32" class="pixelated"
+					/>
+				</span>
 
-			{errorMessage}
-		</a></li>;
+				{errorMessage}
+			</a>
+		</li>;
 	}
 
-	renderCategoryRow(id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
+	renderCategoryRow(index: number, id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
 		const name = id.charAt(0).toUpperCase() + id.slice(1);
+		const hover = this.resultIndex === index ? 'hover' : '';
 
-		return <li class="result">
-			<a href={`${this.URL_ROOT}categories/${id}`} data-target="push" data-entry={`category|${name}`}>
+		return <li key={index} class="result">
+			<a href={`${this.URL_ROOT}categories/${id}`} class={hover} data-target="push" data-entry={`category|${name}`}>
 				<span class="col namecol">{this.renderName(name, matchStart, matchEnd)}</span>
 
 				<span class="col typecol">
@@ -291,20 +314,23 @@ export class PSSearchResults extends preact.Component<{
 		</li>;
 	}
 
-	renderArticleRow(id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
+	renderArticleRow(index: number, id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
 		const isSearchType = (id === 'pokemon' || id === 'moves');
 		const name = window.BattleArticleTitles?.[id] || (id.charAt(0).toUpperCase() + id.substr(1));
+		const hover = this.resultIndex === index ? 'hover' : '';
 
-		return <li class="result"><a href={`${this.URL_ROOT}articles/${id}`} data-target="push" data-entry={`article|${name}`}>
-			<span class="col namecol">{this.renderName(name, matchStart, matchEnd)}</span>
+		return <li key={index} class="result">
+			<a href={`${this.URL_ROOT}articles/${id}`} class={hover} data-target="push" data-entry={`article|${name}`}>
+				<span class="col namecol">{this.renderName(name, matchStart, matchEnd)}</span>
 
-			<span class="col movedesccol">{isSearchType ? "(search type)" : "(article)"}</span>
+				<span class="col movedesccol">{isSearchType ? "(search type)" : "(article)"}</span>
 
-			{errorMessage}
-		</a></li>;
+				{errorMessage}
+			</a>
+		</li>;
 	}
 
-	renderEggGroupRow(id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
+	renderEggGroupRow(index: number, id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
 		// very hardcode
 		let name: string | undefined;
 		if (id === 'humanlike') name = 'Human-Like';
@@ -316,9 +342,10 @@ export class PSSearchResults extends preact.Component<{
 		} else {
 			name = id.charAt(0).toUpperCase() + id.slice(1);
 		}
+		const hover = this.resultIndex === index ? 'hover' : '';
 
-		return <li class="result">
-			<a href={`${this.URL_ROOT}egggroups/${id}`} data-target="push" data-entry={`egggroup|${name}`}>
+		return <li key={index} class="result">
+			<a href={`${this.URL_ROOT}egggroups/${id}`} class={hover} data-target="push" data-entry={`egggroup|${name}`}>
 				<span class="col namecol">{this.renderName(name, matchStart, matchEnd)}</span>
 
 				<span class="col movedesccol">(egg group)</span>
@@ -328,7 +355,7 @@ export class PSSearchResults extends preact.Component<{
 		</li>;
 	}
 
-	renderTierRow(id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
+	renderTierRow(index: number, id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
 		// very hardcode
 		const tierTable: { [id: string]: string } = {
 			uber: "Uber",
@@ -336,17 +363,20 @@ export class PSSearchResults extends preact.Component<{
 			capnfe: "CAP NFE",
 		};
 		const name = tierTable[id] || id.toUpperCase();
+		const hover = this.resultIndex === index ? 'hover' : '';
 
-		return <li class="result"><a href={`${this.URL_ROOT}tiers/${id}`} data-target="push" data-entry={`tier|${name}`}>
-			<span class="col namecol">{this.renderName(name, matchStart, matchEnd)}</span>
+		return <li key={index} class="result">
+			<a href={`${this.URL_ROOT}tiers/${id}`} class={hover} data-target="push" data-entry={`tier|${name}`}>
+				<span class="col namecol">{this.renderName(name, matchStart, matchEnd)}</span>
 
-			<span class="col movedesccol">(tier)</span>
+				<span class="col movedesccol">(tier)</span>
 
-			{errorMessage}
-		</a></li>;
+				{errorMessage}
+			</a>
+		</li>;
 	}
 
-	renderRow(row: SearchRow) {
+	renderRow(index: number, row: SearchRow) {
 		const search = this.props.search;
 		const [type, id] = row;
 		let matchStart = 0;
@@ -369,35 +399,35 @@ export class PSSearchResults extends preact.Component<{
 			const sanitizedHTML = id.replace(/</g, '&lt;')
 				.replace(/&lt;em>/g, '<em>').replace(/&lt;\/em>/g, '</em>')
 				.replace(/&lt;strong>/g, '<strong>').replace(/&lt;\/strong>/g, '</strong>');
-			return <li class="result">
+			return <li key={index} class="result">
 				<p dangerouslySetInnerHTML={{ __html: sanitizedHTML }}></p>
 			</li>;
 		case 'header':
-			return <li class="result"><h3>{id}</h3></li>;
+			return <li key={index} class="result"><h3>{id}</h3></li>;
 		case 'sortpokemon':
-			return this.renderPokemonSortRow();
+			return this.renderPokemonSortRow(index);
 		case 'sortmove':
-			return this.renderMoveSortRow();
+			return this.renderMoveSortRow(index);
 		case 'pokemon':
-			return this.renderPokemonRow(id, matchStart, matchEnd, errorMessage);
+			return this.renderPokemonRow(index, id, matchStart, matchEnd, errorMessage);
 		case 'move':
-			return this.renderMoveRow(id, matchStart, matchEnd, errorMessage);
+			return this.renderMoveRow(index, id, matchStart, matchEnd, errorMessage);
 		case 'item':
-			return this.renderItemRow(id, matchStart, matchEnd, errorMessage);
+			return this.renderItemRow(index, id, matchStart, matchEnd, errorMessage);
 		case 'ability':
-			return this.renderAbilityRow(id, matchStart, matchEnd, errorMessage);
+			return this.renderAbilityRow(index, id, matchStart, matchEnd, errorMessage);
 		case 'type':
-			return this.renderTypeRow(id, matchStart, matchEnd, errorMessage);
+			return this.renderTypeRow(index, id, matchStart, matchEnd, errorMessage);
 		case 'egggroup':
-			return this.renderEggGroupRow(id, matchStart, matchEnd, errorMessage);
+			return this.renderEggGroupRow(index, id, matchStart, matchEnd, errorMessage);
 		case 'tier':
-			return this.renderTierRow(id, matchStart, matchEnd, errorMessage);
+			return this.renderTierRow(index, id, matchStart, matchEnd, errorMessage);
 		case 'category':
-			return this.renderCategoryRow(id, matchStart, matchEnd, errorMessage);
+			return this.renderCategoryRow(index, id, matchStart, matchEnd, errorMessage);
 		case 'article':
-			return this.renderArticleRow(id, matchStart, matchEnd, errorMessage);
+			return this.renderArticleRow(index, id, matchStart, matchEnd, errorMessage);
 		}
-		return <li>Error: not found</li>;
+		return <li key={index}>Error: not found</li>;
 	}
 	static renderFilters(search: DexSearch, showHints?: boolean) {
 		return search.filters && <li class="dexlist-filters">
@@ -460,18 +490,8 @@ export class PSSearchResults extends preact.Component<{
 		}
 	};
 
-	override componentDidUpdate() {
-		if (this.props.resultIndex !== undefined) {
-			this.base!.children[this.resultIndex + 1]?.children[0]?.classList.remove('hover');
-			this.resultIndex = this.props.resultIndex;
-			this.base!.children[this.resultIndex + 1]?.children[0]?.classList.add('hover');
-		}
-	}
-	override componentDidMount() {
-		this.componentDidUpdate();
-	}
 	override render() {
-		const search = this.props.search;
+		const { resultIndex, resultSlice, search } = this.props;
 
 		const set = search.typedSearch?.set;
 		if (set) {
@@ -481,14 +501,22 @@ export class PSSearchResults extends preact.Component<{
 			this.moveIds = set.moves.map(toID);
 		}
 
-		let results = search.results;
-		if (this.props.windowing) results = results?.slice(0, this.props.windowing) || null;
+		if (resultIndex !== undefined) {
+			this.resultIndex = resultIndex;
+		}
 
-		return <ul
-			class="dexlist" style={`min-height: ${(1 + (search.results?.length || 1)) * 33}px;`} onClick={this.handleClick}
-		>
-			{(!this.props.hideFilters && PSSearchResults.renderFilters(search, true)) || <li></li>}
-			{results?.map(result => this.renderRow(result))}
+		let results = search.results;
+		if (results && resultSlice) {
+			const { start, end } = resultSlice;
+			results = results.slice(start, end);
+		}
+
+		return <ul class="dexlist" style={{ 'min-height': `${(1 + (search.results?.length || 1)) * 33}px` }} onClick={this.handleClick}>
+			{PSSearchResults.renderFilters(search, true)}
+			{results && [
+				(!!resultSlice?.start && <div style={{ width: "100%", height: `${Math.min(resultSlice.start, search.results!.length) * 33}px` }}></div>),
+				results.map((result, index) => this.renderRow(index, result)),
+			]}
 		</ul>;
 	}
 }
