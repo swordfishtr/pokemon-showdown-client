@@ -41,6 +41,8 @@ export class ChatRoom extends PSRoom {
 	// PM-only properties
 	pmTarget: string | null = null;
 	challengeMenuOpen = false;
+	/** Used for remembering the format entered in chat before opening the menu. */
+	challengeMenuFormat?: string;
 	initialSlash = false;
 	challenging: Challenge | null = null;
 	/** True during the period between challenge send and server acknowledgement. */
@@ -64,7 +66,7 @@ export class ChatRoom extends PSRoom {
 	constructor(options: RoomOptions) {
 		super(options);
 		if (options.args?.pmTarget) this.pmTarget = options.args.pmTarget as string;
-		if (options.args?.challengeMenuOpen) this.challengeMenuOpen = true;
+		//if (options.args?.challengeMenuOpen) this.challengeMenuOpen = true;
 		if (options.args?.initialSlash) this.initialSlash = true;
 		this.updateTarget(this.pmTarget);
 		this.connect();
@@ -283,12 +285,13 @@ export class ChatRoom extends PSRoom {
 	};
 	override clientCommands = this.parseClientCommands({
 		'chall,challenge'(target) {
-			if (target) {
-				const [targetUser, format] = target.split(',');
-				PS.join(`challenge-${toID(targetUser)}` as RoomID);
-				return;
+			const [user, format] = PSUtils.splitFirst(target, ',');
+			if(!target || this.pmTarget && (user.includes('@@@') || !format)) {
+				this.openChallenge(target);
 			}
-			this.openChallenge();
+			else {
+				PS.getPMRoom(toID(user)).openChallenge(format);
+			}
 		},
 		'cchall,cancelchallenge'(target) {
 			this.cancelChallenge();
@@ -376,12 +379,14 @@ export class ChatRoom extends PSRoom {
 			this.update(null);
 		},
 	});
-	openChallenge() {
+	openChallenge(format?: string) {
 		if (!this.pmTarget) {
 			this.add(`|error|Can only be used in a PM.`);
 			return;
 		}
 		this.challengeMenuOpen = true;
+		this.challengeMenuFormat = format?.trim();
+		if(!this.challengeMenuFormat) delete this.challengeMenuFormat;
 		this.update(null);
 	}
 	cancelChallenge() {
@@ -393,6 +398,7 @@ export class ChatRoom extends PSRoom {
 			this.sendDirect('/cancelchallenge');
 		} else {
 			this.challengeMenuOpen = false;
+			delete this.challengeMenuFormat;
 		}
 		this.challenging = null;
 		this.challengingSent = false;
@@ -435,6 +441,7 @@ export class ChatRoom extends PSRoom {
 				this.challenging = challenge;
 				this.challengingSent = false;
 				this.challengeMenuOpen = false;
+				delete this.challengeMenuFormat;
 				PS.mainmenu.lastChallenged = Date.now();
 			}
 			else {
@@ -1041,7 +1048,6 @@ class ChatPanel extends PSRoomPanel<ChatRoom> {
 		if (!room.pmTarget) throw new Error("Not a PM room");
 		PS.send(`/utm ${packedTeam}`);
 		this.props.room.send(`/accept`);
-		// room.challenged = null;
 		room.challengedSent = true;
 		room.update(null);
 	};
@@ -1052,19 +1058,18 @@ class ChatPanel extends PSRoomPanel<ChatRoom> {
 
 		const challengeTo = room.challengingSent ? <div class="challenge">
 			<p>Checking...</p>
-			<TeamForm onSubmit={null}>
+			<TeamForm room={this.props.room} onSubmit={null}>
 				<button data-cmd="/cancelchallenge" class="button">Cancel</button>
 			</TeamForm>
 		</div> : room.challenging ? <div class="challenge">
 			<p>Waiting for {room.pmTarget}...</p>
-			<TeamForm format={room.challenging.formatName} teamFormat={room.challenging.teamFormat} onSubmit={null}>
+			<TeamForm room={this.props.room} format={room.challenging.formatName} teamFormat={room.challenging.teamFormat} onSubmit={null}>
 				<button data-cmd="/cancelchallenge" class="button">Cancel</button>
 			</TeamForm>
 		</div> : room.challengeMenuOpen ? <div class="challenge">
-			<TeamForm onSubmit={this.makeChallenge}>
-				<button type="submit" class="button button-first">
-					<strong>Challenge</strong>
-				</button><button data-href="battleoptions" class="button button-last" aria-label="Battle options">
+			<TeamForm room={this.props.room} format={room.challengeMenuFormat} teamFormat={room.challengeMenuFormat} onSubmit={this.makeChallenge}>
+				<button type="submit" class="button button-first"><strong>Challenge</strong></button>
+				<button data-href="battleoptions" class="button button-last" aria-label="Battle options">
 					<i class="fa fa-caret-down" aria-hidden></i>
 				</button> {}
 				<button data-cmd="/cancelchallenge" class="button">Cancel</button>
@@ -1073,10 +1078,10 @@ class ChatPanel extends PSRoomPanel<ChatRoom> {
 
 		const challengeFrom = room.challengedSent ? <div class="challenge">
 			<p>Checking...</p>
-			<TeamForm onSubmit={null}><></></TeamForm>
+			<TeamForm room={this.props.room} onSubmit={null}><></></TeamForm>
 		</div> : room.challenged ? <div class="challenge">
 			{!!room.challenged.message && <p>{room.challenged.message}</p>}
-			<TeamForm format={room.challenged.formatName} teamFormat={room.challenged.teamFormat} onSubmit={this.acceptChallenge}>
+			<TeamForm room={this.props.room} format={room.challenged.formatName} teamFormat={room.challenged.teamFormat} onSubmit={this.acceptChallenge}>
 				<button type="submit" class={room.challenged.formatName ? `button button-first` : `button`}>
 					<strong>{room.challenged.acceptButtonLabel || 'Accept'}</strong>
 				</button>

@@ -731,7 +731,7 @@ class MainMenuPanel extends PSRoomPanel<MainMenuRoom> {
 
 export class FormatDropdown extends preact.Component<{
 	selectType?: SelectType, format?: string, defaultFormat?: string, placeholder?: string,
-	onChange?: JSX.EventHandler<Event>,
+	disabled?: boolean, onChange?: JSX.EventHandler<Event>,
 }> {
 	declare base?: HTMLButtonElement;
 	format = '';
@@ -750,7 +750,7 @@ export class FormatDropdown extends preact.Component<{
 		this.format ||= this.props.format || this.props.defaultFormat || '';
 		let [formatName, customRules] = this.format.split('@@@');
 		if (window.BattleLog) formatName = BattleLog.formatName(formatName);
-		if (this.props.format || PS.mainmenu.searchSent) {
+		if (this.props.format || this.props.disabled) {
 			return <button
 				name="format" value={this.format} class="select formatselect preselected" disabled
 			>
@@ -815,7 +815,7 @@ class TeamDropdown extends preact.Component<{ format: string }> {
 }
 
 export class TeamForm extends preact.Component<{
-	children: preact.ComponentChildren,
+	children: preact.ComponentChildren, room?: PSRoom,
 	class?: string, format?: string, teamFormat?: string, hideFormat?: boolean, selectType?: SelectType,
 	onSubmit: ((e: Event, format: string, team?: Team) => void) | null,
 	onValidate?: ((e: Event, format: string, team?: Team) => void) | null,
@@ -851,6 +851,7 @@ export class TeamForm extends preact.Component<{
 	render() {
 		window.teamforms ??= {};
 		window.teamforms[this.props.class ?? ''] = this;
+		if(!this.format && this.props.format) this.format = this.props.format;
 		if (window.BattleFormats) {
 			const starredPrefs = PS.prefs.starredformats || {};
 			// .reverse() because the newest starred format should be the default one
@@ -874,7 +875,11 @@ export class TeamForm extends preact.Component<{
 					Format:<br />
 					<FormatDropdown
 						selectType={this.props.selectType} format={this.props.format} defaultFormat={this.format}
-						onChange={this.changeFormat}
+						disabled={
+							this.props.room &&
+							(this.props.room as MainMenuRoom).searchSent ||
+							(this.props.room as ChatRoom).challengingSent
+						} onChange={this.changeFormat}
 					/>
 				</label>
 			</p>}

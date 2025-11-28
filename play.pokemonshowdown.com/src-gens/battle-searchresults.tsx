@@ -515,7 +515,11 @@ export class PSSearchResults extends preact.Component<{
 			{PSSearchResults.renderFilters(search, true)}
 			{results && [
 				(!!resultSlice?.start && <div style={{ width: "100%", height: `${Math.min(resultSlice.start, search.results!.length) * 33}px` }}></div>),
-				results.map((result, index) => this.renderRow(index, result)),
+				(
+					resultSlice?.start ?
+					results.map((result, index) => this.renderRow(index + resultSlice.start, result)) :
+					results.map((result, index) => this.renderRow(index, result))
+				),
 			]}
 		</ul>;
 	}

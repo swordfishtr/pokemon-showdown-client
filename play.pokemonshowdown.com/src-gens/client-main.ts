@@ -1579,7 +1579,7 @@ export class PSRoom extends PSStreamModel<Args | null> implements RoomOptions {
 	 * Handles outgoing messages, like `/logout`.
 	 * Return string to send it instead.
 	 * Return true to send the original string.
-	 * Return false | null | void to NOT send to the server.
+	 * Return falsy to NOT send to the server.
 	 */
 	handleSend(line: string, element = this.currentElement) {
 		if (!line.startsWith('/') || line.startsWith('//')) return line;
@@ -1587,7 +1587,7 @@ export class PSRoom extends PSStreamModel<Args | null> implements RoomOptions {
 		const cmd = (spaceIndex >= 0 ? line.slice(1, spaceIndex) : line.slice(1)) as 'parsed';
 		const target = spaceIndex >= 0 ? line.slice(spaceIndex + 1).trim() : '';
 
-		const cmdHandler = this.globalClientCommands[cmd] || this.clientCommands?.[cmd];
+		const cmdHandler = this.clientCommands?.[cmd] ?? this.globalClientCommands[cmd];
 		if (!cmdHandler) return line;
 
 		const previousElement = this.currentElement;
@@ -1960,7 +1960,7 @@ export const PS = new class extends PSModel {
 			msg = msg.slice(nlIndex + 1);
 		}
 		const roomid2 = roomid || 'lobby' as RoomID;
-		let room = PS.rooms[roomid];
+		let room = PS.rooms[roomid] ?? null;
 		console.log('\u2705 ' + (roomid ? '[' + roomid + '] ' : '') + '%c' + msg, "color: #007700");
 		let isInit = false;
 		for (const line of msg.split('\n')) {
@@ -1968,7 +1968,7 @@ export const PS = new class extends PSModel {
 			switch (args[0]) {
 			case 'init': {
 				isInit = true;
-				room = PS.rooms[roomid2];
+				room = PS.rooms[roomid2] ?? null;
 				const [, type] = args;
 				if (!room) {
 					room = this.addRoom({
@@ -1995,7 +1995,7 @@ export const PS = new class extends PSModel {
 				this.update();
 				continue;
 			} case 'deinit': {
-				room = PS.rooms[roomid2];
+				room = PS.rooms[roomid2] ?? null;
 				if (room && room.connected !== 'expired') {
 					room.connected = false;
 					this.removeRoom(room);
@@ -2004,7 +2004,7 @@ export const PS = new class extends PSModel {
 				this.update();
 				continue;
 			} case 'noinit': {
-				room = PS.rooms[roomid2];
+				room = PS.rooms[roomid2] ?? null;
 				if (room) {
 					room.connected = false;
 					if (args[1] === 'namerequired') {
@@ -2285,11 +2285,9 @@ export const PS = new class extends PSModel {
 		});
 	}
 	getPMRoom(userid: ID): ChatRoom {
-		const myUserid = PS.user.userid;
-		const roomid = `dm-${[userid, myUserid].sort().join('-')}` as RoomID;
+		const roomid = `dm-${userid}` as RoomID;
 		if (this.rooms[roomid]) return this.rooms[roomid] as ChatRoom;
-		this.join(roomid);
-		return this.rooms[roomid]! as ChatRoom;
+		return this.join(roomid) as ChatRoom;
 	}
 	/**
 	 * Low-level add room. You usually want `join`.
@@ -2299,15 +2297,15 @@ export const PS = new class extends PSModel {
 	 * By default, when autofocusing, closes popups that aren't the parent of the added room.
 	 * (`options.autoclosePopups = false` to suppress)
 	 */
-	addRoom(options: RoomOptions & { autoclosePopups?: boolean, autofocus?: boolean }) {
+	addRoom(options: RoomOptions & { autoclosePopups?: boolean, autofocus?: boolean }): PSRoom | null {
 		options.autofocus ??= true;
 		options.autoclosePopups ??= options.autofocus;
 		// support hardcoded PM room-IDs
-		if (options.id.startsWith('challenge-')) {
-			this.requestNotifications();
-			options.id = `dm-${options.id.slice(10)}` as RoomID;
-			options.args = { challengeMenuOpen: true };
-		}
+		// if (options.id.startsWith('challenge-')) {
+		// 	this.requestNotifications();
+		// 	options.id = `dm-${options.id.slice(10)}` as RoomID;
+		// 	options.args = { challengeMenuOpen: true };
+		// }
 		if (options.id.startsWith('dm-')) {
 			this.requestNotifications();
 			if (options.id.length >= 5 && options.id.endsWith('--')) {
@@ -2322,16 +2320,11 @@ export const PS = new class extends PSModel {
 		if (preexistingRoom && this.isPopup(preexistingRoom)) {
 			const sameOpener = (preexistingRoom.parentElem === options.parentElem);
 			this.closePopupsAbove(parentRoom, true);
-			if (sameOpener) return;
+			if (sameOpener) return null;
 			preexistingRoom = this.rooms[options.id];
 		}
 		if (preexistingRoom) {
-			if (options.autofocus) {
-				if (options.args?.challengeMenuOpen) {
-					(preexistingRoom as ChatRoom).openChallenge();
-				}
-				this.focusRoom(preexistingRoom.id);
-			}
+			if (options.autofocus) this.focusRoom(preexistingRoom.id);
 			return preexistingRoom;
 		}
 		if (options.autoclosePopups) {
@@ -2561,15 +2554,15 @@ export const PS = new class extends PSModel {
 		if (!skipUpdate) this.update();
 	}
 	/** Focus a room, creating it if it doesn't already exist. */
-	join(roomid: RoomID, options?: Partial<RoomOptions> | null) {
+	join(roomid: RoomID, options?: Partial<RoomOptions> | null): PSRoom | null {
 		// popups are always reopened rather than focused
 		if (PS.rooms[roomid] && !PS.isPopup(PS.rooms[roomid])) {
-			if (this.room.id === roomid) return;
-			this.focusRoom(roomid);
-			return;
+			if (this.room.id !== roomid) this.focusRoom(roomid);
+			return PS.rooms[roomid];
 		}
-		this.addRoom({ id: roomid, ...options });
+		const room = this.addRoom({ id: roomid, ...options });
 		this.update();
+		return room;
 	}
 	leave(roomid: RoomID) {
 		if (!roomid || roomid === 'rooms') return;
