@@ -43,6 +43,8 @@ export class ChatRoom extends PSRoom {
 	challengeMenuOpen = false;
 	/** Used for remembering the format entered in chat before opening the menu. */
 	challengeMenuFormat?: string;
+	/** Used for reconstructing the challenge menu. TODO: remove the need for this. */
+	challengeMenuKey = 0;
 	initialSlash = false;
 	challenging: Challenge | null = null;
 	/** True during the period between challenge send and server acknowledgement. */
@@ -380,17 +382,14 @@ export class ChatRoom extends PSRoom {
 		},
 	});
 	openChallenge(format?: string) {
-		if (!this.pmTarget) {
+		if(!this.pmTarget) {
 			this.add(`|error|Can only be used in a PM.`);
 			return;
 		}
-		if(this.challengeMenuOpen) {
-			// Discard previous menu
-			this.challengeMenuOpen = false;
-			this.update(null);
-		}
+		if(this.challenging || this.challengingSent) return;
 		this.challengeMenuOpen = true;
 		this.challengeMenuFormat = format?.trim();
+		this.challengeMenuKey = Date.now();
 		if(!this.challengeMenuFormat) delete this.challengeMenuFormat;
 		this.update(null);
 	}
@@ -1063,16 +1062,19 @@ class ChatPanel extends PSRoomPanel<ChatRoom> {
 
 		const challengeTo = room.challengingSent ? <div class="challenge">
 			<p>Checking...</p>
-			<TeamForm room={this.props.room} onSubmit={null}>
+			<TeamForm key={room.challengeMenuKey} room={this.props.room}
+			onSubmit={null}>
 				<button data-cmd="/cancelchallenge" class="button">Cancel</button>
 			</TeamForm>
 		</div> : room.challenging ? <div class="challenge">
 			<p>Waiting for {room.pmTarget}...</p>
-			<TeamForm room={this.props.room} format={room.challenging.formatName} teamFormat={room.challenging.teamFormat} onSubmit={null}>
+			<TeamForm key={room.challengeMenuKey} room={this.props.room}
+			format={room.challenging.formatName} teamFormat={room.challenging.teamFormat} onSubmit={null}>
 				<button data-cmd="/cancelchallenge" class="button">Cancel</button>
 			</TeamForm>
 		</div> : room.challengeMenuOpen ? <div class="challenge">
-			<TeamForm room={this.props.room} format={room.challengeMenuFormat} teamFormat={room.challengeMenuFormat} onSubmit={this.makeChallenge}>
+			<TeamForm key={room.challengeMenuKey} room={this.props.room}
+			format={room.challengeMenuFormat} teamFormat={room.challengeMenuFormat} onSubmit={this.makeChallenge}>
 				<button type="submit" class="button button-first"><strong>Challenge</strong></button>
 				<button data-href="battleoptions" class="button button-last" aria-label="Battle options">
 					<i class="fa fa-caret-down" aria-hidden></i>
@@ -1083,10 +1085,12 @@ class ChatPanel extends PSRoomPanel<ChatRoom> {
 
 		const challengeFrom = room.challengedSent ? <div class="challenge">
 			<p>Checking...</p>
-			<TeamForm room={this.props.room} onSubmit={null}><></></TeamForm>
+			<TeamForm room={this.props.room}
+			onSubmit={null}><></></TeamForm>
 		</div> : room.challenged ? <div class="challenge">
 			{!!room.challenged.message && <p>{room.challenged.message}</p>}
-			<TeamForm room={this.props.room} format={room.challenged.formatName} teamFormat={room.challenged.teamFormat} onSubmit={this.acceptChallenge}>
+			<TeamForm room={this.props.room}
+			format={room.challenged.formatName} teamFormat={room.challenged.teamFormat} onSubmit={this.acceptChallenge}>
 				<button type="submit" class={room.challenged.formatName ? `button button-first` : `button`}>
 					<strong>{room.challenged.acceptButtonLabel || 'Accept'}</strong>
 				</button>
