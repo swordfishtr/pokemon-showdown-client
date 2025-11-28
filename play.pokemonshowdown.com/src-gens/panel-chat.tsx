@@ -384,6 +384,11 @@ export class ChatRoom extends PSRoom {
 			this.add(`|error|Can only be used in a PM.`);
 			return;
 		}
+		if(this.challengeMenuOpen) {
+			// Discard previous menu
+			this.challengeMenuOpen = false;
+			this.update(null);
+		}
 		this.challengeMenuOpen = true;
 		this.challengeMenuFormat = format?.trim();
 		if(!this.challengeMenuFormat) delete this.challengeMenuFormat;
