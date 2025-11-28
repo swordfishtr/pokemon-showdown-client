@@ -876,9 +876,8 @@ export class TeamForm extends preact.Component<{
 					<FormatDropdown
 						selectType={this.props.selectType} format={this.props.format} defaultFormat={this.format}
 						disabled={
-							this.props.room &&
-							(this.props.room as MainMenuRoom).searchSent ||
-							(this.props.room as ChatRoom).challengingSent
+							(this.props.room as MainMenuRoom)?.searchSent ||
+							(this.props.room as ChatRoom)?.challengingSent
 						} onChange={this.changeFormat}
 					/>
 				</label>
