@@ -34,6 +34,12 @@ export class UserRoom extends PSRoom {
 		this.update(null);
 		if (this.userid) PS.send(`/cmd userdetails ${this.userid}`);
 	}
+	override clientCommands = this.parseClientCommands({
+		'chall,challenge'() {
+			// Possibly set a default format of the target user's choice?
+			PS.getPMRoom(this.userid).openChallenge();
+		},
+	});
 }
 
 class UserPanel extends PSRoomPanel<UserRoom> {
@@ -142,7 +148,7 @@ class UserPanel extends PSRoomPanel<UserRoom> {
 				</p>
 			) : (
 				<p class="buttonbar">
-					<button class="button" data-href={`challenge-${user.userid}`}>Challenge</button> {}
+					<button class="button" data-cmd="/challenge">Challenge</button> {}
 					<button class="button" data-href={`dm-${user.userid}`}>Chat</button> {}
 					<button class="button" data-href={`useroptions-${user.userid}-${room.parentRoomid || ''}`}>{'\u2026'}</button>
 				</p>
