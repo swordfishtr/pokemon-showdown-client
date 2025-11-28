@@ -388,12 +388,15 @@ export class PSView extends preact.Component {
 			const elem = ev.target as HTMLFormElement | null;
 			if (elem?.getAttribute('data-submitsend')) {
 				const inputs = Net.formData(elem);
+				console.log(inputs);
 				let cmd = elem.getAttribute('data-submitsend')!;
 				for (const [name, value] of Object.entries(inputs)) {
 					cmd = cmd.replace(`{${name}}`, value === true ? 'on' : value === false ? 'off' : value);
 				}
 				cmd = cmd.replace(/\{[a-z0-9-]+\}/g, '');
+				console.log(cmd);
 				const room = PS.getRoom(elem) || PS.mainmenu;
+				console.log(room);
 				room.sendDirect(cmd);
 
 				ev.preventDefault();
