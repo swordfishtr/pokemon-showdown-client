@@ -1905,7 +1905,8 @@ class TeamWizard extends preact.Component<{
 					});
 				}
 				else {
-					if(nextSlot >= 0) editor.innerFocus.moveSlot = nextSlot;
+					if(nextSlot < 0) editor.innerFocus.moveSlot++;
+					else editor.innerFocus.moveSlot = nextSlot;
 					if(editor.search.query) {
 						this.resetScroll();
 					}
