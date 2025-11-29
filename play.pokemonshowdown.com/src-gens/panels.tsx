@@ -388,15 +388,12 @@ export class PSView extends preact.Component {
 			const elem = ev.target as HTMLFormElement | null;
 			if (elem?.getAttribute('data-submitsend')) {
 				const inputs = Net.formData(elem);
-				console.log(inputs);
 				let cmd = elem.getAttribute('data-submitsend')!;
 				for (const [name, value] of Object.entries(inputs)) {
 					cmd = cmd.replace(`{${name}}`, value === true ? 'on' : value === false ? 'off' : value);
 				}
 				cmd = cmd.replace(/\{[a-z0-9-]+\}/g, '');
-				console.log(cmd);
 				const room = PS.getRoom(elem) || PS.mainmenu;
-				console.log(room);
 				room.sendDirect(cmd);
 
 				ev.preventDefault();
@@ -491,7 +488,10 @@ export class PSView extends preact.Component {
 						// the spec says that buttons with no `type` attribute should be
 						// submit buttons, but this is a bad default so we're going
 						// to just assume they're not
-						elem.setAttribute('type', 'button');
+						const exception = (
+							!!(elem as HTMLButtonElement).form?.parentElement?.innerText?.startsWith('This battle needs more players to start')
+						);
+						if(!exception) elem.setAttribute('type', 'button');
 
 						// don't return, to allow <a><button> to make links that look
 						// like buttons
