@@ -7,7 +7,7 @@
 
 import preact from "../js/lib/preact";
 import { PS, PSRoom, type RoomOptions, type RoomID, Config } from "./client-main";
-import { PSIcon, PSPanelWrapper, PSRoomPanel } from "./panels";
+import { PSIcon, PSPanelWrapper, PSRoomPanel, PSView } from "./panels";
 import { ChatLog, ChatRoom, ChatTextEntry, ChatUserList } from "./panel-chat";
 import { FormatDropdown } from "./panel-mainmenu";
 import { Battle, type Pokemon, type ServerPokemon } from "./battle";
@@ -900,7 +900,7 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 		const room = this.props.room;
 		const atEnd = room.battle.atQueueEnd;
 		if (!atEnd) return <div class="controls">
-			{room.width >= 700 && <div class="whatdo">
+			{!PSView.narrowMode && <div class="whatdo">
 				<button class="button" data-cmd="/ffto end">Skip animation <i class="fa fa-fast-forward" aria-hidden></i></button>
 			</div>}
 			{this.renderTeamList()}
@@ -1013,7 +1013,6 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 
 	renderAfterBattleControls() {
 		const room = this.props.room;
-		const isNotTiny = room.width > 700;
 		return <div class="controls">
 			<p>
 				<span style="float: right">
@@ -1033,10 +1032,10 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 				<button class="button" data-cmd="/play" style="min-width:4.5em">
 					<i class="fa fa-undo" aria-hidden></i><br />Replay
 				</button> {}
-				{isNotTiny && <button class="button button-first" data-cmd="/ffto 0" style="margin-right:2px">
+				{!PSView.narrowMode && <button class="button button-first" data-cmd="/ffto 0" style="margin-right:2px">
 					<i class="fa fa-undo" aria-hidden></i><br />First turn
 				</button>}
-				{isNotTiny && <button class="button button-first" data-cmd="/ffto -1">
+				{!PSView.narrowMode && <button class="button button-first" data-cmd="/ffto -1">
 					<i class="fa fa-step-backward" aria-hidden></i><br />Prev turn
 				</button>}
 			</p>
@@ -1081,7 +1080,7 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 			dangerouslySetInnerHTML={{ __html: `#${id} .battle .turn, #${id} .battle-history { display: none !important; }` }}
 		></style> : null;
 
-		if (room.width < 700) {
+		if (PSView.narrowMode) {
 			return <PSPanelWrapper room={room} focusClick scrollable="hidden">
 				{hardcoreStyle}
 				<BattleDiv room={room} />
