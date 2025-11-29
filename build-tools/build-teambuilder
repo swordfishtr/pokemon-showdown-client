@@ -662,6 +662,7 @@ const check = {
 		const formatsStartingWithNumber = [
 			'35pokes',
 			'35moves',
+			'35factory',
 			'1v1',
 		];
 		for(const x of formatsStartingWithNumber) {
