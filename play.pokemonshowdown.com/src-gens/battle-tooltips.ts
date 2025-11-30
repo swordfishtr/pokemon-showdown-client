@@ -1509,7 +1509,7 @@ export class BattleTooltips {
 		}
 		if (rules['Frantic Fusions Mod']) {
 			const fusionSpecies = this.battle.gtt.getFormatSpecies(pokemon.name);
-			if (fusionSpecies.name !== species.name) {
+			if (fusionSpecies.exists && fusionSpecies.name !== species.name) {
 				baseSpe += tr(fusionSpecies.baseStats.spe / 4);
 				if (baseSpe < 1) baseSpe = 1;
 				if (baseSpe > 255) baseSpe = 255;
@@ -2504,11 +2504,11 @@ export class BattleTooltips {
 			} else {
 				const speciesForme = clientPokemon.getSpeciesForme() || serverPokemon?.speciesForme || '';
 				const species = this.battle.gtt.getFormatSpecies(speciesForme);
-				if (species.abilities) {
+				if (species.exists && species.abilities) {
 					abilityData.possibilities = Object.values(species.abilities);
 					if (this.battle.rules['Frantic Fusions Mod']) {
 						const fusionSpecies = this.battle.gtt.getFormatSpecies(clientPokemon.name);
-						if (fusionSpecies.name !== species.name) {
+						if (fusionSpecies.exists && fusionSpecies.name !== species.name) {
 							for (const newAbility of Object.values(fusionSpecies.abilities)) {
 								if (abilityData.possibilities.includes(newAbility)) continue;
 								abilityData.possibilities.push(newAbility);
@@ -2618,6 +2618,7 @@ export class BattleStatGuesser {
 
 		let species = this.gtt.getFormatSpecies(set.species || set.name!);
 		if (item.megaEvolves === species.name) species = this.gtt.getFormatSpecies(item.megaStone);
+		if (!species.exists) return '?';
 		let stats = species.baseStats;
 
 		if (set.moves.length < 1) return '?';
@@ -3119,6 +3120,7 @@ export class BattleStatGuesser {
 
 	getStat(stat: Dex.StatName, set: Dex.PokemonSet, evOverride?: number, natureOverride?: number) {
 		let species = this.gtt.getFormatSpecies(set.species);
+		if (!species.exists) return 0;
 
 		let level = set.level || 100;
 

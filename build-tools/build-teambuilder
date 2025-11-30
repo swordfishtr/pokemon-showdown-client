@@ -597,6 +597,10 @@ function buildOverrides(mod, gtt) {
 				overrideSpeciesData[id][key] = modEntry[key];
 			}
 		}
+		if (!parentEntry.exists) {
+			overrideSpeciesData[id].exists = true;
+			overrideSpeciesData[id].custom = true;
+		}
 	}
 
 	const overrideMoveData = (gtt.overrideMoveData = {});
@@ -610,6 +614,10 @@ function buildOverrides(mod, gtt) {
 				overrideMoveData[id][key] = modEntry[key];
 			}
 		}
+		if (!parentEntry.exists) {
+			overrideMoveData[id].exists = true;
+			overrideMoveData[id].custom = true;
+		}
 	}
 
 	const overrideAbilityData = (gtt.overrideAbilityData = {});
@@ -622,6 +630,10 @@ function buildOverrides(mod, gtt) {
 				overrideAbilityData[id][key] = modEntry[key];
 			}
 		}
+		if (!parentEntry.exists) {
+			overrideAbilityData[id].exists = true;
+			overrideAbilityData[id].custom = true;
+		}
 	}
 
 	const overrideItemData = (gtt.overrideItemData = {});
@@ -633,6 +645,10 @@ function buildOverrides(mod, gtt) {
 				if (!overrideItemData[id]) overrideItemData[id] = {};
 				overrideItemData[id][key] = modEntry[key];
 			}
+		}
+		if (!parentEntry.exists) {
+			overrideItemData[id].exists = true;
+			overrideItemData[id].custom = true;
 		}
 	}
 }

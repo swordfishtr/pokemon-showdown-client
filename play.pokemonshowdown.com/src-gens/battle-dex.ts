@@ -885,11 +885,10 @@ export const Dex = new class implements ModdedDex {
 			}
 		}
 
-		if(id in GensPokemonIconIndexes) {
-			return { spriteDir: 'sprites/gen5', spriteid, x: 20, y: 4 };
-		}
-
 		if (!species.exists) return { spriteDir: 'sprites/gen5', spriteid: '0', x: 10, y: 5 };
+
+		if (species.custom) return { spriteDir: 'sprites/gen5', spriteid, x: 20, y: 4 };
+
 		if (Dex.afdMode) {
 			return {
 				spriteid,

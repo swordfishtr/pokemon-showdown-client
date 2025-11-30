@@ -90,7 +90,7 @@ class TeamEditorState extends PSModel {
 			case 'move': {
 				value = set?.moves[this.innerFocus.moveSlot] ?? '';
 				const id = toID(value);
-				if (this.gtt.getFormatMove(id).exists || this.gtt.format.overrideMoveData?.[id]) {
+				if (this.gtt.getFormatMove(id).exists) {
 					this.search.prependResults = [['move', id]];
 					value = '';
 				}
@@ -99,7 +99,7 @@ class TeamEditorState extends PSModel {
 			case 'pokemon': {
 				value = set?.species;
 				const id = toID(value);
-				if (this.gtt.getFormatSpecies(id).exists || this.gtt.format.overrideSpeciesData?.[id]) {
+				if (this.gtt.getFormatSpecies(id).exists) {
 					this.search.prependResults = [['pokemon', id]];
 					value = '';
 				}
@@ -109,7 +109,7 @@ class TeamEditorState extends PSModel {
 				this.search.prependResults = [['item', '' as ID]];
 				if(set?.item && set.item !== 'noitem') value = set.item;
 				const id = toID(value);
-				if (this.gtt.getFormatItem(id).exists || this.gtt.format.overrideItemData?.[id]) {
+				if (this.gtt.getFormatItem(id).exists) {
 					this.search.prependResults.unshift(['item', id]);
 					value = '';
 				}
@@ -118,7 +118,7 @@ class TeamEditorState extends PSModel {
 			case 'ability': {
 				if(set?.ability && set.ability !== 'noability') value = set.ability;
 				const id = toID(value);
-				if (this.gtt.getFormatAbility(id).exists || this.gtt.format.overrideAbilityData?.[id]) {
+				if (this.gtt.getFormatAbility(id).exists) {
 					this.search.prependResults = [['ability', id]];
 					value = '';
 				}
@@ -755,7 +755,9 @@ export class TeamEditor extends preact.Component<{
 				{this.renderClipboard()}
 				{this.wizard ? (
 					<TeamWizard editor={this.editor} onChange={this.props.onChange} onUpdate={this.forceUpdateBound} />
-				) : 'Work in progress!'}
+				) : (
+					<TeamTextbox />
+				)}
 				{!this.editor.innerFocus && <>
 					{this.props.children}
 					<div class="team-resources">
@@ -772,7 +774,13 @@ export class TeamEditor extends preact.Component<{
 	}
 }
 
-class TeamTextbox extends preact.Component<{
+class TeamTextbox extends preact.Component<{}> {
+	render() {
+		return 'Work in progress!';
+	}
+}
+
+class TeamTextbox2 extends preact.Component<{
 	editor: TeamEditorState,
 	onChange?: () => void, onUpdate?: () => void,
 }> {
@@ -3001,6 +3009,7 @@ class DetailsForm extends preact.Component<{
 		const formId = target.value;
 		const { editor, set } = this.props;
 		const species = editor.gtt.getFormatSpecies(formId);
+		if (!species.exists) return;
 		editor.changeSpecies(set, species.name);
 		this.props.onChange();
 		this.forceUpdate();

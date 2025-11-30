@@ -352,7 +352,7 @@ export class DexSearch {
 			if (type === this.sortCol) this.sortCol = null;
 			if (!['type', 'move', 'ability', 'egggroup', 'tier'].includes(type)) return false;
 			if (type === 'type') entry[1] = this.capitalizeFirst(entry[1]);
-			if (type === 'move') entry[1] = toID(entry[1]);
+			if (type === 'move') entry[1] = this.gtt.getFormatMove(entry[1]).name;
 			if (type === 'ability') entry[1] = this.gtt.getFormatAbility(entry[1]).name;
 			if (type === 'tier') {
 				// very hardcode
@@ -378,7 +378,7 @@ export class DexSearch {
 			if (!['type', 'category', 'pokemon'].includes(type)) return false;
 			if (type === 'type') entry[1] = this.capitalizeFirst(entry[1]);
 			if (type === 'category') entry[1] = this.capitalizeFirst(entry[1]);
-			if (type === 'pokemon') entry[1] = toID(entry[1]);
+			if (type === 'pokemon') entry[1] = this.gtt.getFormatSpecies(entry[1]).name;
 			if (!this.filters) this.filters = [];
 			this.filters.push(entry.slice(0, 2) as SearchFilter);
 			this._results = null;

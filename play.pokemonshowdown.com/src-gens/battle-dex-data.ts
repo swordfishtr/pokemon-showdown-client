@@ -1086,6 +1086,13 @@ export interface Effect {
 	 * WARNING: Always false if the relevant data files aren't loaded.
 	 */
 	readonly exists: boolean;
+	/**
+	 * Format-specific effect, only obtainable from `GTTIndex`.
+	 * Allows for and requires various special handling:
+	 * - This effect can be placed at the top of search results.
+	 * - This effect is missing from the search indexes.
+	 * */
+	readonly custom?: true;
 }
 
 export class PureEffect implements Effect {
@@ -1109,6 +1116,7 @@ export class Item implements Effect {
 	readonly name: string;
 	readonly gen: number;
 	readonly exists: boolean;
+	readonly custom?: true;
 
 	readonly num: number;
 	readonly spritenum: number;
@@ -1233,6 +1241,7 @@ export class Move implements Effect {
 	readonly name: string;
 	readonly gen: number;
 	readonly exists: boolean;
+	readonly custom?: true;
 
 	readonly basePower: number;
 	readonly accuracy: number | true;
@@ -1425,6 +1434,7 @@ export class Ability implements Effect {
 	readonly name: string;
 	readonly gen: number;
 	readonly exists: boolean;
+	readonly custom?: true;
 
 	readonly num: number;
 	readonly shortDesc: string;
@@ -1472,6 +1482,7 @@ export class Species implements Effect {
 	readonly name: string;
 	readonly gen: number;
 	readonly exists: boolean;
+	readonly custom?: true;
 
 	// name
 	readonly baseSpecies: string;
