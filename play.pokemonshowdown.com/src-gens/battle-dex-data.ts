@@ -1144,6 +1144,7 @@ export class Item implements Effect {
 		this.id = id;
 		this.gen = data.gen || 0;
 		this.exists = ('exists' in data ? !!data.exists : true);
+		if('custom' in data) this.custom = true;
 
 		this.num = data.num || 0;
 		this.spritenum = data.spritenum || 0;
@@ -1284,6 +1285,7 @@ export class Move implements Effect {
 		this.id = id;
 		this.gen = data.gen || 0;
 		this.exists = ('exists' in data ? !!data.exists : true);
+		if('custom' in data) this.custom = true;
 
 		this.basePower = data.basePower || 0;
 		this.accuracy = data.accuracy || 0;
@@ -1451,6 +1453,7 @@ export class Ability implements Effect {
 		this.id = id;
 		this.gen = data.gen || 0;
 		this.exists = ('exists' in data ? !!data.exists : true);
+		if('custom' in data) this.custom = true;
 		this.num = data.num || 0;
 		this.shortDesc = data.shortDesc || data.desc || '';
 		this.desc = data.desc || data.shortDesc || '';
@@ -1542,6 +1545,7 @@ export class Species implements Effect {
 		this.id = id;
 		this.gen = data.gen || 0;
 		this.exists = ('exists' in data ? !!data.exists : true);
+		if('custom' in data) this.custom = true;
 		this.baseSpecies = data.baseSpecies || name;
 		this.forme = data.forme || '';
 		const baseId = toID(this.baseSpecies);

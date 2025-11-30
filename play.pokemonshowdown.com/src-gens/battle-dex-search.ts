@@ -1002,7 +1002,15 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 		return BattlePokedex;
 	}
 	getDefaultResults(): SearchRow[] {
-		let results: SearchRow[] = [];
+		const results: SearchRow[] = [];
+		if(this.gtt.format.overrideSpeciesData) {
+			const custom: SearchRow[] = Object.entries(this.gtt.format.overrideSpeciesData)
+			.filter(([id, data]) => (data as any).custom)
+			.map(([id, data]) => ['pokemon', id as ID]);
+			if(custom.length) {
+				results.push(['header', "Custom"], ...custom);
+			}
+		}
 		for (let id in BattlePokedex) {
 			switch (id) {
 			case 'bulbasaur':
@@ -1046,12 +1054,6 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 
 		if(this.gtt.format.whitelist) {
 			results = results.filter(([type, id]) => (id in this.gtt.format.whitelist!));
-			// Custom species
-			// Can't use for loops here fsr??? blame Babel
-			Object.keys(this.gtt.format.whitelist).forEach((id) => {
-				if(results.some(([type, id2]) => id === id2)) return;
-				results.unshift(['pokemon', id as ID]);
-			});
 		}
 
 		if(this.gtt.format.blacklist) {
