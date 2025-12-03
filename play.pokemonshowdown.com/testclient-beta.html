@@ -58,6 +58,11 @@
 			}
 		})();
 	</script>
+	<script>
+		// CommonJS compat hack
+		window.exports = window;
+		window.require = () => window;
+	</script>
 	<script nomodule src="js-gens/lib/ps-polyfill.js?v1"></script>
 	<script src="js-gens/client-core.js?v1" onerror="alert('You must build the client with `node build` before using testclient.html')"></script>
 

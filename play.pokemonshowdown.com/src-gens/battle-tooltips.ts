@@ -3302,11 +3302,3 @@ export function BattleStatOptimizer(set: Dex.PokemonSet, formatid: ID) {
 
 	return null;
 }
-
-declare const require: any;
-declare const global: any;
-if (typeof require === 'function') {
-	// in Node
-	global.BattleStatGuesser = BattleStatGuesser;
-	global.BattleStatOptimizer = BattleStatOptimizer;
-}

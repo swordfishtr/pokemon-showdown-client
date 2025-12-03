@@ -1631,16 +1631,3 @@ export interface Type extends Effect {
 	HPivs?: Partial<Dex.StatsTable>;
 	HPdvs?: Partial<Dex.StatsTable>;
 }
-
-declare const require: any;
-declare const global: any;
-if (typeof require === 'function') {
-	// in Node
-	global.BattleBaseSpeciesChart = BattleBaseSpeciesChart;
-	global.BattleNatures = BattleNatures;
-	global.PureEffect = PureEffect;
-	global.Species = Species;
-	global.Ability = Ability;
-	global.Item = Item;
-	global.Move = Move;
-}

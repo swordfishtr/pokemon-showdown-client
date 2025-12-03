@@ -59,20 +59,6 @@ export declare namespace Dex {
 }
 export type { ID };
 
-declare const require: any;
-declare const global: any;
-declare const process: any;
-
-if (typeof window === 'undefined') {
-	// Node
-	global.window = global;
-} else {
-	// browser (possibly NW.js!)
-	window.exports = window;
-}
-
-window.nodewebkit = !!(typeof process !== 'undefined' && process.versions?.['node-webkit']);
-
 export function toID(text: any) {
 	if (text?.id) {
 		text = text.id;
@@ -1214,10 +1200,4 @@ export class ModdedDex {
 		}
 		return this.pokeballs;
 	}
-}
-
-if (typeof require === 'function') {
-	// in Node
-	global.Dex = Dex;
-	global.toID = toID;
 }

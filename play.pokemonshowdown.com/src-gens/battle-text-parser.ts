@@ -1221,10 +1221,3 @@ export class BattleTextParser {
 		}
 	}
 }
-
-declare const require: any;
-declare const global: any;
-if (typeof require === 'function') {
-	// in Node
-	global.BattleTextParser = BattleTextParser;
-}

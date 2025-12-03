@@ -3971,11 +3971,3 @@ export class Battle {
 		this.scene.setMute(mute);
 	}
 }
-
-declare const require: any;
-declare const global: any;
-if (typeof require === 'function') {
-	// in Node
-	global.Battle = Battle;
-	global.Pokemon = Pokemon;
-}

@@ -78,10 +78,3 @@ export class BattleSceneStub {
 	beforeMove(pokemon: Pokemon) { }
 	afterMove(pokemon: Pokemon) { }
 }
-
-declare const require: any;
-declare const global: any;
-if (typeof require === 'function') {
-	// in Node
-	global.BattleSceneStub = BattleSceneStub;
-}
