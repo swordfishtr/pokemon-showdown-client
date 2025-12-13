@@ -18,9 +18,12 @@ export type SearchType = (
 	'pokemon' | 'type' | 'tier' | 'move' | 'item' | 'ability' | 'egggroup' | 'category' | 'article'
 );
 
+/** type, id, matchStart, matchEnd */
 export type SearchRow = (
 	[SearchType, ID, number?, number?] | ['sortpokemon' | 'sortmove', ''] | ['header' | 'html', string]
 );
+
+type SearchRowBasic = [SearchType, ID];
 
 type SearchFilter = [string, string];
 
@@ -86,6 +89,9 @@ export class GTTIndex {
 	private moveCache!: { [move: ID]: Move | undefined };
 	private abilityCache!: { [ability: ID]: Ability | undefined };
 	private itemCache!: { [item: ID]: Item | undefined };
+
+	customRows!: SearchRowBasic[];
+
 	constructor(options: {
 		/** Defaults to `DexSearch.DEFAULT_FORMAT` */
 		format?: string,
@@ -118,6 +124,33 @@ export class GTTIndex {
 		this.moveCache = {};
 		this.abilityCache = {};
 		this.itemCache = {};
+
+		this.customRows = [];
+		if(this.format.overrideSpeciesData) {
+			const rows: SearchRowBasic[] = Object.entries(this.format.overrideSpeciesData)
+			.filter(([id, data]) => (data as any).custom)
+			.map(([id, data]) => ['pokemon', id as ID]);
+			this.customRows.push(...rows);
+		}
+		if(this.format.overrideMoveData) {
+			const rows: SearchRowBasic[] = Object.entries(this.format.overrideMoveData)
+			.filter(([id, data]) => (data as any).custom)
+			.map(([id, data]) => ['move', id as ID]);
+			this.customRows.push(...rows);
+		}
+		if(this.format.overrideAbilityData) {
+			const rows: SearchRowBasic[] = Object.entries(this.format.overrideAbilityData)
+			.filter(([id, data]) => (data as any).custom)
+			.map(([id, data]) => ['ability', id as ID]);
+			this.customRows.push(...rows);
+		}
+		if(this.format.overrideItemData) {
+			const rows: SearchRowBasic[] = Object.entries(this.format.overrideItemData)
+			.filter(([id, data]) => (data as any).custom)
+			.map(([id, data]) => ['item', id as ID]);
+			this.customRows.push(...rows);
+		}
+		this.customRows.sort(([, id1], [, id2]) => (id1 === id2) ? 0 : (id1 > id2) ? 1 : -1);
 	}
 	/**
 	 * Returns species from the specified dex with any format specific overrides applied.
@@ -268,6 +301,18 @@ export class DexSearch {
 		category: 8,
 		article: 9,
 	};
+	static typeOrder = [
+		,
+		'pokemon',
+		'type',
+		'tier',
+		'move',
+		'item',
+		'ability',
+		'egggroup',
+		'category',
+		'article',
+	] as const;
 	static typeName = {
 		pokemon: 'Pok\u00e9mon',
 		type: 'Type',
@@ -439,6 +484,7 @@ export class DexSearch {
 	}
 
 	textSearch(query: string): SearchRow[] {
+		// debugger;
 		query = toID(query);
 
 		this.exactMatch = false;
@@ -512,10 +558,12 @@ export class DexSearch {
 		if (!this.exactMatch && BattleSearchIndex[i][0].substr(0, query.length) !== query) {
 			// No results start with this. Do a fuzzy match pass.
 			let matchLength = query.length - 1;
-			if (!i) i++;
-			while (matchLength &&
+			if (i < 1) i = 1;
+			while (
+				matchLength &&
 				BattleSearchIndex[i][0].substr(0, matchLength) !== query.substr(0, matchLength) &&
-				BattleSearchIndex[i - 1][0].substr(0, matchLength) !== query.substr(0, matchLength)) {
+				BattleSearchIndex[i - 1][0].substr(0, matchLength) !== query.substr(0, matchLength)
+			) {
 				matchLength--;
 			}
 			let matchQuery = query.substr(0, matchLength);
@@ -543,6 +591,33 @@ export class DexSearch {
 		let instafilter: [SearchType, ID, number] | null = null;
 		let instafilterSort = [0, 1, 2, 5, 4, 3, 6, 7, 8];
 		let illegal = this.typedSearch?.illegalReasons;
+
+		// GENERATIONS
+		// Add matching custom effects to the top.
+		for (const [type, id] of this.gtt.customRows) {
+			let typeIndex = DexSearch.typeTable[type];
+
+			// For performance, with a query length of 1, we only fill the first bucket
+			if (query.length === 1 && typeIndex !== (searchType ? searchTypeIndex : 1)) continue;
+
+			// For pokemon queries, accept types/tier/abilities/moves/eggroups as filters
+			if (searchType === 'pokemon' && (typeIndex === 5 || typeIndex > 7)) continue;
+			// For move queries, accept types/categories as filters
+			if (searchType === 'move' && ((typeIndex !== 8 && typeIndex > 4) || typeIndex === 3)) continue;
+			// For move queries in the teambuilder, don't accept pokemon as filters
+			if (searchType === 'move' && illegal && typeIndex === 1) continue;
+			// For ability/item queries, don't accept anything else as a filter
+			if ((searchType === 'ability' || searchType === 'item') && typeIndex !== searchTypeIndex) continue;
+
+			if (!id.startsWith(query)) continue;
+
+			if (illegal && typeIndex === searchTypeIndex && !(id in illegal)) {
+				typeIndex = 0;
+			}
+
+			bufs[typeIndex].push([type, id, 0, query.length]);
+			count++;
+		}
 
 		// We aren't actually looping through the entirety of the searchIndex
 		for (i = 0; i < BattleSearchIndex.length; i++) {
@@ -638,20 +713,13 @@ export class DexSearch {
 				topbufIndex = 2;
 			}
 
-			if (illegal && typeIndex === searchTypeIndex) {
-				// Always show illegal results under legal results.
-				// This is done by putting legal results (and the type header)
-				// in bucket 0, and illegal results in the searchType's bucket.
-				// searchType buckets are always on top (but under bucket 0), so
-				// illegal results will be seamlessly right under legal results.
-				if (!bufs[typeIndex].length && !bufs[0].length) {
-					bufs[0] = [['header', DexSearch.typeName[type]]];
-				}
-				if (!(id in illegal)) typeIndex = 0;
-			} else {
-				if (!bufs[typeIndex].length) {
-					bufs[typeIndex] = [['header', DexSearch.typeName[type]]];
-				}
+			// Always show illegal results under legal results.
+			// This is done by putting legal results (and the type header)
+			// in bucket 0, and illegal results in the searchType's bucket.
+			// searchType buckets are always on top (but under bucket 0), so
+			// illegal results will be seamlessly right under legal results.
+			if (illegal && typeIndex === searchTypeIndex && !(id in illegal)) {
+				typeIndex = 0;
 			}
 
 			// don't match duplicate aliases
@@ -662,6 +730,21 @@ export class DexSearch {
 
 			count++;
 		}
+
+		// Add headers
+		bufs.forEach((buf, i) => {
+			if (buf.length) {
+				if (i === 0) {
+					if (searchType) {
+						buf.unshift(['header', DexSearch.typeName[searchType]]);
+					}
+				}
+				else if (!(bufs[0].length && i === searchTypeIndex)) {
+					const type = DexSearch.typeOrder[i]!;
+					buf.unshift(['header', DexSearch.typeName[type]]);
+				}
+			}
+		});
 
 		let topbuf: SearchRow[] = [];
 		if (nearMatch) {
@@ -833,6 +916,13 @@ abstract class BattleTypedSearch<T extends SearchType> {
 			for (const id in this.getTable()) {
 				if (!(id in legalityFilter)) {
 					this.baseIllegalResults.push([this.searchType, id as ID]);
+					this.illegalReasons[id] = 'Illegal';
+				}
+			}
+			// GENERATIONS
+			for (const [type, id] of this.gtt.customRows.filter(([type, id]) => type === this.searchType)) {
+				if (!(id in legalityFilter)) {
+					this.baseIllegalResults.push([type as SearchType, id as ID]);
 					this.illegalReasons[id] = 'Illegal';
 				}
 			}
