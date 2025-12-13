@@ -1179,7 +1179,7 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 				if (!Dex.hasAbility(species, value)) return false;
 				break;
 			case 'move':
-				if (!this.canLearn(species.id, value as ID)) return false;
+				if (!this.canLearn(species.id, toID(value))) return false;
 			}
 		}
 		return true;
