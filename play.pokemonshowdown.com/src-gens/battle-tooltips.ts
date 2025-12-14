@@ -147,6 +147,12 @@ export class ModifiableValue {
 	}
 }
 
+window.addEventListener('mousedown', ev => {
+	BattleTooltips.hideTooltip();
+});
+window.addEventListener('touchstart', ev => {
+	BattleTooltips.hideTooltip();
+});
 export class BattleTooltips {
 	battle: Battle;
 

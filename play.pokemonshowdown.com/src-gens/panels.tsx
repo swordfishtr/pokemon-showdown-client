@@ -635,13 +635,6 @@ export class PSView extends preact.Component {
 			PS.dragging = null;
 		});
 
-		window.addEventListener('mousedown', ev => {
-			BattleTooltips.hideTooltip();
-		});
-		window.addEventListener('touchstart', ev => {
-			BattleTooltips.hideTooltip();
-		});
-
 		const colorSchemeQuery = window.matchMedia?.('(prefers-color-scheme: dark)');
 		if (colorSchemeQuery?.media !== 'not all') {
 			colorSchemeQuery.addEventListener('change', cs => {
@@ -781,8 +774,8 @@ export class PSView extends preact.Component {
 		try {
 			const selection = window.getSelection()!;
 			if (selection.type === 'Range') return false;
+			BattleTooltips.hideTooltip();
 		} catch {}
-		BattleTooltips.hideTooltip();
 	}
 	static posStyle(room: PSRoom) {
 		if (PS.leftPanelWidth === null) {
