@@ -1590,6 +1590,7 @@ class TeamWizard extends preact.Component<{
 	editor: TeamEditorState, onChange?: () => void, onUpdate: (callback?: () => void) => void,
 }> {
 	readonly PREFIX_SEARCHBOX = 'innerfocus-searchbox-';
+	readonly exportStates: boolean[] = [];
 	constructor() {
 		super(...arguments);
 		window.wizard = this;
@@ -1725,6 +1726,20 @@ class TeamWizard extends preact.Component<{
 		this.copySet(i, false);
 		ev.preventDefault();
 	};
+	/** Export to OS clipboard */
+	handleExportSet = async (ev: Event) => {
+		const target = ev.currentTarget as HTMLButtonElement;
+		const i = parseInt(target.value);
+		const { editor } = this.props;
+		try {
+			await navigator.clipboard.writeText(Teams.exportSet(editor.sets[i], editor.gtt.dex, false).trim());
+			this.exportStates[i] = true;
+		}
+		catch {
+			this.exportStates[i] = false;
+		}
+		this.forceUpdate();
+	}
 	handleCutSet = (ev: Event) => {
 		const target = ev.currentTarget as HTMLButtonElement;
 		const i = parseInt(target.value);
@@ -1739,6 +1754,16 @@ class TeamWizard extends preact.Component<{
 		while (set.moves.length < 4) set.moves.push('');
 		const overfull = set.moves.length > 4 ? ' overfull' : '';
 		const readOnlyClass = editor.readonly ? ' message-error' : '';
+		let exportStateClass = '';
+		let exportStateText = 'Export';
+		if (this.exportStates[i] === true) {
+			exportStateClass = ' success';
+			exportStateText = 'Exported!';
+		}
+		else if (this.exportStates[i] === false) {
+			exportStateClass = ' failure';
+			exportStateText = 'Failed!';
+		}
 
 		const cur = (t: SelectionType) => (
 			editor.readonly || (editor.innerFocus?.type === t && editor.innerFocus.setIndex === i) ? ' cur' : ''
@@ -1748,6 +1773,9 @@ class TeamWizard extends preact.Component<{
 			<div style="text-align:right">
 				<button class="option" onClick={this.handleCopySet} value={i}>
 					<i class="fa fa-copy" aria-hidden></i> Copy
+				</button> {}
+				<button class={`option${exportStateClass}`} onClick={this.handleExportSet} value={i}>
+					<i class="fa fa-upload" aria-hidden></i> {exportStateText}
 				</button> {}
 				<button class={`option${readOnlyClass}`} onClick={this.handleCutSet} value={i}>
 					<i class="fa fa-cut" aria-hidden></i> Cut
@@ -2159,6 +2187,7 @@ class TeamWizard extends preact.Component<{
 
 	changeFocus(input: Partial<TeamEditorState['innerFocus']>) {
 		const { editor } = this.props;
+		this.exportStates.length = 0;
 		if(!input) {
 			editor.innerFocus = null;
 			this.props.onUpdate();
