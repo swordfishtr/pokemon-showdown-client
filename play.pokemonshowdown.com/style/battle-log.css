@@ -506,7 +506,7 @@ pre.textbox {
 .option.success, .option.success:hover {
 	border-color: #52fb45;
 }
-.option.failure, .option.success:hover {
+.option.failure, .option.failure:hover {
 	border-color: red;
 }
 
