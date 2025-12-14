@@ -979,6 +979,7 @@ abstract class BattleTypedSearch<T extends SearchType> {
 	protected firstLearnsetid(speciesid: ID) {
 		const learnsets = this.gtt.format.learnsets ?? this.gtt.mod.learnsets ?? GensTeambuilderTable.learnsets;
 		if (speciesid in learnsets) return speciesid;
+		if (this.gtt.format.learnsetDiff && speciesid in this.gtt.format.learnsetDiff.additions) return speciesid;
 
 		const species = this.gtt.getFormatSpecies(speciesid);
 		if (!species.exists) return '' as ID;
@@ -1020,6 +1021,21 @@ abstract class BattleTypedSearch<T extends SearchType> {
 		// GENERATIONS
 		// Heavy rewrite; merge carefully.
 		// TODO: check that the results match the original
+
+		if (this.gtt.format.learnsetDiff) {
+			if (
+				speciesid in this.gtt.format.learnsetDiff.additions &&
+				moveid in this.gtt.format.learnsetDiff.additions[speciesid]
+			) {
+				return true;
+			}
+			if (
+				speciesid in this.gtt.format.learnsetDiff.removals &&
+				moveid in this.gtt.format.learnsetDiff.removals[speciesid]
+			) {
+				return false;
+			}
+		}
 
 		const move = this.gtt.getFormatMove(moveid);
 		if(this.gtt.format.natdex && move.isNonstandard && move.isNonstandard !== 'Past') {
