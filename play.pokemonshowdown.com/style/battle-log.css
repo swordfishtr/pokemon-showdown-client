@@ -503,10 +503,10 @@ pre.textbox {
 	color: #FFFFFF;
 }
 
-.option.success {
+.option.success .option.success:hover {
 	border-color: #52fb45;
 }
-.option.failure {
+.option.failure .option.success:hover {
 	border-color: red;
 }
 
