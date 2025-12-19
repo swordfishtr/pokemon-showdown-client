@@ -756,7 +756,7 @@ export class TeamEditor extends preact.Component<{
 				{this.wizard ? (
 					<TeamWizard editor={this.editor} onChange={this.props.onChange} onUpdate={this.forceUpdateBound} />
 				) : (
-					<TeamTextbox />
+					<TeamTextbox editor={this.editor} onChange={this.props.onChange} onUpdate={this.forceUpdateBound} />
 				)}
 				{!this.editor.innerFocus && <>
 					{this.props.children}
@@ -774,9 +774,120 @@ export class TeamEditor extends preact.Component<{
 	}
 }
 
-class TeamTextbox extends preact.Component<{}> {
-	render() {
-		return 'Work in progress!';
+class TeamTextbox extends preact.Component<{
+	editor: TeamEditorState, onChange?: () => void, onUpdate: (callback?: () => void) => void,
+}> {
+	sets = structuredClone(this.props.editor.sets);
+	unsavedChanges = false;
+
+	row: JSX.Element | null = null;
+	message: JSX.Element | null = null;
+	fetching = false;
+
+	textbox: HTMLTextAreaElement = null!;
+	heightTester: HTMLTextAreaElement = null!;
+
+	getHeight() {
+		this.heightTester.value = this.textbox.value;
+		return this.heightTester.scrollHeight;
+	}
+	updateHeight() {
+		this.textbox.style.height = `${this.getHeight() + 100}px`;
+	}
+
+	save = () => {
+		const { editor } = this.props;
+		this.sets = Teams.import(this.textbox.value);
+		editor.sets = structuredClone(this.sets);
+		editor.save();
+		this.unsavedChanges = false;
+		this.message = null;
+		this.props.onChange?.();
+		this.props.onUpdate?.();
+	};
+	input = () => {
+		this.tryPokepaste(this.textbox.value);
+		this.unsavedChanges = true;
+		this.updateHeight();
+		this.forceUpdate();
+	};
+	updateRow() {
+		// TODO: cursor set focus detection
+		this.row = null;
+	}
+	tryPokepaste(text: string) {
+		const { editor } = this.props;
+		const pokepaste = /https?:\/\/pokepast.es\/([a-z0-9]+)\/?/.exec(text)?.[1];
+		if (pokepaste) {
+			this.fetching = true;
+			Net(`https://pokepast.es/${pokepaste}/json`).get()
+			.then(json => {
+				const paste = JSON.parse(json);
+				const pasteTxt: string = paste.paste.replace(/\r\n/g, '\n');
+				const notes: string = paste.notes;
+				if (notes.startsWith('Format: ')) {
+					const formatid = toID(notes.slice(8));
+					editor.setFormat(formatid);
+				}
+				const title: string = paste.title;
+				if (title && !title.startsWith('Untitled')) {
+					editor.team.name = title.replace(/[|\\/]/g, '');
+				}
+				editor.import(pasteTxt);
+				this.textbox.value = editor.export(true);
+				this.updateHeight();
+				this.sets = structuredClone(editor.sets);
+				this.unsavedChanges = false;
+				this.message = (
+					<span>Successfully imported pokepaste!</span>
+				);
+				this.fetching = false;
+				this.props.onChange?.();
+				this.props.onUpdate?.();
+				this.forceUpdate();
+			})
+			.catch((error) => {
+				this.message = (
+					<span>Pokepaste import failed: {error?.message}</span>
+				);
+				this.fetching = false;
+				this.forceUpdate();
+			});
+		}
+	}
+	override componentDidMount() {
+		const [heightTester, textbox] = this.base!.getElementsByClassName('teamtextbox');
+		this.textbox = textbox as HTMLTextAreaElement;
+		this.heightTester = heightTester as HTMLTextAreaElement;
+
+		const initialText = this.props.editor.export(true);
+		this.textbox.value = initialText;
+		this.updateHeight();
+	}
+	override componentWillUnmount() {
+		this.textbox = null!;
+		this.heightTester = null!;
+	}
+	override render() {
+		window.textbox = this;
+		return (
+			<div class="teameditor-text">
+				<p>
+					<button class="button" onClick={this.save}>{this.unsavedChanges ? 'Save (Unsaved changes)' : 'Save'}</button>
+					{} {this.message}
+				</p>
+				<textarea
+					key={0} class="textbox teamtextbox heighttester" tabIndex={-1} aria-hidden
+					style={`padding-left:${PSView.narrowMode ? '50px' : '100px'};visibility:hidden;left:-15px`}
+				/>
+				<textarea
+					key={1} class="textbox teamtextbox" disabled={this.fetching}
+					onInput={this.input}
+					placeholder="Paste exported team or pokepaste URL here"
+				/>
+				{this.row}
+			</div>
+		);
 	}
 }
 
