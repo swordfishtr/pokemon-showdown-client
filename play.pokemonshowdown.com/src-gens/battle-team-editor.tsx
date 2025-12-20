@@ -640,7 +640,7 @@ class TeamEditorState extends PSModel {
 }
 
 export class TeamEditor extends preact.Component<{
-	team: Team, onChange?: () => void, resources?: preact.ComponentChildren,
+	team: Team, onChange?: () => void,
 }> {
 	wizard = true;
 	editor = new TeamEditorState(this.props.team);
@@ -738,6 +738,54 @@ export class TeamEditor extends preact.Component<{
 			</div>
 		);
 	}
+	renderResources() {
+		if (this.editor.gtt.format.name.includes('] ND 35 Pokes [')) {
+			// It's a main 35 Pokes meta
+			const monthMap: Record<string, string> = {
+				'jan': 'january',
+				'feb': 'february',
+				'mar': 'march',
+				'apr': 'april',
+				'may': 'may',
+				'jun': 'june',
+				'jul': 'july',
+				'aug': 'august',
+				'sep': 'september',
+				'oct': 'october',
+				'nov': 'november',
+				'dec': 'december',
+			};
+			const month = this.editor.gtt.formatid.slice(13, 16);
+			const year = this.editor.gtt.formatid.slice(16);
+			const urlWiki = `https://sites.google.com/view/35pokeswiki/months/${monthMap[month]}-${year}`;
+			const urlSmogon = 'https://www.smogon.com/forums/threads/35-pokes-december-2025.3749375/post-10234222';
+			return (
+				<div>
+					<summary><strong>
+						Teambuilding resources for:<br />
+						{this.editor.gtt.format.name}
+					</strong></summary>
+					<p><a href={urlWiki} target="_blank">35 Pokes Wiki Page</a></p>
+					<p><a href={urlSmogon} target="_blank">Smogon Resources Post</a></p>
+				</div>
+			);
+		}
+		if (this.editor.gtt.formatid.includes('35pokesperfect')) {
+			const index = this.editor.gtt.formatid.indexOf('35pokesperfect');
+			const meta = this.editor.gtt.formatid.slice(index + 14);
+			const urlWiki = `https://sites.google.com/view/35pokeswiki/35-info/subtiers/35-perfect/${meta}`;
+			return (
+				<div>
+					<summary><strong>
+						Teambuilding resources for:<br />
+						{this.editor.gtt.format.name}
+					</strong></summary>
+					<p><a href={urlWiki} target="_blank">35 Pokes Wiki Page</a></p>
+				</div>
+			);
+		}
+		return null;
+	}
 	override render() {
 		if (this.props.team.format !== this.editor.search.gtt.formatid) {
 			this.editor.setFormat(this.props.team.format);
@@ -760,10 +808,14 @@ export class TeamEditor extends preact.Component<{
 				)}
 				{!this.editor.innerFocus && <>
 					{this.props.children}
+					<br /><hr /><br />
 					<div class="team-resources">
-						<br /><hr /><br />
-						{this.renderDefensiveCoverage()}
-						{this.props.resources}
+						<div>
+							<button class="button"><i class="fa fa-upload"></i> Upload to PokePaste</button>
+							<br />
+							{this.renderDefensiveCoverage()}
+						</div>
+						{this.renderResources()}
 					</div>
 				</>}
 			</div>
