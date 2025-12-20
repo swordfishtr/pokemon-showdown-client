@@ -1099,7 +1099,7 @@ export class Battle {
 	myAllyPokemon: ServerPokemon[] | null = null;
 	lastMove = '';
 
-	readonly gtt = new GTTIndex({ throwInvalid: true });
+	readonly gtt = new GTTIndex();
 	teamPreviewCount = 0;
 	speciesClause = false;
 	gameType: 'singles' | 'doubles' | 'triples' | 'multi' | 'freeforall' | 'rotation' = 'singles';
