@@ -786,6 +786,22 @@ export class TeamEditor extends preact.Component<{
 		}
 		return null;
 	}
+	uploadPokepaste = (event: Event) => {
+		if (!this.editor.sets.length) {
+			PS.alert('Add a Pokémon to your team before uploading it!');
+			return;
+		}
+		const form = (event.currentTarget as HTMLButtonElement).parentElement as HTMLFormElement;
+		const title = form.children.namedItem('title') as HTMLInputElement;
+		const paste = form.children.namedItem('paste') as HTMLInputElement;
+		const author = form.children.namedItem('author') as HTMLInputElement;
+		const notes = form.children.namedItem('notes') as HTMLInputElement;
+		title.value = this.props.team.name;
+		paste.value = this.editor.export(true);
+		author.value = PS.user.name;
+		notes.value = `Format: ${this.props.team.format}`;
+		form.submit();
+	};
 	override render() {
 		if (this.props.team.format !== this.editor.search.gtt.formatid) {
 			this.editor.setFormat(this.props.team.format);
@@ -811,7 +827,15 @@ export class TeamEditor extends preact.Component<{
 					<br /><hr /><br />
 					<div class="team-resources">
 						<div>
-							<button class="button"><i class="fa fa-upload"></i> Upload to PokePaste</button>
+							<form method="post" action="https://pokepast.es/create" target="_blank">
+								<input type="hidden" name="title" />
+								<input type="hidden" name="paste" />
+								<input type="hidden" name="author" />
+								<input type="hidden" name="notes" />
+								<button class="button" onClick={this.uploadPokepaste}>
+									<i class="fa fa-upload"></i> Upload to PokePaste
+								</button>
+							</form>
 							<br />
 							{this.renderDefensiveCoverage()}
 						</div>
@@ -857,6 +881,11 @@ class TeamTextbox extends preact.Component<{
 		this.props.onChange?.();
 		this.props.onUpdate?.();
 	};
+	/** Export to OS clipboard */
+	copy = async () => {
+		const { editor } = this.props;
+		await navigator.clipboard.writeText(this.textbox.value.trim());
+	}
 	input = () => {
 		this.tryPokepaste(this.textbox.value);
 		this.unsavedChanges = true;
@@ -927,6 +956,7 @@ class TeamTextbox extends preact.Component<{
 				<p>
 					<button class="button" onClick={this.save}>{this.unsavedChanges ? 'Save (Unsaved changes)' : 'Save'}</button>
 					{} {this.message}
+					<button class="button" onClick={this.copy} style={{ float: 'right' }}>Copy</button>
 				</p>
 				<textarea
 					key={0} class="textbox teamtextbox heighttester" tabIndex={-1} aria-hidden
