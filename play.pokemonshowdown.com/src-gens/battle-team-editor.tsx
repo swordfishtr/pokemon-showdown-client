@@ -787,6 +787,8 @@ export class TeamEditor extends preact.Component<{
 		return null;
 	}
 	uploadPokepaste = (event: Event) => {
+		event.preventDefault();
+		event.stopPropagation();
 		if (!this.editor.sets.length) {
 			PS.alert('Add a Pokémon to your team before uploading it!');
 			return;
@@ -801,7 +803,6 @@ export class TeamEditor extends preact.Component<{
 		author.value = PS.user.name;
 		notes.value = `Format: ${this.props.team.format}`;
 		form.submit();
-		event.stopPropagation();
 	};
 	override render() {
 		if (this.props.team.format !== this.editor.search.gtt.formatid) {
