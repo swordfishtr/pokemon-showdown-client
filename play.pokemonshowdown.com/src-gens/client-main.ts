@@ -270,6 +270,7 @@ class PSPrefs extends PSStreamModel<string | null> {
 			delete newPrefs['user'];
 			delete newPrefs['pass'];
 			setTimeout(() => {
+				// Timeout because `PS` has not finished initializing yet.
 				const subscription = PS.user.subscribe((args) => {
 					// Listening for receiveLine in mainmenu:
 					// 'challstr' or 'updateuser'
