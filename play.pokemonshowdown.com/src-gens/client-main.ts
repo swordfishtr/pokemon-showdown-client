@@ -193,7 +193,9 @@ class PSPrefs extends PSStreamModel<string | null> {
 				const noSave = !('user' in showdown_prefs) && !('pass' in showdown_prefs);
 				this.load(showdown_prefs, noSave);
 			}
-		} catch {}
+		} catch(error) {
+			console.log(error);
+		}
 	}
 	/**
 	 * Change a preference.
