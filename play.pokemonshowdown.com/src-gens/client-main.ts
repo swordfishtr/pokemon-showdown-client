@@ -1652,9 +1652,9 @@ type PSRoomPanelSubclass<T extends PSRoom = PSRoom> = (new () => PSRoomPanel<T>)
 export const PS = new class extends PSModel {
 	down: string | boolean = false;
 
+	user = new PSUser();
 	prefs = new PSPrefs();
 	teams = new PSTeams();
-	user = new PSUser();
 	server = new PSServer();
 	connection: PSConnection | null = null;
 	/**
