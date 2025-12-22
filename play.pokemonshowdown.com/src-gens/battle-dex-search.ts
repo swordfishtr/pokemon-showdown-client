@@ -195,7 +195,7 @@ export class GTTIndex {
 		}
 
 		const result = PSUtils.isEmpty(moddedData) ? species : new Species(speciesid, speciesName, { ...species, ...moddedData });
-		if(!customDex) this.speciesCache[speciesid] = result
+		if(!customDex && result.exists) this.speciesCache[speciesid] = result
 		return result;
 	}
 	getFormatMove(moveName: string, dex = this.dex) {
@@ -214,7 +214,7 @@ export class GTTIndex {
 		}
 
 		const result = PSUtils.isEmpty(moddedData) ? move : new Move(moveid, moveName, { ...move, ...moddedData });
-		if(!customDex) this.moveCache[moveid] = result
+		if(!customDex && result.exists) this.moveCache[moveid] = result
 		return result;
 	}
 	getFormatAbility(abilityName: string, dex = this.dex) {
@@ -233,7 +233,7 @@ export class GTTIndex {
 		}
 
 		const result = PSUtils.isEmpty(moddedData) ? ability : new Ability(abilityid, abilityName, { ...ability, ...moddedData });
-		if(!customDex) this.abilityCache[abilityid] = result
+		if(!customDex && result.exists) this.abilityCache[abilityid] = result
 		return result;
 	}
 	getFormatItem(itemName: string, dex = this.dex) {
@@ -252,7 +252,7 @@ export class GTTIndex {
 		}
 
 		const result = PSUtils.isEmpty(moddedData) ? item : new Item(itemid, itemName, { ...item, ...moddedData });
-		if(!customDex) this.itemCache[itemid] = result
+		if(!customDex && result.exists) this.itemCache[itemid] = result
 		return result;
 	}
 }

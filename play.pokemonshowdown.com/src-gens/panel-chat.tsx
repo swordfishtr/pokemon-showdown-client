@@ -1193,9 +1193,10 @@ export class ChatLog extends preact.Component<{
 				const backlog = room.backlog;
 				room.backlog = null;
 				for (const args of backlog) {
-					room.log.add(args, undefined, undefined, PS.prefs.timestamps[room.pmTarget ? 'pms' : 'chatrooms']);
+					room.receiveLine(args);
 				}
 			}
+			// NOTE: this applies the backlog and nullifies it.
 			this.subscription = room.subscribe(tokens => {
 				if (!tokens) return;
 				this.props.room.log!.add(tokens, undefined, undefined, PS.prefs.timestamps[room.pmTarget ? 'pms' : 'chatrooms']);

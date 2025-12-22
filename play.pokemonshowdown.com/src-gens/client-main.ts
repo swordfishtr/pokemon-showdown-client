@@ -845,6 +845,16 @@ export class PSRoom extends PSStreamModel<Args | null> implements RoomOptions {
 	title = "";
 	type = '';
 	isPlaceholder = false;
+	/**
+	 * Backlog before the actual backlog.
+	 * This backlog is run through the replacing room's `receiveLine`,
+	 * which may send it to the other backlog.
+	 * 
+	 * The other backlog is relevant for `PSRoomPanel`s,
+	 * and may be nullified before the placeholder room is replaced,
+	 * so the separation is necessary.
+	 */
+	placeholderBacklog: Args[] | null = null;
 	readonly classType: string = '';
 	location: PSRoomLocation = 'left';
 	closable = true;
@@ -1627,7 +1637,7 @@ class PlaceholderRoom extends PSRoom {
 		this.isPlaceholder = true;
 	}
 	override receiveLine(args: Args) {
-		(this.backlog ||= []).push(args);
+		(this.placeholderBacklog ||= []).push(args);
 	}
 }
 
@@ -2163,6 +2173,13 @@ export const PS = new class extends PSModel {
 			if (this.room === room) {
 				this.room = newRoom;
 				newRoom.focusNextUpdate = true;
+			}
+
+			if (room.placeholderBacklog) {
+				for (const args of room.placeholderBacklog) {
+					newRoom.receiveLine(args);
+				}
+				room.placeholderBacklog = null;
 			}
 
 			updated = true;
