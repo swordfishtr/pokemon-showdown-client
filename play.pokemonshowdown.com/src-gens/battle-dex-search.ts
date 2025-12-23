@@ -58,6 +58,9 @@ interface GTTFormat {
 	stabmons?: 1, // not in use yet
 	scalemons?: 1,
 
+	listlc?: 1,
+	listcg?: 1,
+
 	whitelist?: { [species: ID]: 1 },
 	blacklist?: { [species: ID]: 1 },
 	moves?: { [move: ID]: 1 },
@@ -1109,65 +1112,77 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 	}
 	getDefaultResults(): SearchRow[] {
 		const results: SearchRow[] = [];
+		let custom: SearchRow[] = [];
 		if(this.gtt.format.overrideSpeciesData) {
-			const custom: SearchRow[] = Object.entries(this.gtt.format.overrideSpeciesData)
+			custom = Object.entries(this.gtt.format.overrideSpeciesData)
 			.filter(([id, data]) => (data as any).custom)
 			.map(([id, data]) => ['pokemon', id as ID]);
 			if(custom.length) {
-				results.push(['header', "Custom"], ...custom);
+				custom.unshift(['header', "Custom"]);
 			}
 		}
 		for (let id in BattlePokedex) {
 			switch (id) {
-			case 'bulbasaur':
+			case 'chikorita':
 				results.push(['header', "Generation 1"]);
 				break;
-			case 'chikorita':
+			case 'treecko':
 				results.push(['header', "Generation 2"]);
 				break;
-			case 'treecko':
+			case 'turtwig':
 				results.push(['header', "Generation 3"]);
 				break;
-			case 'turtwig':
+			case 'victini':
 				results.push(['header', "Generation 4"]);
 				break;
-			case 'victini':
+			case 'chespin':
 				results.push(['header', "Generation 5"]);
 				break;
-			case 'chespin':
+			case 'rowlet':
 				results.push(['header', "Generation 6"]);
 				break;
-			case 'rowlet':
+			case 'grookey':
 				results.push(['header', "Generation 7"]);
 				break;
-			case 'grookey':
+			case 'sprigatito':
 				results.push(['header', "Generation 8"]);
 				break;
-			case 'sprigatito':
-				results.push(['header', "Generation 9"]);
-				break;
-			case 'missingno':
-				return results;
 			case 'pikachucosplay':
 				continue;
 			}
+			if (id === 'missingno') {
+				results.push(['header', "Generation 9"]);
+				break;
+			}
 			results.push(['pokemon', id as ID]);
 		}
-		return results;
+		return custom.concat(results.reverse());
 	}
 	getBaseResults(): SearchRow[] {
 		let results = this.getDefaultResults();
 
-		if(this.gtt.format.whitelist) {
+		if (this.gtt.format.whitelist) {
 			results = results.filter(([type, id]) => (id in this.gtt.format.whitelist!));
 		}
 
-		if(this.gtt.format.blacklist) {
+		if (this.gtt.format.blacklist) {
 			results = results.filter(([type, id]) => !(id in this.gtt.format.blacklist!));
 		}
 
+		if (this.gtt.format.listlc) {
+			results = results.filter(([type, id]) => {
+				if (type !== 'pokemon') return false;
+				const species = this.gtt.getFormatSpecies(id);
+				return !species.prevo && species.nfe;
+			});
+		}
+
+		if (this.gtt.format.listcg) {
+			results = results.filter(([type, id]) => type === 'pokemon' && !this.gtt.getFormatSpecies(id).isNonstandard);
+		}
+
 		// 35 Moves formats should come with customNumCol.
-		if(this.gtt.format.moves) {
+		if (this.gtt.format.moves) {
 			results = results
 			.filter(([type, id]) => type === 'pokemon' && !['CAP', 'Custom'].includes(this.gtt.getFormatSpecies(id).isNonstandard as any))
 			.sort(([type1, id1], [type2, id2]) => (this.gtt.format.customNumCol![id1 as ID] ?? 0) - (this.gtt.format.customNumCol![id2 as ID] ?? 0))
@@ -1421,6 +1436,10 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 		return results;
 	}
 	private moveIsNotUseless(id: ID, species: Dex.Species, moves: string[], set: Dex.PokemonSet | null): boolean {
+		if (this.gtt.format.overrideMoveData?.[id]?.custom) {
+			return true;
+		}
+
 		const dex = this.gtt.dex;
 
 		let abilityid: ID = set ? toID(set.ability) : '' as ID;
@@ -1825,6 +1844,23 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 
 		moves.sort();
 		sketchMoves.sort();
+
+		if (this.gtt.format.overrideMoveData) {
+			for (const movesArray of [moves, sketchMoves]) {
+				const top: string[] = [];
+				const bottom: string[] = [];
+				for (const id of movesArray) {
+					if (this.gtt.format.overrideMoveData[id]?.custom) {
+						top.push(id);
+					}
+					else {
+						bottom.push(id);
+					}
+				}
+				if (movesArray === moves) moves = top.concat(bottom);
+				else if (movesArray === sketchMoves) sketchMoves = top.concat(bottom);
+			}
+		}
 
 		let usableMoves: SearchRow[] = [];
 		let uselessMoves: SearchRow[] = [];

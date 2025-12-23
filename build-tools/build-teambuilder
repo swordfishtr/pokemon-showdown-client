@@ -700,7 +700,6 @@ const check = {
 	idToLevel(id) {
 		if([
 			/babies/,
-			/vgclc/,
 		].some((regex) => regex.test(id))) {
 			return 5;
 		}
@@ -739,6 +738,20 @@ const check = {
 	isScalemons(id) {
 		return [
 			'gen9benjaminbutton',
+		].includes(id);
+	},
+	// Filter non LC pokemon from results
+	listLC(id) {
+		return [
+			'gen9ndvgclc',
+			'gen9ndvgclcbo3',
+		].includes(id);
+	},
+	// Filter non current gen pokemon from results
+	listCG(id) {
+		return [
+			'gen9vgcuu',
+			'gen9vgcuubo3'
 		].includes(id);
 	},
 };
@@ -781,6 +794,10 @@ for(const format of Dex.formats.all()) {
 	if(check.isStabmons(format.id)) gtt.stabmons = 1;
 
 	if(check.isScalemons(format.id)) gtt.scalemons = 1;
+
+	if(check.listLC(format.id)) gtt.listlc = 1;
+
+	if(check.listCG(format.id)) gtt.listcg = 1;
 
 	if([
 		'-pokemontag:ndlc', '-pokemontag:ndnfe', '-pokemontag:ndru', '-pokemontag:ndrubl', '-pokemontag:nduu',
