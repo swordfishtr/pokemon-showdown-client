@@ -193,7 +193,9 @@ class PSPrefs extends PSStreamModel<string | null> {
 				const noSave = !('user' in showdown_prefs) && !('pass' in showdown_prefs);
 				this.load(showdown_prefs, noSave);
 			}
-		} catch {}
+		} catch(error) {
+			console.error(error);
+		}
 	}
 	/**
 	 * Change a preference.
@@ -265,18 +267,21 @@ class PSPrefs extends PSStreamModel<string | null> {
 		// Migrating from old client.
 		if(('user' in newPrefs) && ('pass' in newPrefs)) {
 			const { user, pass } = newPrefs;
-			const subscription = PS.user.subscribe((args) => {
-				// Listening for receiveLine in mainmenu:
-				// 'challstr' or 'updateuser'
-				if(args || PS.user.initializing) return;
-				subscription.unsubscribe();
-				if(!PS.user.named) {
-					PS.user.changeNameWithPassword(user, pass);
-				}
+			delete newPrefs['user'];
+			delete newPrefs['pass'];
+			setTimeout(() => {
+				// Timeout because `PS` has not finished initializing yet.
+				const subscription = PS.user.subscribe((args) => {
+					// Listening for receiveLine in mainmenu:
+					// 'challstr' or 'updateuser'
+					if (args || PS.user.initializing) return;
+					subscription.unsubscribe();
+					if (!PS.user.named) {
+						PS.user.changeNameWithPassword(user, pass);
+					}
+				});
 			});
 		}
-		delete newPrefs['user'];
-		delete newPrefs['pass'];
 	}
 
 	setAFD(mode?: typeof this['afd']) {
@@ -840,6 +845,16 @@ export class PSRoom extends PSStreamModel<Args | null> implements RoomOptions {
 	title = "";
 	type = '';
 	isPlaceholder = false;
+	/**
+	 * Backlog before the actual backlog.
+	 * This backlog is run through the replacing room's `receiveLine`,
+	 * which may send it to the other backlog.
+	 * 
+	 * The other backlog is relevant for `PSRoomPanel`s,
+	 * and may be nullified before the placeholder room is replaced,
+	 * so the separation is necessary.
+	 */
+	placeholderBacklog: Args[] | null = null;
 	readonly classType: string = '';
 	location: PSRoomLocation = 'left';
 	closable = true;
@@ -1622,7 +1637,7 @@ class PlaceholderRoom extends PSRoom {
 		this.isPlaceholder = true;
 	}
 	override receiveLine(args: Args) {
-		(this.backlog ||= []).push(args);
+		(this.placeholderBacklog ||= []).push(args);
 	}
 }
 
@@ -1652,9 +1667,9 @@ type PSRoomPanelSubclass<T extends PSRoom = PSRoom> = (new () => PSRoomPanel<T>)
 export const PS = new class extends PSModel {
 	down: string | boolean = false;
 
+	user = new PSUser();
 	prefs = new PSPrefs();
 	teams = new PSTeams();
-	user = new PSUser();
 	server = new PSServer();
 	connection: PSConnection | null = null;
 	/**
@@ -2158,6 +2173,13 @@ export const PS = new class extends PSModel {
 			if (this.room === room) {
 				this.room = newRoom;
 				newRoom.focusNextUpdate = true;
+			}
+
+			if (room.placeholderBacklog) {
+				for (const args of room.placeholderBacklog) {
+					newRoom.receiveLine(args);
+				}
+				room.placeholderBacklog = null;
 			}
 
 			updated = true;

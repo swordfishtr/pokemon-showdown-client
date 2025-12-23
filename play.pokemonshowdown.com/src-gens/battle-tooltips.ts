@@ -147,6 +147,12 @@ export class ModifiableValue {
 	}
 }
 
+window.addEventListener('mousedown', ev => {
+	BattleTooltips.hideTooltip();
+});
+window.addEventListener('touchstart', ev => {
+	BattleTooltips.hideTooltip();
+});
 export class BattleTooltips {
 	battle: Battle;
 
@@ -2566,7 +2572,7 @@ export class BattleStatGuesser {
 	supportsAVs: boolean;
 
 	constructor(formatid: ID) {
-		this.gtt = new GTTIndex({ format: formatid, throwInvalid: true });
+		this.gtt = new GTTIndex({ format: formatid });
 		this.ignoreEVLimits = (
 			this.gtt.dex.gen < 3 ||
 			(this.gtt.format.hackmons && this.gtt.dex.gen !== 6) ||
@@ -3161,7 +3167,7 @@ export class BattleStatGuesser {
 export function BattleStatOptimizer(set: Dex.PokemonSet, formatid: ID) {
 	if (!set.evs) return null;
 
-	const gtt = new GTTIndex({ format: formatid, throwInvalid: true });
+	const gtt = new GTTIndex({ format: formatid });
 
 	const ignoreEVLimits = (
 		gtt.dex.gen < 3 || (gtt.format.hackmons && gtt.dex.gen !== 6) ||

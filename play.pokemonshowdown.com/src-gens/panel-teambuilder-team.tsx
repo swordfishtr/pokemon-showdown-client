@@ -110,26 +110,6 @@ class TeamPanel extends PSRoomPanel<TeamRoom> {
 		this.props.room.save();
 		this.forceUpdate();
 	};
-	renderResources() {
-		const { room } = this.props;
-		const team = room.team;
-		const info = TeamPanel.formatResources[team.format];
-		const formatName = BattleLog.formatName(team.format);
-		return (info && (info.resources.length || info.url)) ? (
-			<details class="details" open>
-				<summary><strong>Teambuilding resources for {formatName}</strong></summary>
-				<div style="margin-left:5px"><ul>
-					{info.resources.map(resource => (
-						<li><p><a href={resource.url} target="_blank">{resource.resource_name}</a></p></li>
-					))}
-				</ul>
-				<p>
-					Find {info.resources.length ? 'more ' : ''}
-					helpful resources for {formatName} on <a href={info.url} target="_blank">the Smogon Dex</a>.
-				</p></div>
-			</details>
-		) : null;
-	}
 	override render() {
 		const { room } = this.props;
 		const team = room.team;
@@ -169,9 +149,7 @@ class TeamPanel extends PSRoomPanel<TeamRoom> {
 					onInput={this.handleRename} onChange={this.handleRename} onKeyUp={this.handleRename}
 				/>
 			</label>
-			<TeamEditor
-				team={team} onChange={this.save} resources={this.renderResources()}
-			/>
+			<TeamEditor team={team} onChange={this.save} />
 		</div></PSPanelWrapper>;
 	}
 }

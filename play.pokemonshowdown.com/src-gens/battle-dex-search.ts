@@ -18,9 +18,12 @@ export type SearchType = (
 	'pokemon' | 'type' | 'tier' | 'move' | 'item' | 'ability' | 'egggroup' | 'category' | 'article'
 );
 
+/** type, id, matchStart, matchEnd */
 export type SearchRow = (
 	[SearchType, ID, number?, number?] | ['sortpokemon' | 'sortmove', ''] | ['header' | 'html', string]
 );
+
+type SearchRowBasic = [SearchType, ID];
 
 type SearchFilter = [string, string];
 
@@ -55,6 +58,10 @@ interface GTTFormat {
 	stabmons?: 1, // not in use yet
 	scalemons?: 1,
 
+	listlc?: 1,
+	listcg?: 1,
+	sortevo?: 1,
+
 	whitelist?: { [species: ID]: 1 },
 	blacklist?: { [species: ID]: 1 },
 	moves?: { [move: ID]: 1 },
@@ -86,6 +93,9 @@ export class GTTIndex {
 	private moveCache!: { [move: ID]: Move | undefined };
 	private abilityCache!: { [ability: ID]: Ability | undefined };
 	private itemCache!: { [item: ID]: Item | undefined };
+
+	customRows!: SearchRowBasic[];
+
 	constructor(options: {
 		/** Defaults to `DexSearch.DEFAULT_FORMAT` */
 		format?: string,
@@ -118,6 +128,33 @@ export class GTTIndex {
 		this.moveCache = {};
 		this.abilityCache = {};
 		this.itemCache = {};
+
+		this.customRows = [];
+		if(this.format.overrideSpeciesData) {
+			const rows: SearchRowBasic[] = Object.entries(this.format.overrideSpeciesData)
+			.filter(([id, data]) => (data as any).custom)
+			.map(([id, data]) => ['pokemon', id as ID]);
+			this.customRows.push(...rows);
+		}
+		if(this.format.overrideMoveData) {
+			const rows: SearchRowBasic[] = Object.entries(this.format.overrideMoveData)
+			.filter(([id, data]) => (data as any).custom)
+			.map(([id, data]) => ['move', id as ID]);
+			this.customRows.push(...rows);
+		}
+		if(this.format.overrideAbilityData) {
+			const rows: SearchRowBasic[] = Object.entries(this.format.overrideAbilityData)
+			.filter(([id, data]) => (data as any).custom)
+			.map(([id, data]) => ['ability', id as ID]);
+			this.customRows.push(...rows);
+		}
+		if(this.format.overrideItemData) {
+			const rows: SearchRowBasic[] = Object.entries(this.format.overrideItemData)
+			.filter(([id, data]) => (data as any).custom)
+			.map(([id, data]) => ['item', id as ID]);
+			this.customRows.push(...rows);
+		}
+		this.customRows.sort(([, id1], [, id2]) => (id1 === id2) ? 0 : (id1 > id2) ? 1 : -1);
 	}
 	/**
 	 * Returns species from the specified dex with any format specific overrides applied.
@@ -162,7 +199,7 @@ export class GTTIndex {
 		}
 
 		const result = PSUtils.isEmpty(moddedData) ? species : new Species(speciesid, speciesName, { ...species, ...moddedData });
-		if(!customDex) this.speciesCache[speciesid] = result
+		if(!customDex && result.exists) this.speciesCache[speciesid] = result
 		return result;
 	}
 	getFormatMove(moveName: string, dex = this.dex) {
@@ -181,7 +218,7 @@ export class GTTIndex {
 		}
 
 		const result = PSUtils.isEmpty(moddedData) ? move : new Move(moveid, moveName, { ...move, ...moddedData });
-		if(!customDex) this.moveCache[moveid] = result
+		if(!customDex && result.exists) this.moveCache[moveid] = result
 		return result;
 	}
 	getFormatAbility(abilityName: string, dex = this.dex) {
@@ -200,7 +237,7 @@ export class GTTIndex {
 		}
 
 		const result = PSUtils.isEmpty(moddedData) ? ability : new Ability(abilityid, abilityName, { ...ability, ...moddedData });
-		if(!customDex) this.abilityCache[abilityid] = result
+		if(!customDex && result.exists) this.abilityCache[abilityid] = result
 		return result;
 	}
 	getFormatItem(itemName: string, dex = this.dex) {
@@ -219,7 +256,7 @@ export class GTTIndex {
 		}
 
 		const result = PSUtils.isEmpty(moddedData) ? item : new Item(itemid, itemName, { ...item, ...moddedData });
-		if(!customDex) this.itemCache[itemid] = result
+		if(!customDex && result.exists) this.itemCache[itemid] = result
 		return result;
 	}
 }
@@ -268,6 +305,18 @@ export class DexSearch {
 		category: 8,
 		article: 9,
 	};
+	static typeOrder = [
+		,
+		'pokemon',
+		'type',
+		'tier',
+		'move',
+		'item',
+		'ability',
+		'egggroup',
+		'category',
+		'article',
+	] as const;
 	static typeName = {
 		pokemon: 'Pok\u00e9mon',
 		type: 'Type',
@@ -439,6 +488,7 @@ export class DexSearch {
 	}
 
 	textSearch(query: string): SearchRow[] {
+		// debugger;
 		query = toID(query);
 
 		this.exactMatch = false;
@@ -512,10 +562,12 @@ export class DexSearch {
 		if (!this.exactMatch && BattleSearchIndex[i][0].substr(0, query.length) !== query) {
 			// No results start with this. Do a fuzzy match pass.
 			let matchLength = query.length - 1;
-			if (!i) i++;
-			while (matchLength &&
+			if (i < 1) i = 1;
+			while (
+				matchLength &&
 				BattleSearchIndex[i][0].substr(0, matchLength) !== query.substr(0, matchLength) &&
-				BattleSearchIndex[i - 1][0].substr(0, matchLength) !== query.substr(0, matchLength)) {
+				BattleSearchIndex[i - 1][0].substr(0, matchLength) !== query.substr(0, matchLength)
+			) {
 				matchLength--;
 			}
 			let matchQuery = query.substr(0, matchLength);
@@ -543,6 +595,33 @@ export class DexSearch {
 		let instafilter: [SearchType, ID, number] | null = null;
 		let instafilterSort = [0, 1, 2, 5, 4, 3, 6, 7, 8];
 		let illegal = this.typedSearch?.illegalReasons;
+
+		// GENERATIONS
+		// Add matching custom effects to the top.
+		for (const [type, id] of this.gtt.customRows) {
+			let typeIndex = DexSearch.typeTable[type];
+
+			// For performance, with a query length of 1, we only fill the first bucket
+			if (query.length === 1 && typeIndex !== (searchType ? searchTypeIndex : 1)) continue;
+
+			// For pokemon queries, accept types/tier/abilities/moves/eggroups as filters
+			if (searchType === 'pokemon' && (typeIndex === 5 || typeIndex > 7)) continue;
+			// For move queries, accept types/categories as filters
+			if (searchType === 'move' && ((typeIndex !== 8 && typeIndex > 4) || typeIndex === 3)) continue;
+			// For move queries in the teambuilder, don't accept pokemon as filters
+			if (searchType === 'move' && illegal && typeIndex === 1) continue;
+			// For ability/item queries, don't accept anything else as a filter
+			if ((searchType === 'ability' || searchType === 'item') && typeIndex !== searchTypeIndex) continue;
+
+			if (!id.startsWith(query)) continue;
+
+			if (illegal && typeIndex === searchTypeIndex && !(id in illegal)) {
+				typeIndex = 0;
+			}
+
+			bufs[typeIndex].push([type, id, 0, query.length]);
+			count++;
+		}
 
 		// We aren't actually looping through the entirety of the searchIndex
 		for (i = 0; i < BattleSearchIndex.length; i++) {
@@ -638,20 +717,13 @@ export class DexSearch {
 				topbufIndex = 2;
 			}
 
-			if (illegal && typeIndex === searchTypeIndex) {
-				// Always show illegal results under legal results.
-				// This is done by putting legal results (and the type header)
-				// in bucket 0, and illegal results in the searchType's bucket.
-				// searchType buckets are always on top (but under bucket 0), so
-				// illegal results will be seamlessly right under legal results.
-				if (!bufs[typeIndex].length && !bufs[0].length) {
-					bufs[0] = [['header', DexSearch.typeName[type]]];
-				}
-				if (!(id in illegal)) typeIndex = 0;
-			} else {
-				if (!bufs[typeIndex].length) {
-					bufs[typeIndex] = [['header', DexSearch.typeName[type]]];
-				}
+			// Always show illegal results under legal results.
+			// This is done by putting legal results (and the type header)
+			// in bucket 0, and illegal results in the searchType's bucket.
+			// searchType buckets are always on top (but under bucket 0), so
+			// illegal results will be seamlessly right under legal results.
+			if (illegal && typeIndex === searchTypeIndex && !(id in illegal)) {
+				typeIndex = 0;
 			}
 
 			// don't match duplicate aliases
@@ -662,6 +734,21 @@ export class DexSearch {
 
 			count++;
 		}
+
+		// Add headers
+		bufs.forEach((buf, i) => {
+			if (buf.length) {
+				if (i === 0) {
+					if (searchType) {
+						buf.unshift(['header', DexSearch.typeName[searchType]]);
+					}
+				}
+				else if (!(bufs[0].length && i === searchTypeIndex)) {
+					const type = DexSearch.typeOrder[i]!;
+					buf.unshift(['header', DexSearch.typeName[type]]);
+				}
+			}
+		});
 
 		let topbuf: SearchRow[] = [];
 		if (nearMatch) {
@@ -836,6 +923,13 @@ abstract class BattleTypedSearch<T extends SearchType> {
 					this.illegalReasons[id] = 'Illegal';
 				}
 			}
+			// GENERATIONS
+			for (const [type, id] of this.gtt.customRows.filter(([type, id]) => type === this.searchType)) {
+				if (!(id in legalityFilter)) {
+					this.baseIllegalResults.push([type as SearchType, id as ID]);
+					this.illegalReasons[id] = 'Illegal';
+				}
+			}
 		}
 
 		let results: SearchRow[];
@@ -889,6 +983,7 @@ abstract class BattleTypedSearch<T extends SearchType> {
 	protected firstLearnsetid(speciesid: ID) {
 		const learnsets = this.gtt.format.learnsets ?? this.gtt.mod.learnsets ?? GensTeambuilderTable.learnsets;
 		if (speciesid in learnsets) return speciesid;
+		if (this.gtt.format.learnsetDiff && speciesid in this.gtt.format.learnsetDiff.additions) return speciesid;
 
 		const species = this.gtt.getFormatSpecies(speciesid);
 		if (!species.exists) return '' as ID;
@@ -930,6 +1025,21 @@ abstract class BattleTypedSearch<T extends SearchType> {
 		// GENERATIONS
 		// Heavy rewrite; merge carefully.
 		// TODO: check that the results match the original
+
+		if (this.gtt.format.learnsetDiff) {
+			if (
+				speciesid in this.gtt.format.learnsetDiff.additions &&
+				moveid in this.gtt.format.learnsetDiff.additions[speciesid]
+			) {
+				return true;
+			}
+			if (
+				speciesid in this.gtt.format.learnsetDiff.removals &&
+				moveid in this.gtt.format.learnsetDiff.removals[speciesid]
+			) {
+				return false;
+			}
+		}
 
 		const move = this.gtt.getFormatMove(moveid);
 		if(this.gtt.format.natdex && move.isNonstandard && move.isNonstandard !== 'Past') {
@@ -1003,69 +1113,95 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 	}
 	getDefaultResults(): SearchRow[] {
 		const results: SearchRow[] = [];
+		let custom: SearchRow[] = [];
 		if(this.gtt.format.overrideSpeciesData) {
-			const custom: SearchRow[] = Object.entries(this.gtt.format.overrideSpeciesData)
+			custom = Object.entries(this.gtt.format.overrideSpeciesData)
 			.filter(([id, data]) => (data as any).custom)
 			.map(([id, data]) => ['pokemon', id as ID]);
 			if(custom.length) {
-				results.push(['header', "Custom"], ...custom);
+				custom.unshift(['header', "Custom"]);
 			}
 		}
 		for (let id in BattlePokedex) {
 			switch (id) {
-			case 'bulbasaur':
+			case 'chikorita':
 				results.push(['header', "Generation 1"]);
 				break;
-			case 'chikorita':
+			case 'treecko':
 				results.push(['header', "Generation 2"]);
 				break;
-			case 'treecko':
+			case 'turtwig':
 				results.push(['header', "Generation 3"]);
 				break;
-			case 'turtwig':
+			case 'victini':
 				results.push(['header', "Generation 4"]);
 				break;
-			case 'victini':
+			case 'chespin':
 				results.push(['header', "Generation 5"]);
 				break;
-			case 'chespin':
+			case 'rowlet':
 				results.push(['header', "Generation 6"]);
 				break;
-			case 'rowlet':
+			case 'grookey':
 				results.push(['header', "Generation 7"]);
 				break;
-			case 'grookey':
+			case 'sprigatito':
 				results.push(['header', "Generation 8"]);
 				break;
-			case 'sprigatito':
-				results.push(['header', "Generation 9"]);
-				break;
-			case 'missingno':
-				return results;
 			case 'pikachucosplay':
 				continue;
 			}
+			if (id === 'missingno') {
+				results.push(['header', "Generation 9"]);
+				break;
+			}
 			results.push(['pokemon', id as ID]);
 		}
-		return results;
+		return custom.concat(results.reverse());
 	}
 	getBaseResults(): SearchRow[] {
 		let results = this.getDefaultResults();
 
-		if(this.gtt.format.whitelist) {
-			results = results.filter(([type, id]) => (id in this.gtt.format.whitelist!));
+		if (this.gtt.format.whitelist) {
+			results = results.filter(([type, id]) => type === 'pokemon' && (id in this.gtt.format.whitelist!));
 		}
 
-		if(this.gtt.format.blacklist) {
-			results = results.filter(([type, id]) => !(id in this.gtt.format.blacklist!));
+		if (this.gtt.format.blacklist) {
+			results = results.filter(([type, id]) => type === 'pokemon' && !(id in this.gtt.format.blacklist!));
+		}
+
+		if (this.gtt.format.listlc) {
+			results = results.filter(([type, id]) => {
+				if (type !== 'pokemon') return false;
+				const species = this.gtt.getFormatSpecies(id);
+				return !species.prevo && species.nfe;
+			});
+		}
+
+		if (this.gtt.format.listcg) {
+			results = results.filter(([type, id]) => type === 'pokemon' && !this.gtt.getFormatSpecies(id).isNonstandard);
 		}
 
 		// 35 Moves formats should come with customNumCol.
-		if(this.gtt.format.moves) {
+		if (this.gtt.format.moves) {
 			results = results
 			.filter(([type, id]) => type === 'pokemon' && !['CAP', 'Custom'].includes(this.gtt.getFormatSpecies(id).isNonstandard as any))
 			.sort(([type1, id1], [type2, id2]) => (this.gtt.format.customNumCol![id1 as ID] ?? 0) - (this.gtt.format.customNumCol![id2 as ID] ?? 0))
 			.reverse();
+		}
+
+		if (this.gtt.format.sortevo) {
+			const fe: SearchRow[] = [];
+			const nfe: SearchRow[] = [['header', 'NFE']];
+			const lc: SearchRow[] = [['header', 'LC']];
+			for (const row of results) {
+				if (row[0] !== 'pokemon') continue;
+				const species = this.gtt.getFormatSpecies(row[1]);
+				if (!species.nfe) fe.push(row);
+				else if (species.prevo) nfe.push(row);
+				else lc.push(row);
+			}
+			results = fe.concat(nfe, lc);
 		}
 
 		return results;
@@ -1089,7 +1225,7 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 				if (!Dex.hasAbility(species, value)) return false;
 				break;
 			case 'move':
-				if (!this.canLearn(species.id, value as ID)) return false;
+				if (!this.canLearn(species.id, toID(value))) return false;
 			}
 		}
 		return true;
@@ -1315,6 +1451,10 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 		return results;
 	}
 	private moveIsNotUseless(id: ID, species: Dex.Species, moves: string[], set: Dex.PokemonSet | null): boolean {
+		if (this.gtt.format.overrideMoveData?.[id]?.custom) {
+			return true;
+		}
+
 		const dex = this.gtt.dex;
 
 		let abilityid: ID = set ? toID(set.ability) : '' as ID;
@@ -1719,6 +1859,23 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 
 		moves.sort();
 		sketchMoves.sort();
+
+		if (this.gtt.format.overrideMoveData) {
+			for (const movesArray of [moves, sketchMoves]) {
+				const top: string[] = [];
+				const bottom: string[] = [];
+				for (const id of movesArray) {
+					if (this.gtt.format.overrideMoveData[id]?.custom) {
+						top.push(id);
+					}
+					else {
+						bottom.push(id);
+					}
+				}
+				if (movesArray === moves) moves = top.concat(bottom);
+				else if (movesArray === sketchMoves) sketchMoves = top.concat(bottom);
+			}
+		}
 
 		let usableMoves: SearchRow[] = [];
 		let uselessMoves: SearchRow[] = [];

@@ -314,8 +314,14 @@
 	z-index: 1;
 }
 
-.teameditor .details {
-	margin: 3px 0 12px;
+.team-resources {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+}
+.team-resources .details {
+	width: fit-content;
+	margin: 20px 0 12px;
 }
 
 .teameditor {

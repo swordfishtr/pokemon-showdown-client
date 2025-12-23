@@ -81,7 +81,6 @@ class TeamEditorState extends PSModel {
 		return index;
 	}
 	updatePrependResults() {
-		// TODO: make gtt.getFormatX return with exists = true
 		let value = '';
 		if(!this.innerFocus) return value;
 		const set = this.sets[this.innerFocus.setIndex];
@@ -192,9 +191,8 @@ class TeamEditorState extends PSModel {
 			return;
 		}
 		const species = this.gtt.getFormatSpecies(set.species);
-		const abilities = Object.values(species.abilities);
-		// requiredAbility would go here.
-		if(abilities.length === 1) set.ability = abilities[0];
+		// requiredAbility check would go here.
+		set.ability = Object.values(species.abilities)[0];
 	}
 	setDefaultItem(set: Dex.PokemonSet) {
 		if(this.gtt.dex.gen < 2 || this.gtt.format.mod === 'gen7letsgo') {
@@ -640,7 +638,7 @@ class TeamEditorState extends PSModel {
 }
 
 export class TeamEditor extends preact.Component<{
-	team: Team, onChange?: () => void, resources?: preact.ComponentChildren,
+	team: Team, onChange?: () => void,
 }> {
 	wizard = true;
 	editor = new TeamEditorState(this.props.team);
@@ -738,6 +736,72 @@ export class TeamEditor extends preact.Component<{
 			</div>
 		);
 	}
+	renderResources() {
+		if (this.editor.gtt.format.name.includes('] ND 35 Pokes [')) {
+			// It's a main 35 Pokes meta
+			const monthMap: Record<string, string> = {
+				'jan': 'january',
+				'feb': 'february',
+				'mar': 'march',
+				'apr': 'april',
+				'may': 'may',
+				'jun': 'june',
+				'jul': 'july',
+				'aug': 'august',
+				'sep': 'september',
+				'oct': 'october',
+				'nov': 'november',
+				'dec': 'december',
+			};
+			const month = this.editor.gtt.formatid.slice(13, 16);
+			const year = this.editor.gtt.formatid.slice(16);
+			const urlWiki = `https://sites.google.com/view/35pokeswiki/months/${monthMap[month]}-${year}`;
+			const urlSmogon = 'https://www.smogon.com/forums/threads/35-pokes-december-2025.3749375/post-10234222';
+			return (
+				<div>
+					<summary><strong>
+						Teambuilding resources for:<br />
+						{this.editor.gtt.format.name}
+					</strong></summary>
+					<p><a href={urlWiki} target="_blank">35 Pokes Wiki Page</a></p>
+					<p><a href={urlSmogon} target="_blank">Smogon Resources Post</a></p>
+				</div>
+			);
+		}
+		if (this.editor.gtt.formatid.includes('35pokesperfect')) {
+			const index = this.editor.gtt.formatid.indexOf('35pokesperfect');
+			const meta = this.editor.gtt.formatid.slice(index + 14);
+			const urlWiki = `https://sites.google.com/view/35pokeswiki/35-info/subtiers/35-perfect/${meta}`;
+			return (
+				<div>
+					<summary><strong>
+						Teambuilding resources for:<br />
+						{this.editor.gtt.format.name}
+					</strong></summary>
+					<p><a href={urlWiki} target="_blank">35 Pokes Wiki Page</a></p>
+				</div>
+			);
+		}
+		return null;
+	}
+	uploadPokepaste = (event: Event) => {
+		event.preventDefault();
+		event.stopPropagation();
+		if (!this.editor.sets.length) {
+			PS.alert('Add a Pokémon to your team before uploading it!');
+			return;
+		}
+		const form = (event.currentTarget as HTMLButtonElement).parentElement as HTMLFormElement;
+		const title = form.children.namedItem('title') as HTMLInputElement;
+		const paste = form.children.namedItem('paste') as HTMLInputElement;
+		const author = form.children.namedItem('author') as HTMLInputElement;
+		const notes = form.children.namedItem('notes') as HTMLInputElement;
+		title.value = this.props.team.name;
+		paste.value = this.editor.export(true);
+		author.value = PS.user.name;
+		notes.value = `Format: ${this.props.team.format}`;
+		form.submit();
+	};
 	override render() {
 		if (this.props.team.format !== this.editor.search.gtt.formatid) {
 			this.editor.setFormat(this.props.team.format);
@@ -756,14 +820,26 @@ export class TeamEditor extends preact.Component<{
 				{this.wizard ? (
 					<TeamWizard editor={this.editor} onChange={this.props.onChange} onUpdate={this.forceUpdateBound} />
 				) : (
-					<TeamTextbox />
+					<TeamTextbox editor={this.editor} onChange={this.props.onChange} onUpdate={this.forceUpdateBound} />
 				)}
 				{!this.editor.innerFocus && <>
 					{this.props.children}
+					<br /><hr /><br />
 					<div class="team-resources">
-						<br /><hr /><br />
-						{this.renderDefensiveCoverage()}
-						{this.props.resources}
+						<div>
+							<form method="post" action="https://pokepast.es/create" target="_blank">
+								<input type="hidden" name="title" />
+								<input type="hidden" name="paste" />
+								<input type="hidden" name="author" />
+								<input type="hidden" name="notes" />
+								<button class="button" onClick={this.uploadPokepaste}>
+									<i class="fa fa-upload"></i> Upload to PokePaste
+								</button>
+							</form>
+							<br />
+							{this.renderDefensiveCoverage()}
+						</div>
+						{this.renderResources()}
 					</div>
 				</>}
 			</div>
@@ -774,9 +850,126 @@ export class TeamEditor extends preact.Component<{
 	}
 }
 
-class TeamTextbox extends preact.Component<{}> {
-	render() {
-		return 'Work in progress!';
+class TeamTextbox extends preact.Component<{
+	editor: TeamEditorState, onChange?: () => void, onUpdate: (callback?: () => void) => void,
+}> {
+	sets = structuredClone(this.props.editor.sets);
+	unsavedChanges = false;
+
+	row: JSX.Element | null = null;
+	message: JSX.Element | null = null;
+	fetching = false;
+
+	textbox: HTMLTextAreaElement = null!;
+	heightTester: HTMLTextAreaElement = null!;
+
+	getHeight() {
+		this.heightTester.value = this.textbox.value;
+		return this.heightTester.scrollHeight;
+	}
+	updateHeight() {
+		this.textbox.style.height = `${this.getHeight() + 100}px`;
+	}
+
+	save = () => {
+		const { editor } = this.props;
+		this.sets = Teams.import(this.textbox.value);
+		editor.sets = structuredClone(this.sets);
+		editor.save();
+		this.unsavedChanges = false;
+		this.message = null;
+		this.props.onChange?.();
+		this.props.onUpdate?.();
+	};
+	/** Export to OS clipboard */
+	copy = async () => {
+		const { editor } = this.props;
+		await navigator.clipboard.writeText(this.textbox.value.trim());
+	}
+	input = () => {
+		this.tryPokepaste(this.textbox.value);
+		this.unsavedChanges = true;
+		this.updateHeight();
+		this.forceUpdate();
+	};
+	updateRow() {
+		// TODO: cursor set focus detection
+		this.row = null;
+	}
+	tryPokepaste(text: string) {
+		const { editor } = this.props;
+		const pokepaste = /https?:\/\/pokepast.es\/([a-z0-9]+)\/?/.exec(text)?.[1];
+		if (pokepaste) {
+			this.fetching = true;
+			Net(`https://pokepast.es/${pokepaste}/json`).get()
+			.then(json => {
+				const paste = JSON.parse(json);
+				const pasteTxt: string = paste.paste.replace(/\r\n/g, '\n');
+				const notes: string = paste.notes;
+				if (notes.startsWith('Format: ')) {
+					const formatid = toID(notes.slice(8));
+					editor.setFormat(formatid);
+				}
+				const title: string = paste.title;
+				if (title && !title.startsWith('Untitled')) {
+					editor.team.name = title.replace(/[|\\/]/g, '');
+				}
+				editor.import(pasteTxt);
+				this.textbox.value = editor.export(true);
+				this.updateHeight();
+				this.sets = structuredClone(editor.sets);
+				this.unsavedChanges = false;
+				this.message = (
+					<span>Successfully imported pokepaste!</span>
+				);
+				this.fetching = false;
+				this.props.onChange?.();
+				this.props.onUpdate?.();
+				this.forceUpdate();
+			})
+			.catch((error) => {
+				this.message = (
+					<span>Pokepaste import failed: {error?.message}</span>
+				);
+				this.fetching = false;
+				this.forceUpdate();
+			});
+		}
+	}
+	override componentDidMount() {
+		const [heightTester, textbox] = this.base!.getElementsByClassName('teamtextbox');
+		this.textbox = textbox as HTMLTextAreaElement;
+		this.heightTester = heightTester as HTMLTextAreaElement;
+
+		const initialText = this.props.editor.export(true);
+		this.textbox.value = initialText;
+		this.updateHeight();
+	}
+	override componentWillUnmount() {
+		this.textbox = null!;
+		this.heightTester = null!;
+	}
+	override render() {
+		window.textbox = this;
+		return (
+			<div class="teameditor-text">
+				<p>
+					<button class="button" onClick={this.save}>{this.unsavedChanges ? 'Save (Unsaved changes)' : 'Save'}</button>
+					{} {this.message}
+					<button class="button" onClick={this.copy} style={{ float: 'right' }}>Copy</button>
+				</p>
+				<textarea
+					key={0} class="textbox teamtextbox heighttester" tabIndex={-1} aria-hidden
+					style={`padding-left:${PSView.narrowMode ? '50px' : '100px'};visibility:hidden;left:-15px`}
+				/>
+				<textarea
+					key={1} class="textbox teamtextbox" disabled={this.fetching}
+					onInput={this.input}
+					placeholder="Paste exported team or pokepaste URL here"
+				/>
+				{this.row}
+			</div>
+		);
 	}
 }
 
@@ -1590,6 +1783,7 @@ class TeamWizard extends preact.Component<{
 	editor: TeamEditorState, onChange?: () => void, onUpdate: (callback?: () => void) => void,
 }> {
 	readonly PREFIX_SEARCHBOX = 'innerfocus-searchbox-';
+	readonly exportStates: boolean[] = [];
 	constructor() {
 		super(...arguments);
 		window.wizard = this;
@@ -1725,6 +1919,20 @@ class TeamWizard extends preact.Component<{
 		this.copySet(i, false);
 		ev.preventDefault();
 	};
+	/** Export to OS clipboard */
+	handleExportSet = async (ev: Event) => {
+		const target = ev.currentTarget as HTMLButtonElement;
+		const i = parseInt(target.value);
+		const { editor } = this.props;
+		try {
+			await navigator.clipboard.writeText(Teams.exportSet(editor.sets[i], editor.gtt.dex, false).trim());
+			this.exportStates[i] = true;
+		}
+		catch {
+			this.exportStates[i] = false;
+		}
+		this.forceUpdate();
+	}
 	handleCutSet = (ev: Event) => {
 		const target = ev.currentTarget as HTMLButtonElement;
 		const i = parseInt(target.value);
@@ -1739,6 +1947,16 @@ class TeamWizard extends preact.Component<{
 		while (set.moves.length < 4) set.moves.push('');
 		const overfull = set.moves.length > 4 ? ' overfull' : '';
 		const readOnlyClass = editor.readonly ? ' message-error' : '';
+		let exportStateClass = '';
+		let exportStateText = 'Export';
+		if (this.exportStates[i] === true) {
+			exportStateClass = ' success';
+			exportStateText = 'Exported!';
+		}
+		else if (this.exportStates[i] === false) {
+			exportStateClass = ' failure';
+			exportStateText = 'Failed!';
+		}
 
 		const cur = (t: SelectionType) => (
 			editor.readonly || (editor.innerFocus?.type === t && editor.innerFocus.setIndex === i) ? ' cur' : ''
@@ -1748,6 +1966,9 @@ class TeamWizard extends preact.Component<{
 			<div style="text-align:right">
 				<button class="option" onClick={this.handleCopySet} value={i}>
 					<i class="fa fa-copy" aria-hidden></i> Copy
+				</button> {}
+				<button class={`option${exportStateClass}`} onClick={this.handleExportSet} value={i}>
+					<i class="fa fa-upload" aria-hidden></i> {exportStateText}
 				</button> {}
 				<button class={`option${readOnlyClass}`} onClick={this.handleCutSet} value={i}>
 					<i class="fa fa-cut" aria-hidden></i> Cut
@@ -1846,13 +2067,6 @@ class TeamWizard extends preact.Component<{
 		this.props.onChange?.();
 		this.forceUpdate();
 	};
-	// clearSearchBox() {
-	// 	const searchBox = this.getSearchBox();
-	// 	if (searchBox) {
-	// 		searchBox.value = '';
-	// 		if (!TeamEditor.probablyMobile()) searchBox.focus();
-	// 	}
-	// }
 	selectResult = (type: string | null, name: string, reverse?: boolean) => {
 		const { editor } = this.props;
 		if(!editor.innerFocus) return;
@@ -2159,6 +2373,7 @@ class TeamWizard extends preact.Component<{
 
 	changeFocus(input: Partial<TeamEditorState['innerFocus']>) {
 		const { editor } = this.props;
+		this.exportStates.length = 0;
 		if(!input) {
 			editor.innerFocus = null;
 			this.props.onUpdate();

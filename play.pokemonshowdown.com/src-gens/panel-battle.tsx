@@ -395,10 +395,8 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 			id: room.id as any,
 			$frame: $elem.find('.battle'),
 			$logFrame: $elem.find('.battle-log'),
-			log: room.backlog?.map(args => '|' + args.join('|')),
 		}));
 		const scene = battle.scene as BattleScene;
-		room.backlog = null;
 		room.log ||= scene.log;
 		room.log.getHighlight = room.handleHighlight;
 		scene.tooltips.listen($elem.find('.battle-controls-container'));

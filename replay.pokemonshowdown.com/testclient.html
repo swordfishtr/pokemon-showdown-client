@@ -135,25 +135,31 @@
 		document.head.appendChild(scriptEl);
 	}
 </script>
+<script>
+	// CommonJS compat hack
+	window.exports = window;
+	window.require = () => window;
+</script>
 
-<script nomodule src="portal/play.pokemonshowdown.com/js/lib/ps-polyfill.js"></script>
-<script src="portal/play.pokemonshowdown.com/js/lib/preact.min.js"></script>
+<script nomodule src="portal/play.pokemonshowdown.com/js-gens/lib/ps-polyfill.js"></script>
+<script src="portal/play.pokemonshowdown.com/js-gens/lib/preact.min.js"></script>
 
 <script src="portal/play.pokemonshowdown.com/config/config.js"></script>
-<script src="portal/play.pokemonshowdown.com/js/lib/jquery-1.11.0.min.js"></script>
-<script src="portal/play.pokemonshowdown.com/js/lib/html-sanitizer-minified.js"></script>
-<script src="portal/play.pokemonshowdown.com/js/battle-sound.js"></script>
-<script src="portal/play.pokemonshowdown.com/js/battledata.js"></script>
+<script src="portal/play.pokemonshowdown.com/js-gens/lib/jquery-1.11.0.min.js"></script>
+<script src="portal/play.pokemonshowdown.com/js-gens/lib/html-sanitizer-minified.js"></script>
+<script src="portal/play.pokemonshowdown.com/js-gens/battle-sound.js"></script>
+<script src="portal/play.pokemonshowdown.com/js-gens/battledata.js"></script>
 <script src="portal/play.pokemonshowdown.com/data/pokedex-mini.js"></script>
 <script src="portal/play.pokemonshowdown.com/data/pokedex-mini-bw.js"></script>
-<script src="portal/play.pokemonshowdown.com/data/graphics.js"></script>
+<script src="portal/play.pokemonshowdown.com/data/graphics-gens.js"></script>
 <script src="portal/play.pokemonshowdown.com/data/pokedex.js"></script>
 <script src="portal/play.pokemonshowdown.com/data/moves.js"></script>
 <script src="portal/play.pokemonshowdown.com/data/abilities.js"></script>
 <script src="portal/play.pokemonshowdown.com/data/items.js"></script>
-<script src="portal/play.pokemonshowdown.com/data/teambuilder-tables.js"></script>
-<script src="portal/play.pokemonshowdown.com/js/battle-tooltips.js"></script>
-<script src="portal/play.pokemonshowdown.com/js/battle.js"></script>
+<script src="portal/play.pokemonshowdown.com/data/teambuilder-tables-gens.js"></script>
+<script src="portal/play.pokemonshowdown.com/js-gens/battle-dex-search.js"></script>
+<script src="portal/play.pokemonshowdown.com/js-gens/battle-tooltips.js"></script>
+<script src="portal/play.pokemonshowdown.com/js-gens/battle.js"></script>
 
 <script src="portal/replay.pokemonshowdown.com/js/utils.js"></script>
 

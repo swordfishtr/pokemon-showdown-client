@@ -1099,7 +1099,7 @@ export class Battle {
 	myAllyPokemon: ServerPokemon[] | null = null;
 	lastMove = '';
 
-	readonly gtt = new GTTIndex({ throwInvalid: true });
+	readonly gtt = new GTTIndex();
 	teamPreviewCount = 0;
 	speciesClause = false;
 	gameType: 'singles' | 'doubles' | 'triples' | 'multi' | 'freeforall' | 'rotation' = 'singles';
@@ -3914,8 +3914,7 @@ export class Battle {
 
 		let interruptionCount: number;
 		do {
-			// modified in this.run() but idk how to tell TS that
-			this.waitForAnimations = true as this['waitForAnimations'];
+			this.waitForAnimations = true;
 			if (this.currentStep >= this.stepQueue.length) {
 				this.atQueueEnd = true;
 				if (!this.ended && this.isReplay) this.prematureEnd();
