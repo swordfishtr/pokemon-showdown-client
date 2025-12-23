@@ -81,7 +81,6 @@ class TeamEditorState extends PSModel {
 		return index;
 	}
 	updatePrependResults() {
-		// TODO: make gtt.getFormatX return with exists = true
 		let value = '';
 		if(!this.innerFocus) return value;
 		const set = this.sets[this.innerFocus.setIndex];
@@ -192,9 +191,8 @@ class TeamEditorState extends PSModel {
 			return;
 		}
 		const species = this.gtt.getFormatSpecies(set.species);
-		const abilities = Object.values(species.abilities);
-		// requiredAbility would go here.
-		if(abilities.length === 1) set.ability = abilities[0];
+		// requiredAbility check would go here.
+		set.ability = Object.values(species.abilities)[0];
 	}
 	setDefaultItem(set: Dex.PokemonSet) {
 		if(this.gtt.dex.gen < 2 || this.gtt.format.mod === 'gen7letsgo') {
@@ -2069,13 +2067,6 @@ class TeamWizard extends preact.Component<{
 		this.props.onChange?.();
 		this.forceUpdate();
 	};
-	// clearSearchBox() {
-	// 	const searchBox = this.getSearchBox();
-	// 	if (searchBox) {
-	// 		searchBox.value = '';
-	// 		if (!TeamEditor.probablyMobile()) searchBox.focus();
-	// 	}
-	// }
 	selectResult = (type: string | null, name: string, reverse?: boolean) => {
 		const { editor } = this.props;
 		if(!editor.innerFocus) return;
