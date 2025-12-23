@@ -751,14 +751,26 @@ const check = {
 	listCG(id) {
 		return [
 			'gen9vgcuu',
-			'gen9vgcuubo3'
+			'gen9vgcuubo3',
+		].includes(id);
+	},
+	listNoMythicals(id) {
+		return [
+			'gen9vgcuu',
+			'gen9vgcuubo3',
+		].includes(id);
+	},
+	listNoLegends(id) {
+		return [
+			'gen9vgcuu',
+			'gen9vgcuubo3',
 		].includes(id);
 	},
 	// Sort pokemon results by evolution stage
 	sortEvo(id) {
 		return [
 			'gen9vgcuu',
-			'gen9vgcuubo3'
+			'gen9vgcuubo3',
 		].includes(id);
 	},
 };
@@ -805,6 +817,10 @@ for(const format of Dex.formats.all()) {
 	if(check.listLC(format.id)) gtt.listlc = 1;
 
 	if(check.listCG(format.id)) gtt.listcg = 1;
+
+	if(check.listNoMythicals(format.id)) gtt.listnomythicals = 1;
+
+	if(check.listNoLegends(format.id)) gtt.listnolegends = 1;
 
 	if(check.sortEvo(format.id)) gtt.sortevo = 1;
 
