@@ -1123,6 +1123,7 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 			}
 		}
 		for (let id in BattlePokedex) {
+			if (BattlePokedex[id].battleOnly) continue;
 			switch (id) {
 			case 'chikorita':
 				results.push(['header', "Generation 1"]);
