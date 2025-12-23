@@ -825,6 +825,25 @@ for(const format of Dex.formats.all()) {
 		);
 	}
 
+	if([
+		'gen9vgcuu',
+		'gen9vgcuubo3',
+		'gen9ndvgclc',
+		'gen9ndvgclcbo3',
+	].includes(format.id)) {
+		gtt.blacklist = Object.fromEntries(
+			[...ruleTable.keys()]
+			.flatMap((rule) =>
+				// This works for custom Pokemon, but for multi-formes you have to spell out all of them.
+				rule.startsWith('-pokemon:') ? rule.slice(9) :
+				rule.startsWith('-basepokemon:') ? Dex.species.get(rule.slice(13)).formeOrder?.map(toID) :
+				null
+			)
+			.filter((x) => x)
+			.map((id) => [id, 1])
+		);
+	}
+
 	if(format.id.includes('35moves') || format.id === 'gen9nd35pokesperfectz1') {
 		const validator = new TeamValidator(format);
 
