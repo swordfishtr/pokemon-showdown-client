@@ -60,6 +60,7 @@ interface GTTFormat {
 
 	listlc?: 1,
 	listcg?: 1,
+	sortevo?: 1,
 
 	whitelist?: { [species: ID]: 1 },
 	blacklist?: { [species: ID]: 1 },
@@ -1162,11 +1163,11 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 		let results = this.getDefaultResults();
 
 		if (this.gtt.format.whitelist) {
-			results = results.filter(([type, id]) => (id in this.gtt.format.whitelist!));
+			results = results.filter(([type, id]) => type === 'pokemon' && (id in this.gtt.format.whitelist!));
 		}
 
 		if (this.gtt.format.blacklist) {
-			results = results.filter(([type, id]) => !(id in this.gtt.format.blacklist!));
+			results = results.filter(([type, id]) => type === 'pokemon' && !(id in this.gtt.format.blacklist!));
 		}
 
 		if (this.gtt.format.listlc) {
@@ -1187,6 +1188,20 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 			.filter(([type, id]) => type === 'pokemon' && !['CAP', 'Custom'].includes(this.gtt.getFormatSpecies(id).isNonstandard as any))
 			.sort(([type1, id1], [type2, id2]) => (this.gtt.format.customNumCol![id1 as ID] ?? 0) - (this.gtt.format.customNumCol![id2 as ID] ?? 0))
 			.reverse();
+		}
+
+		if (this.gtt.format.sortevo) {
+			const fe: SearchRow[] = [];
+			const nfe: SearchRow[] = [['header', 'NFE']];
+			const lc: SearchRow[] = [['header', 'LC']];
+			for (const row of results) {
+				if (row[0] !== 'pokemon') continue;
+				const species = this.gtt.getFormatSpecies(row[1]);
+				if (!species.nfe) fe.push(row);
+				else if (species.prevo) nfe.push(row);
+				else lc.push(row);
+			}
+			results = fe.concat(nfe, lc);
 		}
 
 		return results;

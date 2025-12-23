@@ -754,6 +754,13 @@ const check = {
 			'gen9vgcuubo3'
 		].includes(id);
 	},
+	// Sort pokemon results by evolution stage
+	sortEvo(id) {
+		return [
+			'gen9vgcuu',
+			'gen9vgcuubo3'
+		].includes(id);
+	},
 };
 
 // region COMMON PROPS
@@ -798,6 +805,8 @@ for(const format of Dex.formats.all()) {
 	if(check.listLC(format.id)) gtt.listlc = 1;
 
 	if(check.listCG(format.id)) gtt.listcg = 1;
+
+	if(check.sortEvo(format.id)) gtt.sortevo = 1;
 
 	if([
 		'-pokemontag:ndlc', '-pokemontag:ndnfe', '-pokemontag:ndru', '-pokemontag:ndrubl', '-pokemontag:nduu',
