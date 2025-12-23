@@ -680,6 +680,7 @@ const check = {
 			'35moves',
 			'35factory',
 			'1v1',
+			'4v4',
 		];
 		for(const x of formatsStartingWithNumber) {
 			const index = id.indexOf(x);
@@ -750,27 +751,27 @@ const check = {
 	// Filter non current gen pokemon from results
 	listCG(id) {
 		return [
-			'gen9vgcuu',
-			'gen9vgcuubo3',
+			'gen94v4duu',
+			'gen94v4duubo3',
 		].includes(id);
 	},
 	listNoMythicals(id) {
 		return [
-			'gen9vgcuu',
-			'gen9vgcuubo3',
+			'gen94v4duu',
+			'gen94v4duubo3',
 		].includes(id);
 	},
 	listNoLegends(id) {
 		return [
-			'gen9vgcuu',
-			'gen9vgcuubo3',
+			'gen94v4duu',
+			'gen94v4duubo3',
 		].includes(id);
 	},
 	// Sort pokemon results by evolution stage
 	sortEvo(id) {
 		return [
-			'gen9vgcuu',
-			'gen9vgcuubo3',
+			'gen94v4duu',
+			'gen94v4duubo3',
 		].includes(id);
 	},
 };
@@ -842,8 +843,8 @@ for(const format of Dex.formats.all()) {
 	}
 
 	if([
-		'gen9vgcuu',
-		'gen9vgcuubo3',
+		'gen94v4duu',
+		'gen94v4duubo3',
 		'gen9ndvgclc',
 		'gen9ndvgclcbo3',
 	].includes(format.id)) {
