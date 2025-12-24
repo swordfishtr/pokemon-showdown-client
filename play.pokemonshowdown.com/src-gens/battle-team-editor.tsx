@@ -76,6 +76,29 @@ class TeamEditorState extends PSModel {
 	}
 	getFirstSearchResultIndex(type: SearchType) {
 		if(!this.search.results) return 0;
+		
+		// Fixing the search bug hoepfully......,
+		if (this.search.prependResults && this.search.prependResults.length > 0) {
+			const prepended = this.search.prependResults[0];
+			const prependedType = prepended[0];
+			const prependedId = prepended[1];
+			const searchQuery = this.search.query || '';
+			
+			
+			if (prependedType === type && searchQuery && toID(searchQuery) !== prependedId) {
+				let foundPrepend = false;
+				for (let i = 0; i < this.search.results.length; i++) {
+					if (this.search.results[i][0] === type) {
+						if (!foundPrepend) {
+							foundPrepend = true;
+							continue;
+						}
+						return i;
+					}
+				}
+			}
+		}
+		
 		const index = this.search.results.findIndex(([cur]) => cur === type);
 		if(index < 0) return 0;
 		return index;
