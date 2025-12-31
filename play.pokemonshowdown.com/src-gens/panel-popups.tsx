@@ -1674,22 +1674,26 @@ class PopupPanel extends PSRoomPanel<PopupRoom> {
 		const type = (room.args?.type || (typeof value === 'string' ? 'text' : null)) as string | null;
 		const message = room.args?.message;
 		return <PSPanelWrapper room={room} width={room.args?.width as number || 480}>
-			<form class="pad" onSubmit={this.handleSubmit}>
-				{message && <p
-					style="white-space:pre-wrap;word-wrap:break-word"
-					dangerouslySetInnerHTML={{ __html: this.parseMessage(message as string || '') }}
-				></p>}
-				{!!type && <p><input name="value" type={type} class="textbox autofocus" style="width:100%;box-sizing:border-box" /></p>}
-				<p class="buttonbar">
-					<button class={`button${!type ? ' autofocus' : ''}`} type="submit" style="min-width:50px">
-						<strong>{okButton}</strong>
-					</button> {}
-					{otherButtons} {}
-					{!!cancelButton && <button class="button" data-cmd="/close" type="button">
-						{cancelButton}
-					</button>}
-				</p>
-			</form>
+			{room.args?.jsx ? (
+				room.args.jsx
+			) : (
+				<form class="pad" onSubmit={this.handleSubmit}>
+					{message && <p
+						style="white-space:pre-wrap;word-wrap:break-word"
+						dangerouslySetInnerHTML={{ __html: this.parseMessage(message as string || '') }}
+					></p>}
+					{!!type && <p><input name="value" type={type} class="textbox autofocus" style="width:100%;box-sizing:border-box" /></p>}
+					<p class="buttonbar">
+						<button class={`button${!type ? ' autofocus' : ''}`} type="submit" style="min-width:50px">
+							<strong>{okButton}</strong>
+						</button> {}
+						{otherButtons} {}
+						{!!cancelButton && <button class="button" data-cmd="/close" type="button">
+							{cancelButton}
+						</button>}
+					</p>
+				</form>
+			)}
 		</PSPanelWrapper>;
 	}
 }
