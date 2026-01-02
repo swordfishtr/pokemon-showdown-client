@@ -1874,14 +1874,14 @@ class TeamWizard extends preact.Component<{
 	}
 	populateSearchBox() {
 		const { editor } = this.props;
-		if(!editor.innerFocus) return;
-		switch(editor.innerFocus.type) {
+		if (!editor.innerFocus) return;
+		switch (editor.innerFocus.type) {
 			case 'move': {
-				for(let i = 0; i < 4; i++) {
+				for (let i = 0; i < 4; i++) {
 					const searchbox = this.getSearchBox(i);
-					if(!searchbox) continue;
+					if (!searchbox) continue;
 					searchbox.value = editor.sets[editor.innerFocus.setIndex]?.moves[i] ?? '';
-					if(i === editor.innerFocus.moveSlot) {
+					if (!TeamEditor.probablyMobile() && i === editor.innerFocus.moveSlot) {
 						searchbox.focus();
 						searchbox.select();
 					}
@@ -1890,26 +1890,32 @@ class TeamWizard extends preact.Component<{
 			}
 			case 'ability': {
 				const searchbox = this.getSearchBox(0);
-				if(!searchbox) return;
+				if (!searchbox) return;
 				searchbox.value = editor.sets[editor.innerFocus.setIndex]?.ability ?? '';
-				searchbox.focus();
-				searchbox.select();
+				if (!TeamEditor.probablyMobile()) {
+					searchbox.focus();
+					searchbox.select();
+				}
 				return;
 			}
 			case 'item': {
 				const searchbox = this.getSearchBox(0);
-				if(!searchbox) return;
+				if (!searchbox) return;
 				searchbox.value = editor.sets[editor.innerFocus.setIndex]?.item ?? '';
-				searchbox.focus();
-				searchbox.select();
+				if (!TeamEditor.probablyMobile()) {
+					searchbox.focus();
+					searchbox.select();
+				}
 				return;
 			}
 			case 'pokemon': {
 				const searchbox = this.getSearchBox(0);
-				if(!searchbox) return;
+				if (!searchbox) return;
 				searchbox.value = editor.sets[editor.innerFocus.setIndex]?.species ?? '';
-				searchbox.focus();
-				searchbox.select();
+				if (!TeamEditor.probablyMobile()) {
+					searchbox.focus();
+					searchbox.select();
+				}
 				return;
 			}
 		}
@@ -2491,7 +2497,7 @@ class TeamWizard extends preact.Component<{
 	};
 	renderSetMiscButtons(i: number) {
 		const { editor } = this.props;
-		if(editor.readonly) return null;
+		if(editor.readonly || !editor.canAdd()) return null;
 		const pasteHere = !!TeamEditorState.clipboard.sets.length && (
 			<button class="button notifying" onClick={this.pasteSet} value={i}>
 				<i class="fa fa-clipboard" aria-hidden></i> Paste copy here
