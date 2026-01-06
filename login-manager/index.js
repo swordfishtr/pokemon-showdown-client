@@ -27,7 +27,12 @@ else if(window.top) {
 	console.log('Login manager mode: In iframe');
 
 	const opener = window.top;
-	const parent = 'https://generationssd.co.uk';
+	const allowedOrigins = [
+		'https://generationssd.co.uk',
+		'https://wip.generationssd.co.uk',
+	];
+	// This will throw if not changed before using opener.postMessage()
+	let origin = '';
 
 	const encoder = new TextEncoder();
 	const decoder = new TextDecoder();
@@ -169,9 +174,18 @@ else if(window.top) {
 	};
 
 	window.addEventListener('message', async (event) => {
-		if(event.origin !== parent) return;
 		const { data } = event;
 		if(typeof data !== 'object') return;
+
+		if('origin' in data) {
+			if(event.origin !== data.origin) return;
+			if(allowedOrigins.includes(data.origin)) {
+				origin = data.origin;
+			}
+			return;
+		}
+
+		if(event.origin !== origin) return;
 		// could also possibly validate (event.source as WindowProxy)
 
 		const { msgid, act } = data;
@@ -181,15 +195,15 @@ else if(window.top) {
 			const response = await actions[act](data);
 			if(!response) return;
 			response.msgid = msgid;
-			opener.postMessage(response, parent);
+			opener.postMessage(response, origin);
 		}
 		catch(error) {
-			opener.postMessage({ msgid, error }, parent);
+			opener.postMessage({ msgid, error }, origin);
 		}
 	});
 
 	// we are ready to go!
-	opener.postMessage({ msgid: 0 }, parent);
+	opener.postMessage({ msgid: 0 }, '*');
 
 	/**
 	 * 
