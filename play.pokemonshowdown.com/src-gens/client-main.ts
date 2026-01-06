@@ -2306,6 +2306,11 @@ export const PS = new class extends PSModel {
 			});
 		});
 	}
+	popupJSX(jsx: JSX.Element, parentElem?: HTMLElement) {
+		return new Promise(callback => {
+			this.join(`popup-${this.popups.length}` as RoomID, { parentElem, args: { jsx, callback } });
+		});
+	}
 	getPMRoom(userid: ID): ChatRoom {
 		const roomid = `dm-${userid}` as RoomID;
 		if (this.rooms[roomid]) return this.rooms[roomid] as ChatRoom;

@@ -223,10 +223,13 @@ export const LoginManager = new class {
 	count = 0;
 
 	/**
+	 * Initial handshake with login.generationssd.co.uk
 	 * Some websocket messages will come before the LoginManager iframe loads.
 	 * Await this if you don't want your request to be voided as a result of that.
 	 */
-	readonly ready = this.await(0);
+	readonly ready = this.await(0).then(() => {
+		this.window.postMessage({ origin: window.location.origin }, this.child);
+	});
 
 	/** Login Manager iframe window reference. */
 	readonly window = (() => {

@@ -7,7 +7,7 @@
  */
 
 import preact from "../js/lib/preact";
-import { PS, type Team } from "./client-main";
+import { PS, type RoomID, type Team } from "./client-main";
 import { Dex, toID, type ID, PSUtils } from "./battle-dex";
 import { Teams } from './battle-teams';
 import { DexSearch, type SearchRow, type SearchType } from "./battle-dex-search";
@@ -1874,14 +1874,14 @@ class TeamWizard extends preact.Component<{
 	}
 	populateSearchBox() {
 		const { editor } = this.props;
-		if(!editor.innerFocus) return;
-		switch(editor.innerFocus.type) {
+		if (!editor.innerFocus) return;
+		switch (editor.innerFocus.type) {
 			case 'move': {
-				for(let i = 0; i < 4; i++) {
+				for (let i = 0; i < 4; i++) {
 					const searchbox = this.getSearchBox(i);
-					if(!searchbox) continue;
+					if (!searchbox) continue;
 					searchbox.value = editor.sets[editor.innerFocus.setIndex]?.moves[i] ?? '';
-					if(i === editor.innerFocus.moveSlot) {
+					if (!TeamEditor.probablyMobile() && i === editor.innerFocus.moveSlot) {
 						searchbox.focus();
 						searchbox.select();
 					}
@@ -1890,26 +1890,32 @@ class TeamWizard extends preact.Component<{
 			}
 			case 'ability': {
 				const searchbox = this.getSearchBox(0);
-				if(!searchbox) return;
+				if (!searchbox) return;
 				searchbox.value = editor.sets[editor.innerFocus.setIndex]?.ability ?? '';
-				searchbox.focus();
-				searchbox.select();
+				if (!TeamEditor.probablyMobile()) {
+					searchbox.focus();
+					searchbox.select();
+				}
 				return;
 			}
 			case 'item': {
 				const searchbox = this.getSearchBox(0);
-				if(!searchbox) return;
+				if (!searchbox) return;
 				searchbox.value = editor.sets[editor.innerFocus.setIndex]?.item ?? '';
-				searchbox.focus();
-				searchbox.select();
+				if (!TeamEditor.probablyMobile()) {
+					searchbox.focus();
+					searchbox.select();
+				}
 				return;
 			}
 			case 'pokemon': {
 				const searchbox = this.getSearchBox(0);
-				if(!searchbox) return;
+				if (!searchbox) return;
 				searchbox.value = editor.sets[editor.innerFocus.setIndex]?.species ?? '';
-				searchbox.focus();
-				searchbox.select();
+				if (!TeamEditor.probablyMobile()) {
+					searchbox.focus();
+					searchbox.select();
+				}
 				return;
 			}
 		}
@@ -1955,14 +1961,49 @@ class TeamWizard extends preact.Component<{
 			this.exportStates[i] = false;
 		}
 		this.forceUpdate();
-	}
+	};
 	handleCutSet = (ev: Event) => {
 		const target = ev.currentTarget as HTMLButtonElement;
 		const i = parseInt(target.value);
 		if(Number.isNaN(i)) return;
 		this.copySet(i, true);
 		ev.preventDefault();
-	}
+	};
+	handleCutSetPopup = (ev: Event) => {
+		const target = ev.currentTarget as HTMLButtonElement;
+		const { editor } = this.props;
+		if (!editor.innerFocus) return;
+		const popupid = `popup-${PS.popups.length}` as RoomID;
+		const moveBtn = (i: number) => (<button class="option" onClick={() => {
+			PS.leave(popupid);
+			if (!editor.innerFocus) return;
+			const [set] = editor.sets.splice(editor.innerFocus.setIndex, 1);
+			if (i > editor.innerFocus.setIndex) i -= 1;
+			editor.sets.splice(i, 0, set);
+			editor.save();
+			editor.innerFocus.setIndex = i;
+			this.forceUpdate();
+		}}><i class="fa fa-arrow-right"></i> Move here</button>);
+		const picon = (set: Dex.PokemonSet, cur: boolean) => (<>
+			<span class="picon" style={Dex.getPokemonIcon(set)}></span>{}{set.species}
+		</>);
+		PS.popupJSX((
+			// for some reason, div.pad doesn't work with display:block style of ul.options
+			<div class="pad"><ul class="options" style={{ display: 'contents' }}>
+				{editor.sets.map((set, i) => {
+					const cur = editor.innerFocus!.setIndex === i;
+					return [
+						!cur && editor.innerFocus!.setIndex !== i - 1 &&
+						<li key={`b${i}`}>{moveBtn(i)}</li>,
+						<li key={`i${i}`} style={{ opacity: cur ? '.3' : '.6' }}>{picon(set, cur)}</li>,
+					];
+				})}
+				{editor.innerFocus!.setIndex !== editor.sets.length - 1 && moveBtn(editor.sets.length)}
+			</ul></div>
+		), target);
+		ev.preventDefault();
+		ev.stopPropagation();
+	};
 	renderSet(set: Dex.PokemonSet | undefined, i: number) {
 		const { editor } = this.props;
 		if (!set) return null;
@@ -1993,8 +2034,8 @@ class TeamWizard extends preact.Component<{
 				<button class={`option${exportStateClass}`} onClick={this.handleExportSet} value={i}>
 					<i class="fa fa-upload" aria-hidden></i> {exportStateText}
 				</button> {}
-				<button class={`option${readOnlyClass}`} onClick={this.handleCutSet} value={i}>
-					<i class="fa fa-cut" aria-hidden></i> Cut
+				<button class={`option${readOnlyClass}`} onClick={editor.innerFocus ? this.handleCutSetPopup : this.handleCutSet} value={i}>
+					<i class="fa fa-arrows" aria-hidden></i> Move
 				</button> {}
 				<button class={`option${readOnlyClass}`} onClick={this.handleDeleteSet} value={i}>
 					<i class="fa fa-trash" aria-hidden></i> Delete
@@ -2456,7 +2497,7 @@ class TeamWizard extends preact.Component<{
 	};
 	renderSetMiscButtons(i: number) {
 		const { editor } = this.props;
-		if(editor.readonly) return null;
+		if(editor.readonly || !editor.canAdd()) return null;
 		const pasteHere = !!TeamEditorState.clipboard.sets.length && (
 			<button class="button notifying" onClick={this.pasteSet} value={i}>
 				<i class="fa fa-clipboard" aria-hidden></i> Paste copy here

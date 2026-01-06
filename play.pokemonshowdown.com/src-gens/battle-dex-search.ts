@@ -60,6 +60,8 @@ interface GTTFormat {
 
 	listlc?: 1,
 	listcg?: 1,
+	listnomythicals?: 1,
+	listnolegends?: 1,
 	sortevo?: 1,
 
 	whitelist?: { [species: ID]: 1 },
@@ -1123,6 +1125,7 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 			}
 		}
 		for (let id in BattlePokedex) {
+			if (BattlePokedex[id].battleOnly) continue;
 			switch (id) {
 			case 'chikorita':
 				results.push(['header', "Generation 1"]);
@@ -1180,6 +1183,15 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 
 		if (this.gtt.format.listcg) {
 			results = results.filter(([type, id]) => type === 'pokemon' && !this.gtt.getFormatSpecies(id).isNonstandard);
+		}
+
+		if (this.gtt.format.listnomythicals) {
+			results = results.filter(([type, id]) => type === 'pokemon' &&
+			!this.gtt.getFormatSpecies(this.gtt.getFormatSpecies(id).baseSpecies).tags.includes('Mythical'));
+		}
+		if (this.gtt.format.listnolegends) {
+			results = results.filter(([type, id]) => type === 'pokemon' &&
+			!this.gtt.getFormatSpecies(this.gtt.getFormatSpecies(id).baseSpecies).tags.includes('Restricted Legendary'));
 		}
 
 		// 35 Moves formats should come with customNumCol.
