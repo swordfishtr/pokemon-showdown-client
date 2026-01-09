@@ -56,6 +56,7 @@ const sidemods = [
 const gensmods = [
 	'perfectb1',
 	'perfectb2',
+	'perfectb3',
 	'perfectc1',
 	'perfectc2',
 	'perfectf1',
@@ -793,6 +794,7 @@ for(const format of Dex.formats.all()) {
 	if([
 		'gen335pokesperfectb1',
 		'gen535pokesperfectb2',
+		'gen535pokesperfectb3',
 	].includes(format.id)) {
 		gtt.natdex = 'gen9';
 	}
