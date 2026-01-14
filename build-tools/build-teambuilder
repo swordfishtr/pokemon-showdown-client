@@ -37,10 +37,6 @@ const GensTeambuilderTable = {
 	build: (new Date()).toUTCString(),
 };
 
-for (const format of Dex.formats.all()) {
-	GensTeambuilderTable.formats[format.id] = {}
-}
-
 // region *** MODS ***
 
 const basemods = [];
@@ -668,34 +664,6 @@ for (const mod of sidemods) {
 	buildModOverrides(mod);
 }
 
-for (const mod of gensmods) {
-	// Assuming gens mods are used by 1 format only.
-	const format = Dex.formats.all().find((x) => x.id.includes(mod));
-
-	buildFormatOverrides(mod, format.id);
-
-	const gtt = GensTeambuilderTable.formats[format.id];
-	const learnsetDiff = (gtt.learnsetDiff = Dex.getLearnsetDiff(Dex.mod(mod), Dex.mod(gtt.mod)));
-	for(const diffType in learnsetDiff) {
-		for(const mon in learnsetDiff[diffType]) {
-			if(!(mon in gtt.whitelist)) {
-				delete learnsetDiff[diffType][mon];
-				continue;
-			}
-			learnsetDiff[diffType][mon] = processDiffMon(learnsetDiff[diffType][mon]);
-		}
-	}
-}
-
-// todo mapObjectValues?
-function processDiffMon(mon) {
-	const learnset = {};
-	for(const x in mon.learnset) {
-		learnset[x] = 1;
-	}
-	return learnset;
-}
-
 // endregion
 
 // endregion
@@ -815,7 +783,7 @@ for(const format of Dex.formats.all()) {
 
 	const ruleTable = dex.formats.getRuleTable(format);
 
-	const gtt = GensTeambuilderTable.formats[format.id];
+	const gtt = (GensTeambuilderTable.formats[format.id] ??= {});
 
 	gtt.name = format.name;
 
@@ -963,6 +931,34 @@ for(const format of Dex.formats.all()) {
 			}
 		}
 	}
+}
+
+for (const mod of gensmods) {
+	// Assuming gens mods are used by 1 format only.
+	const formatid = Object.keys(GensTeambuilderTable.formats).find((id) => id.includes(mod));
+
+	buildFormatOverrides(mod, formatid);
+
+	const gtt = GensTeambuilderTable.formats[formatid];
+	const learnsetDiff = (gtt.learnsetDiff = Dex.getLearnsetDiff(Dex.mod(mod), Dex.mod(gtt.mod)));
+	for(const diffType in learnsetDiff) {
+		for(const mon in learnsetDiff[diffType]) {
+			if(!(mon in gtt.whitelist)) {
+				delete learnsetDiff[diffType][mon];
+				continue;
+			}
+			learnsetDiff[diffType][mon] = processDiffMon(learnsetDiff[diffType][mon]);
+		}
+	}
+}
+
+// todo mapObjectValues?
+function processDiffMon(mon) {
+	const learnset = {};
+	for(const x in mon.learnset) {
+		learnset[x] = 1;
+	}
+	return learnset;
 }
 
 function isEmpty(obj) {
