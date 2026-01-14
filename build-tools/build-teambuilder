@@ -46,6 +46,7 @@ const basemods = [];
 	i++;
 }}
 
+/** Cartridge game mods */
 const sidemods = [
 	'gen3rs',
 	'gen5bw1',
@@ -53,14 +54,11 @@ const sidemods = [
 	'gen8bdsp',
 ];
 
+/** Mods with a mod folder */
 const gensmods = [
-	'perfectb1',
-	'perfectb2',
-	'perfectc1',
-	'perfectc2',
-	'perfectf1',
 	'regenerations1',
 ];
+
 //const testmod = 'perfectg1';
 
 for(const mod of [...basemods, ...sidemods]) {
@@ -488,7 +486,7 @@ for (const id in BDSPLearnsets) {
 
 // endregion
 
-// region OLD GENS OVERRIDE
+// region OLDGEN OVERRIDES
 
 const overrideSpeciesKeys = [
 	'abilities', 'baseSpecies', 'baseStats', 'cosmeticFormes', 'isNonstandard', 'name', 'requiredItems', 'types', 'unreleasedHidden',
@@ -580,7 +578,7 @@ basemods.slice(0, -1).forEach((gen, index) => {
 
 // endregion
 
-// region SIDE META OVERRIDE
+// region MOD OVERRIDES
 
 function buildOverrides(mod, gtt) {
 	const modDex = Dex.mod(mod);
@@ -662,7 +660,7 @@ function buildFormatOverrides(mod, format) {
 	return buildOverrides(mod, GensTeambuilderTable.formats[format]);
 }
 
-for (const mod of [...sidemods]) {
+for (const mod of sidemods) {
 	buildModOverrides(mod);
 }
 
@@ -776,12 +774,14 @@ const check = {
 	},
 };
 
-// region COMMON PROPS
+// region TABLE PROPS
 
 for(const format of Dex.formats.all()) {
 	console.log(`Building format ${format} ...`);
 
-	const ruleTable = Dex.formats.getRuleTable(format);
+	const dex = Dex.mod(format.validatorMod || format.mod);
+
+	const ruleTable = dex.formats.getRuleTable(format);
 
 	const gtt = (GensTeambuilderTable.formats[format.id] ??= {});
 
@@ -793,6 +793,7 @@ for(const format of Dex.formats.all()) {
 	if([
 		'gen335pokesperfectb1',
 		'gen535pokesperfectb2',
+		'gen535pokesperfectb3',
 	].includes(format.id)) {
 		gtt.natdex = 'gen9';
 	}
@@ -834,7 +835,7 @@ for(const format of Dex.formats.all()) {
 			.flatMap((rule) =>
 				// This works for custom Pokemon, but for multi-formes you have to spell out all of them.
 				rule.startsWith('+pokemon:') ? rule.slice(9) :
-				rule.startsWith('+basepokemon:') ? Dex.species.get(rule.slice(13)).formeOrder?.map(toID) :
+				rule.startsWith('+basepokemon:') ? dex.species.get(rule.slice(13)).formeOrder?.map(toID) :
 				null
 			)
 			.filter((x) => x)
@@ -853,7 +854,7 @@ for(const format of Dex.formats.all()) {
 			.flatMap((rule) =>
 				// This works for custom Pokemon, but for multi-formes you have to spell out all of them.
 				rule.startsWith('-pokemon:') ? rule.slice(9) :
-				rule.startsWith('-basepokemon:') ? Dex.species.get(rule.slice(13)).formeOrder?.map(toID) :
+				rule.startsWith('-basepokemon:') ? dex.species.get(rule.slice(13)).formeOrder?.map(toID) :
 				null
 			)
 			.filter((x) => x)
@@ -865,13 +866,13 @@ for(const format of Dex.formats.all()) {
 		const validator = new TeamValidator(format);
 
 		const blacklist = (gtt.blacklist ??= {});
-		for(const mon of Dex.species.all().filter((x) => x.natDexTier === 'AG')) {
+		for(const mon of dex.species.all().filter((x) => x.natDexTier === 'AG')) {
 			blacklist[mon.id] = 1;
 		}
 
 		const moves = (gtt.moves = {});
 		const customNumCol = (gtt.customNumCol = {});
-		for(const move of Dex.moves.all()) {
+		for(const move of dex.moves.all()) {
 			if(!validator.ruleTable.has(`+move:${move.id}`)) continue;
 			if(!move.realMove) {
 				moves[move.id] = 1;
@@ -881,7 +882,7 @@ for(const format of Dex.formats.all()) {
 				moves[toID(move.name)] = 1;
 				continue;
 			}
-			for(const mon of Dex.species.all()) {
+			for(const mon of dex.species.all()) {
 				if(validator.checkCanLearn(move, mon) === null) {
 					customNumCol[mon.id] ??= 0;
 					customNumCol[mon.id]++;
@@ -889,24 +890,51 @@ for(const format of Dex.formats.all()) {
 			}
 		}
 	}
-}
 
-// endregion
-
-// region GENS PROPS
-
-// todo mapObjectValues?
-function processDiffMon(mon) {
-	const learnset = {};
-	for(const x in mon.learnset) {
-		learnset[x] = 1;
+	/** Mods using hashtag rules */
+	if (!isEmpty(ruleTable.validatorOverrides)) {
+		for (const species in ruleTable.validatorOverrides) {
+			const speciesid = toID(species.split(':')[1]);
+			for (const effect in ruleTable.validatorOverrides[species]) {
+				const [effectType, effectid] = effect.split(':').map(toID);
+				if (effectType === 'move') {
+					const learnsetDiff = (gtt.learnsetDiff ??= {
+						additions: {},
+						removals: {},
+					});
+					if (ruleTable.validatorOverrides[species][effect]) {
+						learnsetDiff.additions[speciesid] ??= {};
+						learnsetDiff.additions[speciesid][effectid] = 1;
+					} else {
+						learnsetDiff.removals[speciesid] ??= {};
+						learnsetDiff.removals[speciesid][effectid] = 1;
+					}
+				} else {
+					const overrideSpeciesData = (gtt.overrideSpeciesData ??= {});
+					overrideSpeciesData[speciesid] ??= {};
+					overrideSpeciesData[speciesid].abilities ??= structuredClone(dex.species.get(speciesid).abilities);
+					if (ruleTable.validatorOverrides[species][effect]) {
+						let nextSlot = 1;
+						for (const slot in overrideSpeciesData[speciesid].abilities) {
+							const num = parseInt(slot.slice(1));
+							if (num >= nextSlot) nextSlot = num + 1;
+						}
+						overrideSpeciesData[speciesid].abilities[`E${nextSlot}`] = dex.abilities.get(effectid).name;
+					} else {
+						for (const slot in overrideSpeciesData[speciesid].abilities) {
+							if (toID(overrideSpeciesData[speciesid].abilities[slot]) === effectid) {
+								delete overrideSpeciesData[speciesid].abilities[slot];
+							}
+						}
+					}
+				}
+			}
+		}
 	}
-	return learnset;
 }
 
-for(const mod of gensmods) {
+for (const mod of gensmods) {
 	// Assuming gens mods are used by 1 format only.
-	//const formatid = mod === testmod ? 'gen9test' : Object.keys(GensTeambuilderTable.formats).find((id) => id.includes(mod));
 	const formatid = Object.keys(GensTeambuilderTable.formats).find((id) => id.includes(mod));
 
 	buildFormatOverrides(mod, formatid);
@@ -922,6 +950,22 @@ for(const mod of gensmods) {
 			learnsetDiff[diffType][mon] = processDiffMon(learnsetDiff[diffType][mon]);
 		}
 	}
+}
+
+// todo mapObjectValues?
+function processDiffMon(mon) {
+	const learnset = {};
+	for(const x in mon.learnset) {
+		learnset[x] = 1;
+	}
+	return learnset;
+}
+
+function isEmpty(obj) {
+	for (const x in obj) {
+		return false;
+	}
+	return true;
 }
 
 // endregion
