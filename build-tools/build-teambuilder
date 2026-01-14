@@ -666,12 +666,11 @@ for (const mod of sidemods) {
 
 for (const mod of gensmods) {
 	// Assuming gens mods are used by 1 format only.
-	//const formatid = mod === testmod ? 'gen9test' : Object.keys(GensTeambuilderTable.formats).find((id) => id.includes(mod));
-	const formatid = Object.keys(GensTeambuilderTable.formats).find((id) => id.includes(mod));
+	const format = Dex.formats.all().find((x) => x.id.includes(mod));
 
-	buildFormatOverrides(mod, formatid);
+	buildFormatOverrides(mod, format.id);
 
-	const gtt = GensTeambuilderTable.formats[formatid];
+	const gtt = GensTeambuilderTable.formats[format.id];
 	const learnsetDiff = (gtt.learnsetDiff = Dex.getLearnsetDiff(Dex.mod(mod), Dex.mod(gtt.mod)));
 	for(const diffType in learnsetDiff) {
 		for(const mon in learnsetDiff[diffType]) {
