@@ -37,6 +37,10 @@ const GensTeambuilderTable = {
 	build: (new Date()).toUTCString(),
 };
 
+for (const format of Dex.formats.all()) {
+	GensTeambuilderTable.formats[format.id] = {}
+}
+
 // region *** MODS ***
 
 const basemods = [];
@@ -811,7 +815,7 @@ for(const format of Dex.formats.all()) {
 
 	const ruleTable = dex.formats.getRuleTable(format);
 
-	const gtt = (GensTeambuilderTable.formats[format.id] ??= {});
+	const gtt = GensTeambuilderTable.formats[format.id];
 
 	gtt.name = format.name;
 
