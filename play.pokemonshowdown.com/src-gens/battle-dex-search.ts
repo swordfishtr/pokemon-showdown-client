@@ -64,6 +64,8 @@ interface GTTFormat {
 	listnolegends?: 1,
 	sortevo?: 1,
 
+	listnogems?: 1,
+
 	whitelist?: { [species: ID]: 1 },
 	blacklist?: { [species: ID]: 1 },
 	moves?: { [move: ID]: 1 },
@@ -1395,7 +1397,12 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 	getBaseResults(): SearchRow[] {
 		if (!this.species) return this.getDefaultResults();
 		const speciesName = this.gtt.getFormatSpecies(this.species).name;
-		const results = this.getDefaultResults();
+		let results = this.getDefaultResults();
+
+		if (this.gtt.format.listnogems) {
+			results = results.filter((x) => !x[1].endsWith('gem'));
+		}
+
 		const speciesSpecific: SearchRow[] = [];
 		const abilitySpecific: SearchRow[] = [];
 		const abilityItem = {

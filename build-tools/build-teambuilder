@@ -772,6 +772,13 @@ const check = {
 			'gen94v4duubo3',
 		].includes(id);
 	},
+	// Misc filters
+	listNoGems(id) {
+		return [
+			'gen535pokesperfectb2',
+			'gen535pokesperfectb3',
+		].includes(id);
+	},
 };
 
 // region TABLE PROPS
@@ -825,6 +832,8 @@ for(const format of Dex.formats.all()) {
 	if(check.listNoLegends(format.id)) gtt.listnolegends = 1;
 
 	if(check.sortEvo(format.id)) gtt.sortevo = 1;
+
+	if(check.listNoGems(format.id)) gtt.listnogems = 1;
 
 	if([
 		'-pokemontag:ndlc', '-pokemontag:ndnfe', '-pokemontag:ndru', '-pokemontag:ndrubl', '-pokemontag:nduu',
