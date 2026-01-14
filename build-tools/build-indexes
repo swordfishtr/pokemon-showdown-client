@@ -245,7 +245,9 @@ console.log("DONE");
 
 process.stdout.write("Building `data/teambuilder-tables.js`... ");
 
-{
+// Old client teambuilder-tables.js has been frozen after the migration of Perfect 35 mods to hashtag rules.
+process.stdout.write("Skipped.");
+if (false) {
 	const BattleTeambuilderTable = {};
 	let buf = '// DO NOT EDIT - automatically built with build-tools/build-indexes\n\n';
 
