@@ -578,7 +578,20 @@ export class BattleScene implements BattleSceneStub {
 			else if (gen <= 4) bg = 'fx/bg-gen4-spl.png';
 			else bg = 'fx/bg-spl.png';
 			this.setBgm(-101);
-		} else if (typeof rated === 'string' && rated.startsWith('National Pokemon Association')) {
+		}
+		else if (typeof rated === 'string' && rated.startsWith("35 Premier League")) {
+			if (gen <= 1) bg = 'fx/bg-gen1-spl.png';
+			else if (gen <= 2) bg = 'fx/bg-gen2-spl.png';
+			else if (gen <= 3) bg = 'fx/bg-gen3-spl.png';
+			else if (gen <= 4) bg = 'fx/bg-gen4-spl.png';
+			else bg = 'fx/bg-spl.png';
+			this.setBgm(-101);
+		}
+		else if (typeof rated === 'string' && rated.startsWith("Prepare for Takeoff")) {
+			else bg = 'fx/bg-space.jpg';
+			this.setBgm(-101);
+		}
+		else if (typeof rated === 'string' && rated.startsWith('National Pokemon Association')) {
 			bg = 'fx/bg-npa.png';
 			this.setBgm(-101);
 		} else if (typeof rated === 'string' && rated.startsWith('Smogon Champions League')) {
