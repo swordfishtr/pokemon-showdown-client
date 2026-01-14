@@ -779,7 +779,7 @@ const check = {
 for(const format of Dex.formats.all()) {
 	console.log(`Building format ${format} ...`);
 
-	const dex = Dex.mod(format.mod);
+	const dex = Dex.mod(format.validatorMod || format.mod);
 
 	const ruleTable = dex.formats.getRuleTable(format);
 
