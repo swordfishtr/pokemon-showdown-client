@@ -2472,7 +2472,12 @@ export class Battle {
 			let species = this.gtt.getFormatSpecies(newSpeciesForme);
 			if (nextArgs) {
 				if (nextArgs[0] === '-mega') {
-					species = this.gtt.getFormatSpecies(this.gtt.getFormatItem(nextArgs[3]).megaStone);
+					const item = this.gtt.getFormatItem(nextArgs[3]);
+					if (item.megaStone) {
+						let index = Object.values(item.megaStone).indexOf(species.name);
+						if (index < 0) index = 0;
+						species = this.gtt.getFormatSpecies(Object.keys(item.megaStone)[index]);
+					}
 				} else if (nextArgs[0] === '-primal' && nextArgs.length > 2) {
 					if (nextArgs[2] === 'Red Orb') species = this.gtt.getFormatSpecies('Groudon-Primal');
 					if (nextArgs[2] === 'Blue Orb') species = this.gtt.getFormatSpecies('Kyogre-Primal');
