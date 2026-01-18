@@ -56,7 +56,8 @@ const sidemods = [
 
 /** Mods with a mod folder */
 const gensmods = [
-	'regenerations1',
+	'regenerations10',
+	'regenerations11',
 ];
 
 //const testmod = 'perfectg1';

@@ -367,10 +367,12 @@ PSBackground.subscribe(bgUrl => {
 		let background;
 		if (bgUrl.startsWith('#')) {
 			background = bgUrl;
-		} else if (PSBackground.curId !== 'custom' && PSBackground.curId !== 'mascotmedley') {
-			background = `#546bac url(${bgUrl}) no-repeat left center fixed`;
-		} else {
+		} else if (PSBackground.curId === 'mascotmedley') {
+			background = `#546bac url(${bgUrl}) no-repeat center bottom fixed`;
+		} else if (PSBackground.curId === 'custom') {
 			background = `#546bac url(${bgUrl}) no-repeat center center fixed`;
+		} else {
+			background = `#546bac url(${bgUrl}) no-repeat left center fixed`;
 		}
 		document.body.style.background = background;
 		document.body.style.backgroundSize = 'cover';
