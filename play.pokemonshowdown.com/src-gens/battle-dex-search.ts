@@ -65,6 +65,7 @@ interface GTTFormat {
 	sortevo?: 1,
 
 	listnogems?: 1,
+	newitems?: ID[],
 
 	whitelist?: { [species: ID]: 1 },
 	blacklist?: { [species: ID]: 1 },
@@ -1414,10 +1415,20 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 		}[toID(this.set?.ability) as string];
 		for (const row of results) {
 			if (row[0] !== 'item') continue;
-			const item = this.gtt.dex.items.get(row[1]);
+			const item = this.gtt.getFormatItem(row[1]);
 			if (item.itemUser?.includes(speciesName)) speciesSpecific.push(row);
 			if (abilityItem === item.id) abilitySpecific.push(row);
 		}
+
+		if (this.gtt.format.newitems) {
+			const index = results.findIndex(([type, value]) => type === 'header' && value === 'Items');
+			if (index !== -1) {
+				const newItems = [['header', 'New Items']]
+				.concat(this.gtt.format.newitems.map((value) => ['item', value])) as SearchRow[];
+				results.splice(index, 0, ...newItems);
+			}
+		}
+
 		if (speciesSpecific.length) {
 			return [
 				['header', "Specific to " + speciesName],

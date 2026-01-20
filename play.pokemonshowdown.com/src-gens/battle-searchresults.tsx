@@ -175,7 +175,7 @@ export class PSSearchResults extends preact.Component<{
 
 	renderItemRow(index: number, id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
 		const search = this.props.search;
-		const item = search.gtt.dex.items.get(id);
+		const item = search.gtt.getFormatItem(id);
 		const cur = this.itemId === id ? 'cur' : '';
 		const hover = this.resultIndex === index ? 'hover' : '';
 		const classes = `${cur} ${hover}`.trim();

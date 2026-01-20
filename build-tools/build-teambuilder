@@ -56,6 +56,7 @@ const sidemods = [
 
 /** Mods with a mod folder */
 const gensmods = [
+	'generationsdraftgen4',
 	'regenerations10',
 	'regenerations11',
 ];
@@ -689,14 +690,6 @@ const check = {
 		const gen = /^(gen\d+)/.exec(id)?.[1];
 		return gen ?? `gen${Dex.gen}`;
 	},
-	// This matters for 1. learnsets, 2. tiers.
-	isNatdex(id) {
-		return [
-			/natdex/,
-			/nationaldex/,
-			/^gen\d+nd/,
-		].some((regex) => regex.test(id));
-	},
 	idToLevel(id) {
 		if([
 			/babies/,
@@ -711,70 +704,81 @@ const check = {
 		}
 		return 100;
 	},
-	isDoubles(id) {
+	// This matters for 1. learnsets, 2. tiers.
+	idToNatdex(id) {
+		return [
+			/natdex/,
+			/nationaldex/,
+			/^gen\d+nd/,
+		].some((regex) => regex.test(id));
+	},
+};
+
+const flags = {
+	doubles(id) {
 		return [
 			/doubles/,
 			/vgc/,
 		].some((regex) => regex.test(id));
 	},
-	isCAP(id) {
+	cap(id) {
 		return false;
 	},
-	isTradebacks(id) {
+	tradebacks(id) {
 		return false;
 	},
-	isFlipped(id) {
+	flipped(id) {
 		return /flipped/.test(id);
 	},
-	isAAA(id) {
+	aaa(id) {
 		return false;
 	},
-	isHackmons(id) {
+	hackmons(id) {
 		return /brokencup|chaoscup|hackmonscup/.test(id);
 	},
-	isStabmons(id) {
+	stabmons(id) {
 		return false;
 	},
-	isScalemons(id) {
+	scalemons(id) {
 		return [
 			'gen9benjaminbutton',
 		].includes(id);
 	},
 	// Filter non LC pokemon from results
-	listLC(id) {
+	listlc(id) {
 		return [
 			'gen9ndvgclc',
 			'gen9ndvgclcbo3',
 		].includes(id);
 	},
 	// Filter non current gen pokemon from results
-	listCG(id) {
+	listcg(id) {
 		return [
 			'gen94v4duu',
 			'gen94v4duubo3',
 		].includes(id);
 	},
-	listNoMythicals(id) {
+	listnomythicals(id) {
 		return [
 			'gen94v4duu',
 			'gen94v4duubo3',
 		].includes(id);
 	},
-	listNoLegends(id) {
+	listnolegends(id) {
 		return [
 			'gen94v4duu',
 			'gen94v4duubo3',
 		].includes(id);
 	},
 	// Sort pokemon results by evolution stage
-	sortEvo(id) {
+	sortevo(id) {
 		return [
 			'gen94v4duu',
 			'gen94v4duubo3',
 		].includes(id);
 	},
 	// Misc filters
-	listNoGems(id) {
+	listnogems(id) {
 		return [
 			'gen535pokesperfectb2',
 			'gen535pokesperfectb3',
@@ -794,8 +798,8 @@ for(const format of Dex.formats.all()) {
 	const gtt = (GensTeambuilderTable.formats[format.id] ??= {});
 
 	gtt.name = format.name;
-
 	gtt.mod = check.idToGen(format.id);
+	gtt.level = check.idToLevel(format.id);
 
 	gtt.natdex = check.isNatdex(format.id) ? gtt.mod : null;
 	if([
@@ -806,35 +810,11 @@ for(const format of Dex.formats.all()) {
 		gtt.natdex = 'gen9';
 	}
 
-	gtt.level = check.idToLevel(format.id);
-
-	if(check.isDoubles(format.id)) gtt.doubles = 1;
-
-	if(check.isCAP(format.id)) gtt.cap = 1;
-
-	if(check.isTradebacks(format.id)) gtt.tradebacks = 1;
-
-	if(check.isFlipped(format.id)) gtt.flipped = 1;
-
-	if(check.isAAA(format.id)) gtt.aaa = 1;
-
-	if(check.isHackmons(format.id)) gtt.hackmons = 1;
-
-	if(check.isStabmons(format.id)) gtt.stabmons = 1;
-
-	if(check.isScalemons(format.id)) gtt.scalemons = 1;
-
-	if(check.listLC(format.id)) gtt.listlc = 1;
-
-	if(check.listCG(format.id)) gtt.listcg = 1;
-
-	if(check.listNoMythicals(format.id)) gtt.listnomythicals = 1;
-
-	if(check.listNoLegends(format.id)) gtt.listnolegends = 1;
-
-	if(check.sortEvo(format.id)) gtt.sortevo = 1;
-
-	if(check.listNoGems(format.id)) gtt.listnogems = 1;
+	for (const flag in flags) {
+		if (flags[flag](format.id)) {
+			gtt[flag] = 1;
+		}
+	}
 
 	if([
 		'-pokemontag:ndlc', '-pokemontag:ndnfe', '-pokemontag:ndru', '-pokemontag:ndrubl', '-pokemontag:nduu',
@@ -899,6 +879,16 @@ for(const format of Dex.formats.all()) {
 				}
 			}
 		}
+	}
+
+	/** Item unbans */
+	if (format.id === 'gen9ndgenerationsdraftgen4') {
+		gtt.newitems = [
+			'belueberry',
+			'watmelberry',
+			'pamtreberry',
+			'durinberry',
+		];
 	}
 
 	/** Mods using hashtag rules */
