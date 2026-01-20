@@ -801,7 +801,7 @@ for(const format of Dex.formats.all()) {
 	gtt.mod = check.idToGen(format.id);
 	gtt.level = check.idToLevel(format.id);
 
-	gtt.natdex = check.isNatdex(format.id) ? gtt.mod : null;
+	gtt.natdex = check.idToNatdex(format.id) ? gtt.mod : null;
 	if([
 		'gen335pokesperfectb1',
 		'gen535pokesperfectb2',
