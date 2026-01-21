@@ -794,14 +794,27 @@ const flags = {
 
 // region TABLE PROPS
 
-for(const format of Dex.formats.all()) {
+// Formats that reuse another's table
+const reuse = {
+	'gen94v4duubo3': 'gen94v4duu',
+	'gen9ndvgclcbo3': 'gen9ndvgclc',
+	'gen9natdexdraftterapreview': 'gen9natdexdraft',
+};
+
+for (const format of Dex.formats.all()) {
+	if (format.id in reuse) {
+		console.log(`Reusing format ${reuse[format.id]} as ${format.id} .`);
+		GensTeambuilderTable.formats[format.id] = reuse[format.id];
+		continue;
+	}
+
 	console.log(`Building format ${format} ...`);
 
 	const dex = Dex.mod(format.validatorMod || format.mod);
 
 	const ruleTable = dex.formats.getRuleTable(format);
 
-	const gtt = (GensTeambuilderTable.formats[format.id] ??= {});
+	const gtt = GensTeambuilderTable.formats[format.id] = {};
 
 	gtt.name = format.name;
 	gtt.mod = check.idToGen(format.id);

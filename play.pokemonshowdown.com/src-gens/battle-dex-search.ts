@@ -122,7 +122,16 @@ export class GTTIndex {
 		if(formatid === this.formatid) return;
 		this.formatid = formatid;
 
-		const gttformat = GensTeambuilderTable.formats[formatid];
+		if (typeof GensTeambuilderTable.formats[formatid] === 'string') {
+			let refid = GensTeambuilderTable.formats[formatid] as ID;
+			if (typeof GensTeambuilderTable.formats[refid] !== 'object') {
+				if(this.throwInvalid) throw new Error(`Reference to unknown format: ${formatName}, ${refid}`);
+				refid = DexSearch.DEFAULT_FORMAT;
+			}
+			GensTeambuilderTable.formats[formatid] = GensTeambuilderTable.formats[refid];
+		}
+
+		const gttformat = GensTeambuilderTable.formats[formatid] as GTTFormat;
 		this.format = gttformat;
 
 		const gttmod = GensTeambuilderTable.mods[gttformat.mod];
@@ -272,7 +281,7 @@ declare const BattleSearchIndex: [ID, SearchType, number?, number?][];
 declare const BattleSearchIndexOffset: any;
 export declare const GensTeambuilderTable: {
 	mods: { [mod: ID]: GTTMod },
-	formats: { [format: ID]: GTTFormat },
+	formats: { [format: ID]: ID | GTTFormat },
 	learnsets: any, // TODO
 	build: string, // Date-compatible
 };
