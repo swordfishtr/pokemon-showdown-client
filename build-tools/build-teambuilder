@@ -57,6 +57,7 @@ const sidemods = [
 /** Mods with a mod folder */
 const gensmods = [
 	'generationsdraftgen4',
+	'generationsdraftgen4vgc',
 	'regenerations10',
 	'regenerations11',
 ];
