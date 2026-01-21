@@ -758,6 +758,12 @@ const flags = {
 			'gen94v4duubo3',
 		].includes(id);
 	},
+	listnomegas(id) {
+		return [
+			'gen94v4duu',
+			'gen94v4duubo3',
+		].includes(id);
+	},
 	listnomythicals(id) {
 		return [
 			'gen94v4duu',

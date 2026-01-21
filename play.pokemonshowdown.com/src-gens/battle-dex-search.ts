@@ -60,6 +60,7 @@ interface GTTFormat {
 
 	listlc?: 1,
 	listcg?: 1,
+	listnomegas?: 1,
 	listnomythicals?: 1,
 	listnolegends?: 1,
 	sortevo?: 1,
@@ -1128,7 +1129,12 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 			}
 		}
 		for (let id in BattlePokedex) {
-			if (BattlePokedex[id].battleOnly) continue;
+			// at this point in time, most of species data hasn't been populated yet,
+			// which will cause inconsistencies if we attempt to read them.
+			const species = BattlePokedex[id];
+			if (species.isCosmeticForme || id.endsWith('totem') || id.endsWith('gmax') || id.endsWith('tera')) {
+				continue;
+			}
 			switch (id) {
 			case 'chikorita':
 				results.push(['header', "Generation 1"]);
@@ -1188,6 +1194,9 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 			results = results.filter(([type, id]) => type === 'pokemon' && !this.gtt.getFormatSpecies(id).isNonstandard);
 		}
 
+		if (this.gtt.format.listnomegas) {
+			results = results.filter(([type, id]) => type === 'pokemon' && !/mega[xyz]?$/.test(id));
+		}
 		if (this.gtt.format.listnomythicals) {
 			results = results.filter(([type, id]) => type === 'pokemon' &&
 			!this.gtt.getFormatSpecies(this.gtt.getFormatSpecies(id).baseSpecies).tags.includes('Mythical'));
