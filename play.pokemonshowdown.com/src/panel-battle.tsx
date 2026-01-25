@@ -201,6 +201,7 @@ class TimerButton extends preact.Component<{ room: BattleRoom }> {
 		const room = this.props.room;
 		if (!this.timerInterval && room.battle.kickingInactive) {
 			this.timerInterval = setInterval(() => {
+				if (room.choices?.isDone()) return;
 				if (typeof room.battle.kickingInactive === 'number' && room.battle.kickingInactive > 1) {
 					room.battle.kickingInactive--;
 					if (room.battle.graceTimeLeft) room.battle.graceTimeLeft--;
@@ -242,7 +243,7 @@ class TimerButton extends preact.Component<{ room: BattleRoom }> {
 
 class BattlePanel extends PSRoomPanel<BattleRoom> {
 	static readonly id = 'battle';
-	static readonly routes = ['battle-*'];
+	static readonly routes = ['battle-*', 'game-*'];
 	static readonly Model = BattleRoom;
 	static handleDrop(ev: DragEvent) {
 		const file = ev.dataTransfer?.files?.[0];
@@ -483,6 +484,9 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 			<p>
 				<button class="button" data-cmd="/switchsides">
 					<i class="fa fa-random" aria-hidden></i> Switch viewpoint
+				</button> {}
+				<button class="button" data-cmd="/ffto">
+					<i class="fa fa-random" aria-hidden></i> Go to turn
 				</button>
 			</p>
 		</div>;
@@ -824,7 +828,7 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 				if (choice.tera) buf.push(`Terastallize (`, <strong>{active?.canTerastallize || '???'}</strong>, `) and `);
 				if (choice.max && active?.canDynamax) buf.push(active?.gigantamax ? `Gigantamax and ` : `Dynamax and `);
 				buf.push(`use `, <strong>{choices.currentMove(choice, i)?.name}</strong>);
-				if (choice.targetLoc > 0) {
+				if (choice.targetLoc > 0 || battle.gameType === 'freeforall') {
 					const target = battle.farSide.active[choice.targetLoc - 1];
 					if (!target) {
 						buf.push(` at slot ${choice.targetLoc}`);
@@ -1010,7 +1014,10 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 				</p>
 			) : (
 				<p>
-					<button class="button" data-cmd="/switchsides"><i class="fa fa-random" aria-hidden></i> Switch viewpoint</button>
+					<button class="button" data-cmd="/switchsides"><i class="fa fa-random" aria-hidden></i> Switch viewpoint</button> {}
+					<button class="button" data-cmd="/ffto">
+						<i class="fa fa-random" aria-hidden></i> Go to turn
+					</button>
 				</p>
 			)}
 		</div>;

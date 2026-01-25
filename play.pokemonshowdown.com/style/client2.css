@@ -896,11 +896,24 @@ p.or:after {
 
 .challenge {
 	margin: 0 5px 5px;
-	background: #fcd2b3;
 	border: 1px solid #f57b21;
-	border-radius: 5px;
+	background: #fcd2b3;
 	color: #682f05;
+	border-radius: 5px;
 	padding: 1px 5px;
+}
+.dark .challenge {
+	background: #682f05;
+	color: #fcd2b3;
+}
+.challenge.outgoing {
+	border: 1px solid #217bf5;
+	background: #b3d2fc;
+	color: #052f68;
+}
+.dark .challenge.outgoing {
+	background: #052f68;
+	color: #b3d2fc;
 }
 .challenge p {
 	margin: 4px 0;
@@ -1461,7 +1474,6 @@ pre.textbox.textbox-empty[placeholder]:before {
 	bottom: 0;
 	width: 145px;
 	height: auto;
-	border-right: 1px solid #AAAAAA;
 
 	overflow: auto;
 	-webkit-overflow-scrolling: touch;
@@ -1487,6 +1499,9 @@ pre.textbox.textbox-empty[placeholder]:before {
 .chat-log-add.hasuserlist,
 .tournament-wrapper.hasuserlist {
 	left: 146px;
+}
+.chat-log.hasuserlist {
+	border-left: 1px solid #AAAAAA;
 }
 .userlist ul,
 .userlist li {

@@ -7,7 +7,7 @@
 
 import { PS, PSRoom, type RoomID, type Team } from "./client-main";
 import { PSPanelWrapper, PSRoomPanel } from "./panels";
-import { TeamBox } from "./panel-teamdropdown";
+import { PSTeambuilder, TeamBox } from "./panel-teamdropdown";
 import { Dex, PSUtils, toID, type ID } from "./battle-dex";
 import { Teams } from "./battle-teams";
 import { BattleLog } from "./battle-log";
@@ -61,7 +61,7 @@ class TeambuilderRoom extends PSRoom {
 	curFolder = '';
 	curFolderKeep = '';
 	searchTerms: string[] = [];
-	exportMode = false;
+	exportMode: boolean | 'partial' = false;
 	exportCode: string | null = null;
 
 	override clientCommands = this.parseClientCommands({
@@ -81,6 +81,7 @@ class TeambuilderRoom extends PSRoom {
 		},
 		'undeleteteam'() {
 			PS.teams.undelete();
+			PS.teams.save();
 			this.update(null);
 		},
 		'backup'() {
@@ -94,15 +95,83 @@ class TeambuilderRoom extends PSRoom {
 			PS.teams.unshift(copy);
 			// `team` has key at this point
 			PS.join(`team-${copy.key}` as RoomID);
-		}
+		},
+		'createfolder'(name) {
+			if (name.includes('/') || name.includes('\\')) {
+				PS.alert("Names can't contain slashes, since they're used as a folder separator.");
+				name = name.replace(/[\\/]/g, '');
+			}
+			if (name.includes('|')) {
+				PS.alert("Names can't contain the character |, since they're used for storing teams.");
+				name = name.replace(/\|/g, '');
+			}
+			if (!name) return this.errorReply('Name required');
+
+			this.curFolderKeep = `${name}/`;
+			this.curFolder = `${name}/`;
+			this.update(null);
+		},
+		'renamefolder'(name) {
+			if (!name) return this.errorReply('New name required');
+			if (!this.curFolder.endsWith('/')) return this.errorReply('Not in a folder');
+
+			if (name.includes('/') || name.includes('\\')) {
+				PS.alert("Names can't contain slashes, since they're used as a folder separator.");
+				name = name.replace(/[\\/]/g, '');
+			}
+			if (name.includes('|')) {
+				PS.alert("Names can't contain the character |, since they're used for storing teams.");
+				name = name.replace(/\|/g, '');
+			}
+
+			const oldFolder = this.curFolder.slice(0, -1);
+			for (const team of PS.teams.list) {
+				if (team.folder !== oldFolder) continue;
+				team.folder = name;
+			}
+			if (this.curFolderKeep === this.curFolder) this.curFolderKeep = `${name}/`;
+			this.curFolder = `${name}/`;
+			PS.teams.save();
+			this.update(null);
+		},
+		'deletefolder'() {
+			if (!this.curFolder.endsWith('/')) return this.errorReply('Not in a folder');
+
+			const oldFolder = this.curFolder.slice(0, -1);
+			for (const team of PS.teams.list) {
+				if (team.folder !== oldFolder) continue;
+				team.folder = '';
+			}
+			if (this.curFolderKeep === this.curFolder) this.curFolderKeep = '';
+			this.curFolder = '';
+			PS.teams.save();
+			this.update(null);
+		},
+		'convertfoldertoprefix'() {
+			if (!this.curFolder.endsWith('/')) return this.errorReply('Not in a folder');
+
+			const oldFolder = this.curFolder.slice(0, -1);
+			for (const team of PS.teams.list) {
+				if (team.folder !== oldFolder) continue;
+				team.folder = '';
+				team.name = `${oldFolder} ${team.name}`;
+			}
+			if (this.curFolderKeep === this.curFolder) this.curFolderKeep = '';
+			this.curFolder = '';
+			PS.teams.save();
+			this.update(null);
+		},
 	});
 	override sendDirect(msg: string): void {
 		PS.alert(`Unrecognized command: ${msg}`);
 	}
 
 	setExportMode(exportMode: boolean) {
-		if (exportMode === this.exportMode) return;
-		this.exportMode = exportMode;
+		const partial = this.searchTerms.length || this.curFolder ? 'partial' : true;
+		const newExportMode = exportMode ? partial : false;
+
+		if (newExportMode === this.exportMode) return;
+		this.exportMode = newExportMode;
 		this.exportCode = null;
 	}
 	createTeam(copyFrom?: Team | null, isBox = false): Team {
@@ -150,7 +219,7 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 	static readonly Model = TeambuilderRoom;
 	static readonly icon = <i class="fa fa-pencil-square-o" aria-hidden></i>;
 	static readonly title = 'Teambuilder';
-	selectFolder = (e: MouseEvent) => {
+	clickFolder = (e: MouseEvent) => {
 		const room = this.props.room;
 		let elem = e.target as HTMLElement | null;
 		let folder: string | null = null;
@@ -171,11 +240,11 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		e.preventDefault();
 		e.stopImmediatePropagation();
 		if (folder === '++') {
-			PS.prompt("Folder name?", '', { parentElem: elem!, okButton: "Create" }).then(name => {
+			PS.prompt("Folder name?", { parentElem: elem, okButton: "Create" }).then(name => {
+				name = (name || '').trim();
 				if (!name) return;
-				room.curFolderKeep = `${name}/`;
-				room.curFolder = `${name}/`;
-				this.forceUpdate();
+
+				room.send(`/createfolder ${name}`, elem);
 			});
 			return;
 		}
@@ -331,7 +400,7 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		this.props.room.updateSearch(target.value);
 		this.forceUpdate();
 	};
-	clearSearch() {
+	clearSearch = () => {
 		const target = this.base!.querySelector<HTMLInputElement>('input[type="search"]');
 		if (!target) return;
 		target.value = '';
@@ -388,7 +457,49 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		);
 	}
 	saveExport = (e: MouseEvent) => {
-		alert("Unimplemented");
+		const value = this.base!.querySelector<HTMLTextAreaElement>('textarea[name="import"]')?.value;
+		if (!value) return alert('Textarea not found');
+		if (this.props.room.exportMode !== true) return alert('Wrong export mode');
+
+		const teams = PSTeambuilder.importTeamBackup(value);
+		// const visibleTeams = this.visibleTeams();
+		// alert(`${teams.length} teams imported, ${visibleTeams.length} teams visible now`);
+		PS.teams.list = [];
+		PS.teams.byKey = {};
+		for (const team of teams) PS.teams.push(team);
+		// TODO: say what changed
+
+		const room = this.props.room;
+		room.exportMode = false;
+		PS.teams.save();
+		room.update(null);
+	};
+	renameFolder = (ev: MouseEvent) => {
+		const { room } = this.props;
+		const oldFolder = room.curFolder.slice(0, -1);
+		const elem = ev.currentTarget as HTMLElement;
+		ev.stopImmediatePropagation();
+		ev.preventDefault();
+		PS.prompt(`Rename \`\`${oldFolder}\`\` to?`, { defaultValue: oldFolder, okButton: "Rename", parentElem: elem }).then(name => {
+			name = (name || '').trim();
+			if (!name) return;
+			if (name === oldFolder) return;
+
+			room.send(`/renamefolder ${name}`, elem);
+		});
+	};
+	promptDeleteFolder = (ev: MouseEvent) => {
+		const { room } = this.props;
+		const oldFolder = room.curFolder.slice(0, -1);
+		const elem = ev.currentTarget as HTMLElement;
+		ev.stopImmediatePropagation();
+		ev.preventDefault();
+		PS.confirm(`Delete \`\`${oldFolder}\`\`? (doesn't delete teams)`, {
+			okButton: "Delete", otherButtons: <button class="button" data-cmd="/closeand /inopener /convertfoldertoprefix">Convert to prefix</button>,
+			parentElem: elem,
+		}).then(result => {
+			if (result) room.send(`/deletefolder`, elem);
+		});
 	};
 	renderFolderList() {
 		const room = this.props.room;
@@ -468,7 +579,7 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 		}
 		renderedFolders.push(...renderedFormatFolders);
 
-		return <div class="folderlist" onClick={this.selectFolder}>
+		return <div class="folderlist" onClick={this.clickFolder}>
 			<div class="folderlistbefore"></div>
 
 			{this.renderFolder('')}
@@ -534,9 +645,12 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 					<button data-cmd="/backup" class="button">
 						<i class="fa fa-caret-left" aria-hidden></i> Back
 					</button> {}
-					<button onClick={this.saveExport} class="button" disabled>
-						<i class="fa fa-save" aria-hidden></i> Save (unimplemented)
-					</button>
+					{room.exportMode !== true && <button class="button" disabled>
+						<i class="fa fa-save" aria-hidden></i> Save (not allowed for partial exports)
+					</button>}
+					{room.exportMode === true && <button onClick={this.saveExport} class="button">
+						<i class="fa fa-save" aria-hidden></i> Save changes
+					</button>}
 				</p>
 				<PSTextarea
 					name="import" initialValue={(room.exportCode ??= PS.teams.packAll(filteredTeams.filter(Boolean) as Team[]))}
@@ -548,10 +662,10 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 			{filterFolder ? (
 				<h2>
 					<i class="fa fa-folder-open" aria-hidden></i> {filterFolder} {}
-					<button class="button small" style="margin-left:5px" name="renameFolder">
+					<button class="button small" style="margin-left:5px" onClick={this.renameFolder}>
 						<i class="fa fa-pencil" aria-hidden></i> Rename
 					</button> {}
-					<button class="button small" style="margin-left:5px" name="promptDeleteFolder">
+					<button class="button small" style="margin-left:5px" onClick={this.promptDeleteFolder}>
 						<i class="fa fa-times" aria-hidden></i> Remove
 					</button>
 				</h2>
@@ -577,8 +691,10 @@ class TeambuilderPanel extends PSRoomPanel<TeambuilderRoom> {
 			<ul class="teamlist">
 				{!teams.length ? (
 					<li><em>you have no teams lol</em></li>
-				) : !filteredTeams.length ? (
+				) : !filteredTeams.length && room.searchTerms.length ? (
 					<li><em>you have no teams matching <code>{room.searchTerms.join(", ")}</code></em></li>
+				) : !filteredTeams.length ? (
+					<li><em>you have no teams in this folder</em></li>
 				) : filteredTeams.map(team => team ? (
 					team === draggedTeam ? (
 						<li key={team.key} data-teamkey={team.key} class="dragging">

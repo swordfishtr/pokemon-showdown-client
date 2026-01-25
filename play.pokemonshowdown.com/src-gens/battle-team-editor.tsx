@@ -20,7 +20,7 @@ import { PSIcon, PSView } from "./panels";
 
 type SelectionType = 'pokemon' | 'ability' | 'item' | 'move' | 'stats' | 'details';
 
-class TeamEditorState extends PSModel {
+export class TeamEditorState extends PSModel {
 	static readonly clipboard: {
 		readonly sets: Dex.PokemonSet[],
 		index: number
@@ -449,7 +449,7 @@ class TeamEditorState extends PSModel {
 		if (this.gtt.formatid.includes('1v1')) return { minAtk, minSpe };
 
 		// only available through an event with 31 Atk IVs
-		if (set.ability === 'Battle Bond' || ['Koraidon', 'Miraidon'].includes(set.species)) {
+		if (set.ability === 'Battle Bond' || ['Koraidon', 'Miraidon', 'Gimmighoul-Roaming'].includes(set.species)) {
 			minAtk = false;
 			return { minAtk, minSpe };
 		}
@@ -2545,7 +2545,7 @@ class StatForm extends preact.Component<{
 			if (statID === 'spd' && editor.gtt.dex.gen === 1) return null;
 
 			const stat = editor.getStat(statID, set, ivs[statID]);
-			let ev: number | string = set.evs?.[statID] ?? defaultEV;
+			let ev: number | string = set.evs ? (set.evs[statID] || 0) : defaultEV;
 			let width = stat * 75 / 504;
 			if (statID === 'hp') width = stat * 75 / 704;
 			if (width > 75) width = 75;
@@ -2963,14 +2963,14 @@ class StatForm extends preact.Component<{
 		] as const);
 
 		let remaining = null;
-		const maxEv = this.maxEVs();
-		if (maxEv < 6 * 252) {
+		const maxEVs = this.maxEVs();
+		if (maxEVs < 6 * 252) {
 			let totalEv = 0;
 			for (const ev of Object.values(set.evs || {})) totalEv += ev;
-			if (totalEv <= maxEv) {
-				remaining = (totalEv > (maxEv - 2) ? 0 : (maxEv - 2) - totalEv);
+			if (totalEv <= maxEVs) {
+				remaining = (totalEv > (maxEVs - 2) ? 0 : (maxEVs - 2) - totalEv);
 			} else {
-				remaining = maxEv - totalEv;
+				remaining = maxEVs - totalEv;
 			}
 			remaining ||= null;
 		}

@@ -830,8 +830,10 @@ export class BattleTooltips {
 			genderBuf = ` <img src="${Dex.fxPrefix}gender-${gender.toLowerCase()}.png" alt="${gender}" width="7" height="10" class="pixelated" /> `;
 		}
 
-		let name = BattleLog.escapeHTML(pokemon.name);
-		if (pokemon.speciesForme !== pokemon.name) {
+		const ignoreNicks = this.battle.ignoreNicks || this.battle.ignoreOpponent;
+		const nickname = ignoreNicks ? Dex.species.get(pokemon.speciesForme).baseSpecies : pokemon.name;
+		let name = BattleLog.escapeHTML(nickname);
+		if (pokemon.speciesForme !== nickname) {
 			name += ` <small>(${BattleLog.escapeHTML(pokemon.speciesForme)})</small>`;
 		}
 
@@ -2618,7 +2620,7 @@ export class BattleStatGuesser {
 		let abilityid = toID(set.ability);
 
 		let species = this.dex.species.get(set.species || set.name!);
-		if (item.megaEvolves === species.name) species = this.dex.species.get(item.megaStone);
+		if (item.megaStone?.[species.name]) species = this.dex.species.get(item.megaStone[species.name]);
 		if (!species.exists) return '?';
 		let stats = species.baseStats;
 

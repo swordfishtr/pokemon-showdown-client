@@ -30,6 +30,9 @@
 				if (this.curTeam.format.includes('bdsp')) {
 					this.curTeam.dex = Dex.mod('gen8bdsp');
 				}
+				if (this.curTeam.format.includes('legends')) {
+					this.curTeam.dex = Dex.mod('gen9legendsou');
+				}
 				Storage.activeSetList = this.curSetList;
 			}
 		},
@@ -754,6 +757,9 @@
 			}
 			if (this.curTeam.format.includes('bdsp')) {
 				this.curTeam.dex = Dex.mod('gen8bdsp');
+			}
+			if (this.curTeam.format.includes('legends')) {
+				this.curTeam.dex = Dex.mod('gen9legendsou');
 			}
 			Storage.activeSetList = this.curSetList = Storage.unpackTeam(this.curTeam.team);
 			this.curTeamIndex = i;
@@ -1608,6 +1614,9 @@
 			}
 			if (this.curTeam.format.includes('bdsp')) {
 				this.curTeam.dex = Dex.mod('gen8bdsp');
+			}
+			if (this.curTeam.format.includes('legends')) {
+				this.curTeam.dex = Dex.mod('gen9legendsou');
 			}
 			this.save();
 			if (this.curTeam.gen === 5 && !Dex.loadedSpriteData['bw']) Dex.loadSpriteData('bw');
@@ -3218,18 +3227,18 @@
 				val = (id in BattlePokedex ? this.curTeam.dex.species.get(e.currentTarget.value).name : '');
 				break;
 			case 'ability':
-				if (id in BattleItems && format && format.endsWith("dualwielding")) {
+				if (id in BattleItems && format && (format.endsWith("dualwielding") || format.endsWith("biomechmons"))) {
 					val = BattleItems[id].name;
-				} else if (id in BattleMovedex && format && format.endsWith("trademarked")) {
+				} else if (id in BattleMovedex && format && (format.endsWith("trademarked") || format.endsWith("biomechmons"))) {
 					val = BattleMovedex[id].name;
 				} else {
 					val = (id in BattleAbilities ? BattleAbilities[id].name : '');
 				}
 				break;
 			case 'item':
-				if (id in BattleMovedex && format && format.endsWith("fortemons")) {
+				if (id in BattleMovedex && format && (format.endsWith("fortemons") || format.endsWith("biomechmons"))) {
 					val = BattleMovedex[id].name;
-				} else if (id in BattleAbilities && format && format.endsWith("multibility")) {
+				} else if (id in BattleAbilities && format && (format.endsWith("multibility") || format.endsWith("biomechmons"))) {
 					val = BattleAbilities[id].name;
 				} else {
 					val = (id in BattleItems ? BattleItems[id].name : '');
@@ -3238,6 +3247,10 @@
 			case 'move1': case 'move2': case 'move3': case 'move4':
 				if (id in BattlePokedex && format && format.endsWith("pokemoves")) {
 					val = BattlePokedex[id].name;
+				} else if (id in BattleAbilities && format && format.endsWith("biomechmons")) {
+					val = BattleAbilities[id].name;
+				} else if (id in BattleItems && format && format.endsWith("biomechmons")) {
+					val = BattleItems[id].name;
 				} else {
 					val = (id in BattleMovedex ? BattleMovedex[id].name : '');
 				}
@@ -3472,7 +3485,7 @@
 
 			var minAtk = true;
 			// only available through an event with 31 Atk IVs
-			if (set.ability === 'Battle Bond' || ['Koraidon', 'Miraidon'].includes(set.species)) minAtk = false;
+			if (set.ability === 'Battle Bond' || ['Koraidon', 'Miraidon', 'Gimmighoul-Roaming'].includes(set.species)) minAtk = false;
 			var hpModulo = (this.curTeam.gen >= 6 ? 2 : 4);
 			var hasHiddenPower = false;
 			var moves = set.moves;
