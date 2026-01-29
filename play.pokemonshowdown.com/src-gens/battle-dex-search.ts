@@ -64,6 +64,7 @@ interface GTTFormat {
 	listnomythicals?: 1,
 	listnolegends?: 1,
 	sortevo?: 1,
+	sortnumcol?: 1,
 
 	listnogems?: 1,
 	newitems?: ID[],
@@ -1215,8 +1216,7 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 			!this.gtt.getFormatSpecies(this.gtt.getFormatSpecies(id).baseSpecies).tags.includes('Restricted Legendary'));
 		}
 
-		// 35 Moves formats should come with customNumCol.
-		if (this.gtt.format.moves) {
+		if (this.gtt.format.sortnumcol) {
 			results = results
 			.filter(([type, id]) => type === 'pokemon' && !['CAP', 'Custom'].includes(this.gtt.getFormatSpecies(id).isNonstandard as any))
 			.sort(([type1, id1], [type2, id2]) => (this.gtt.format.customNumCol![id1 as ID] ?? 0) - (this.gtt.format.customNumCol![id2 as ID] ?? 0))
