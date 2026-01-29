@@ -524,38 +524,69 @@ export class TeamEditorState extends PSModel {
 			return null;
 		}
 	}
-	getStat(stat: StatName, set: Dex.PokemonSet, ivOverride: number, evOverride?: number, natureOverride?: number) {
-		const team = this.team;
-
-		const supportsEVs = !team.format.includes('letsgo');
-		const supportsAVs = !supportsEVs;
-
+	getStat(
+		statID: StatName, set: Dex.PokemonSet, iv = this.getIVs(set)[statID],
+		ev = set.evs?.[statID] ?? (this.gtt.dex.gen > 2 ? 0 : 252),
+		nature = BattleNatures[set.nature!]?.plus === statID ? 1.1 : BattleNatures[set.nature!]?.minus === statID ? 0.9 : 1,
+	) {
 		const level = set.level || this.gtt.format.level;
-		const baseStat = this.gtt.getFormatSpecies(set.species).baseStats[stat];
-		const iv = ivOverride;
-		const ev = evOverride ?? set.evs?.[stat] ?? (this.gtt.dex.gen > 2 ? 0 : 252);
+		const baseStat = this.gtt.getFormatSpecies(set.species).baseStats[statID];
 
-		if (stat === 'hp') {
-			if (baseStat === 1) return 1;
-			if (!supportsEVs) return Math.trunc(Math.trunc(2 * baseStat + iv + 100) * level / 100 + 10) + (supportsAVs ? ev : 0);
-			return Math.trunc(Math.trunc(2 * baseStat + iv + Math.trunc(ev / 4) + 100) * level / 100 + 10);
+		// TODO gen 1, 2, gen7letsgo
+		if (this.gtt.format.mod === 'gen7letsgo') {
+			return 0;
 		}
-		let val = Math.trunc(Math.trunc(2 * baseStat + iv + Math.trunc(ev / 4)) * level / 100 + 5);
-		if (!supportsEVs) {
-			val = Math.trunc(Math.trunc(2 * baseStat + iv) * level / 100 + 5);
+		// Gen 3 onwards
+		else {
+			if (statID === 'hp') {
+				if (baseStat === 1) return 1;
+				return Math.trunc(
+					Math.trunc(
+						2 * baseStat + iv + Math.trunc(ev / 4)
+					) * level / 100
+				) + level + 10;
+			}
+			return Math.trunc(
+				Math.trunc(
+					Math.trunc(
+						2 * baseStat + iv + Math.trunc(ev / 4)
+					) * level / 100 + 5
+				) * nature
+			);
 		}
-		if (natureOverride) {
-			val *= natureOverride;
-		} else if (BattleNatures[set.nature!]?.plus === stat) {
-			val *= 1.1;
-		} else if (BattleNatures[set.nature!]?.minus === stat) {
-			val *= 0.9;
+	}
+	/**
+	 * Returns null if stat can not be reached by changing only EVs.
+	 * If `stat` is at a jump point, returned value will be the same for `stat + 1`.
+	 */
+	getMinEVsForStat(
+		statID: StatName, stat: number, set: Dex.PokemonSet, iv = this.getIVs(set)[statID],
+		nature = BattleNatures[set.nature!]?.plus === statID ? 1.1 : BattleNatures[set.nature!]?.minus === statID ? 0.9 : 1,
+	) {
+		const level = set.level || this.gtt.format.level;
+		const baseStat = this.gtt.getFormatSpecies(set.species).baseStats[statID];
+		let ev: number;
+
+		// We're going to just do the math backwards for this.
+
+		// TODO gen 1, 2, gen7letsgo
+		if (this.gtt.format.mod === 'gen7letsgo') {
+			return null;
 		}
-		if (!supportsEVs) {
-			const friendshipValue = Math.trunc((70 / 255 / 10 + 1) * 100);
-			val = Math.trunc(val) * friendshipValue / 100 + (supportsAVs ? ev : 0);
+		else {
+			if (statID === 'hp') {
+				if (baseStat === 1) return stat === 1 ? 0 : null;
+				if (stat < 11) return null;
+				ev = (Math.ceil((stat - level - 10) * 100 / level) - iv - 2 * baseStat) * 4;
+			}
+			else {
+				if (stat < 4) return null;
+				ev = (Math.ceil((stat / nature - 5) * 100 / level) - iv - 2 * baseStat) * 4;
+			}
+			if (ev < 0 || ev > 252) return null;
 		}
-		return Math.trunc(val);
+
+		return ev;
 	}
 	export(compat?: boolean) {
 		return Teams.export(this.sets, this.gtt.dex, !compat);
@@ -2538,13 +2569,12 @@ class StatForm extends preact.Component<{
 	onChange: () => void,
 }> {
 	static renderStatGraph(set: Dex.PokemonSet, editor: TeamEditorState, evs?: boolean) {
-		// const supportsEVs = !team.format.includes('letsgo');
+		// const supportsEVs = this.gtt.format.mod !== 'gen7letsgo';
 		const defaultEV = (editor.gtt.dex.gen > 2 ? 0 : 252);
-		const ivs = editor.getIVs(set);
 		return Dex.statNames.map(statID => {
 			if (statID === 'spd' && editor.gtt.dex.gen === 1) return null;
 
-			const stat = editor.getStat(statID, set, ivs[statID]);
+			const stat = editor.getStat(statID, set);
 			let ev: number | string = set.evs ? (set.evs[statID] || 0) : defaultEV;
 			let width = stat * 75 / 504;
 			if (statID === 'hp') width = stat * 75 / 704;
@@ -2819,11 +2849,88 @@ class StatForm extends preact.Component<{
 			style={`width:${Math.floor(width)}px;background:hsl(${hue},85%,45%);border-color:hsl(${hue},85%,35%)`}
 		></span>;
 	}
+	slideEV = (ev: Event) => {
+		const target = ev.currentTarget as HTMLInputElement;
+		const { editor, set } = this.props;
+
+		const statID = target.name.split('-')[1] as Dex.StatName;
+		const evInput = parseInt(target.value) || 0;
+		const stat = editor.getStat(statID, set, undefined, evInput);
+		const evNext = editor.getMinEVsForStat(statID, stat, set);
+		let evOriginal = set.evs?.[statID] ?? 0;
+		evOriginal = evOriginal - (evOriginal % 4);
+
+		const evLimit = this.maxEVs();
+		let evLimitPassed = false;
+		if (evNext && evNext > evOriginal && evLimit !== Infinity) {
+			let total = 0;
+			for (const x of Object.values(set.evs ?? {})) total += x;
+			total += (evNext - evOriginal);
+			if (total > evLimit) evLimitPassed = true;
+		}
+
+		if (evNext) {
+			if (!evLimitPassed) {
+				set.evs ??= {};
+				set.evs[statID] = evNext;
+			}
+		}
+		else {
+			delete set.evs?.[statID];
+		}
+
+		this.props.onChange();
+	};
+	nudgeEV = (ev: KeyboardEvent) => {
+		const target = ev.currentTarget as HTMLInputElement;
+		const { editor, set } = this.props;
+
+		// arrow keys: left, up, right, down
+		if (![37, 38, 39, 40].includes(ev.keyCode)) return;
+		const positive = ev.keyCode === 38 || ev.keyCode === 39;
+		// prevent triggering slideEV
+		ev.preventDefault();
+
+		const statID = target.name.split('-')[1] as Dex.StatName;
+		let evOriginal = set.evs?.[statID] ?? 0;
+		evOriginal = evOriginal - (evOriginal % 4);
+		const statOriginal = editor.getStat(statID, set);
+		let evNext: number | null = evOriginal;
+		let statNext = statOriginal;
+
+		// loop, to account for stat jump points
+		while (evNext === evOriginal) {
+			if (positive) statNext++;
+			else statNext--;
+			evNext = editor.getMinEVsForStat(statID, statNext, set);
+		}
+
+		const evLimit = this.maxEVs();
+		let evLimitPassed = false;
+		if (evNext && evNext > evOriginal && evLimit !== Infinity) {
+			let total = 0;
+			for (const x of Object.values(set.evs ?? {})) total += x;
+			total += (evNext - evOriginal);
+			if (total > evLimit) evLimitPassed = true;
+		}
+
+		if (evNext) {
+			if (!evLimitPassed) {
+				set.evs ??= {};
+				set.evs[statID] = evNext;
+			}
+		}
+		else if (!positive) {
+			delete set.evs?.[statID];
+		}
+
+		this.props.onChange();
+	};
 	changeEV = (ev: Event) => {
 		const target = ev.currentTarget as HTMLInputElement;
 		const { set } = this.props;
 		const statID = target.name.split('-')[1] as Dex.StatName;
-		let value = Math.abs(parseInt(target.value));
+		let value = parseInt(target.value.replace(/[^0-9]/g, ''));
 
 		if (isNaN(value)) {
 			if (set.evs) delete set.evs[statID];
@@ -2832,37 +2939,26 @@ class StatForm extends preact.Component<{
 			set.evs[statID] = value;
 		}
 
-		if (target.type === 'range') {
-			// enforce limit
-			const maxEv = this.maxEVs();
-			if (maxEv < 6 * 252) {
-				let totalEv = 0;
-				for (const curEv of Object.values(set.evs || {})) totalEv += curEv;
-				if (totalEv > maxEv && totalEv - value <= maxEv) {
-					set.evs![statID] = maxEv - (totalEv - value) - (maxEv % 4);
-				}
-			}
-		} else {
-			if (target.value.includes('+')) {
-				if (statID === 'hp') {
-					alert("Natures cannot raise or lower HP.");
-					return;
-				}
-				this.plus = statID;
-			} else if (this.plus === statID) {
-				this.plus = null;
-			}
-			if (target.value.includes('-')) {
-				if (statID === 'hp') {
-					alert("Natures cannot raise or lower HP.");
-					return;
-				}
+		let updateNature = false;
+		if (target.value.includes('-')) {
+			if (statID !== 'hp') {
 				this.minus = statID;
-			} else if (this.minus === statID) {
-				this.minus = null;
+				updateNature = true;
 			}
-			this.updateNatureFromPlusMinus();
+		} else if (this.minus === statID) {
+			this.minus = null;
+			updateNature = true;
 		}
+		if (target.value.includes('+')) {
+			if (statID !== 'hp') {
+				this.plus = statID;
+				updateNature = true;
+			}
+		} else if (this.plus === statID) {
+			this.plus = null;
+			updateNature = true;
+		}
+		if (updateNature) this.updateNatureFromPlusMinus();
 
 		this.props.onChange();
 	};
@@ -2926,8 +3022,8 @@ class StatForm extends preact.Component<{
 		this.props.onChange();
 	};
 	maxEVs() {
-		const team = this.props.editor.team;
-		const useEVs = !team.format.includes('letsgo');
+		const { editor } = this.props;
+		const useEVs = editor.gtt.format.mod !== 'gen7letsgo';
 		return useEVs ? 510 : Infinity;
 	}
 	override render() {
@@ -2939,7 +3035,7 @@ class StatForm extends preact.Component<{
 
 		const nature = BattleNatures[set.nature || 'Serious'];
 
-		const useEVs = !team.format.includes('letsgo');
+		const useEVs = editor.gtt.format.mod !== 'gen7letsgo';
 		// const useAVs = !useEVs && team.format.endsWith('norestrictions');
 		const maxEV = useEVs ? 252 : 200;
 		const stepEV = useEVs ? 4 : 1;
@@ -2957,9 +3053,8 @@ class StatForm extends preact.Component<{
 		};
 		if (editor.gtt.dex.gen === 1) statNames.spa = 'Special';
 
-		const ivs = editor.getIVs(set);
 		const stats = Dex.statNames.filter(statID => editor.gtt.dex.gen > 1 || statID !== 'spd').map(statID => [
-			statID, statNames[statID], editor.getStat(statID, set, ivs[statID]),
+			statID, statNames[statID], editor.getStat(statID, set),
 		] as const);
 
 		let remaining = null;
@@ -2997,16 +3092,16 @@ class StatForm extends preact.Component<{
 						<td><input
 							name={`ev-${statID}`} placeholder={`${defaultEV || ''}`}
 							type="text" class="textbox default-placeholder" style="width:40px"
-							onInput={this.changeEV} onChange={this.changeEV}
+							onInput={this.changeEV}
 						/></td>
 						<td><input
 							name={`evslider-${statID}`} value={set.evs?.[statID] ?? defaultEV} min="0" max={maxEV} step={stepEV}
 							type="range" class="evslider" tabIndex={-1} aria-hidden
-							onInput={this.changeEV} onChange={this.changeEV}
+							onKeyDown={this.nudgeEV} onInput={this.slideEV}
 						/></td>
 						<td><input
 							name={`iv-${statID}`} min={0} max={useIVs ? 31 : 15} placeholder={`${defaultIVs[statID]}`} style="width:40px"
-							type="number" class="textbox default-placeholder" onInput={this.changeIV} onChange={this.changeIV}
+							type="number" class="textbox default-placeholder" onInput={this.changeIV}
 						/></td>
 						<td style="text-align:right"><strong>{stat}</strong></td>
 					</tr>)}

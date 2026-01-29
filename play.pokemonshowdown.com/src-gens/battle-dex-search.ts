@@ -1411,7 +1411,7 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 			parent.items = null;
 		}
 
-		return parent.itemSet;
+		return parent.itemSet.slice();
 	}
 	getBaseResults(): SearchRow[] {
 		if (!this.species) return this.getDefaultResults();
