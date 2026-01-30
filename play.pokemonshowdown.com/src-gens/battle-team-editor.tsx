@@ -541,16 +541,12 @@ export class TeamEditorState extends PSModel {
 			if (statID === 'hp') {
 				if (baseStat === 1) return 1;
 				return Math.trunc(
-					Math.trunc(
-						2 * baseStat + iv + Math.trunc(ev / 4)
-					) * level / 100
+					(2 * baseStat + iv + Math.trunc(ev / 4)) * level / 100
 				) + level + 10;
 			}
 			return Math.trunc(
 				Math.trunc(
-					Math.trunc(
-						2 * baseStat + iv + Math.trunc(ev / 4)
-					) * level / 100 + 5
+					(2 * baseStat + iv + Math.trunc(ev / 4)) * level / 100 + 5
 				) * nature
 			);
 		}
@@ -581,7 +577,7 @@ export class TeamEditorState extends PSModel {
 			}
 			else {
 				if (stat < 4) return null;
-				ev = (Math.ceil((stat / nature - 5) * 100 / level) - iv - 2 * baseStat) * 4;
+				ev = (Math.ceil(Math.ceil(stat / nature - 5) * 100 / level) - iv - 2 * baseStat) * 4;
 			}
 			if (ev < 0 || ev > 252) return null;
 		}
@@ -2164,20 +2160,27 @@ class TeamWizard extends preact.Component<{
 	};
 	selectResult = (type: string | null, name: string, reverse?: boolean) => {
 		const { editor } = this.props;
-		if(!editor.innerFocus) return;
+		if (!editor.innerFocus) return;
 		const searchbox = this.getSearchBox();
+		// sort selected
 		if (type === null) {
 			this.resetScroll();
 			this.forceUpdate();
-		} else if (!type) {
-			if(searchbox) {
+		}
+		// filter selected
+		else if (!type) {
+			if (searchbox) {
 				searchbox.value = '';
-				searchbox.focus();
+				if (!TeamEditor.probablyMobile()) {
+					searchbox.focus();
+				}
 			}
 			editor.setSearchValue('');
 			this.resetScroll();
 			this.forceUpdate();
-		} else {
+		}
+		// result selected
+		else {
 			const setIndex = editor.innerFocus.setIndex;
 			const set = (editor.sets[setIndex] ||= { species: '', moves: [] });
 			switch (type) {
