@@ -776,7 +776,7 @@ div.team-focus-editor.mobile > div.wizardsearchresults {
 }
 
 .set-button .button-middle.unset {
-	background: linear-gradient(to bottom, #ee9999, #ee5555);
+	background: linear-gradient(to bottom, #eedddd, #eeaaaa);
 }
 .dark .set-button .button-middle.unset {
 	background: linear-gradient(to bottom, #342222, #340000);
