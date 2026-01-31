@@ -2141,7 +2141,7 @@ class TeamWizard extends preact.Component<{
 					</div></td>
 					<td class="set-item"><div class="border-collapse">
 						<button
-							class={`button button-middle${cur('item')}${set.ability ? '' : ' unset'}`}
+							class={`button button-middle${cur('item')}${set.item ? '' : ' unset'}`}
 							onClick={this.setFocus} value={`item|${i}`}
 						>
 							{(editor.gtt.dex.gen >= 2 || set.item) && <>
