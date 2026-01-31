@@ -2129,8 +2129,8 @@ class TeamWizard extends preact.Component<{
 				<tr>
 					<td class="set-ability"><div class="border-collapse">
 						<button
-							class={`button button-middle${cur('ability')}`} onClick={this.setFocus} value={`ability|${i}`}
-							style={(set.ability !== 'No Ability' && set.ability) ? undefined : { 'background-color': '#340000' }}
+							class={`button button-middle${cur('ability')}${(set.ability !== 'No Ability' && set.ability) ? '' : ' unset'}`}
+							onClick={this.setFocus} value={`ability|${i}`}
 						>
 							{(editor.gtt.dex.gen >= 3 || set.ability) && <>
 								<strong class="label">Ability</strong> {}
@@ -2141,8 +2141,8 @@ class TeamWizard extends preact.Component<{
 					</div></td>
 					<td class="set-item"><div class="border-collapse">
 						<button
-							class={`button button-middle${cur('item')}`} onClick={this.setFocus} value={`item|${i}`}
-							style={set.item ? undefined : { 'background-color': '#340000' }}
+							class={`button button-middle${cur('item')}${set.ability ? '' : ' unset'}`}
+							onClick={this.setFocus} value={`item|${i}`}
 						>
 							{(editor.gtt.dex.gen >= 2 || set.item) && <>
 								{set.item && <PSIcon item={set.item} />}

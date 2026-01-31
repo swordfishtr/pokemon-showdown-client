@@ -774,3 +774,10 @@ div.team-focus-editor.mobile > div.wizardsearchresults {
 .sample-sets h3 {
 	margin: 0 0 10px;
 }
+
+.set-button .button-middle.unset {
+	background: linear-gradient(to bottom, #ee9999, #ee5555);
+}
+.dark .set-button .button-middle.unset {
+	background: linear-gradient(to bottom, #342222, #340000);
+}
