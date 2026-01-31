@@ -2130,11 +2130,11 @@ class TeamWizard extends preact.Component<{
 					<td class="set-ability"><div class="border-collapse">
 						<button
 							class={`button button-middle${cur('ability')}`} onClick={this.setFocus} value={`ability|${i}`}
-							style={(set.ability && set.ability !== 'No Ability') ? undefined : { 'background-color': '#340000' }}
+							style={(set.ability !== 'No Ability' && set.ability) ? undefined : { 'background-color': '#340000' }}
 						>
 							{(editor.gtt.dex.gen >= 3 || set.ability) && <>
 								<strong class="label">Ability</strong> {}
-								{(set.ability && set.ability !== 'No Ability') ||
+								{(set.ability !== 'No Ability' && set.ability) ||
 									(!set.ability ? <em>(choose ability)</em> : <em>(no ability)</em>)}
 							</>}
 						</button>
