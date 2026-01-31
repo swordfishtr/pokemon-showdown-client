@@ -2128,16 +2128,22 @@ class TeamWizard extends preact.Component<{
 				</tr>
 				<tr>
 					<td class="set-ability"><div class="border-collapse">
-						<button class={`button button-middle${cur('ability')}`} onClick={this.setFocus} value={`ability|${i}`}>
+						<button
+							class={`button button-middle${cur('ability')}`} onClick={this.setFocus} value={`ability|${i}`}
+							style={(set.ability && set.ability !== 'No Ability') ? undefined : { 'background-color': '#340000' }}
+						>
 							{(editor.gtt.dex.gen >= 3 || set.ability) && <>
 								<strong class="label">Ability</strong> {}
-								{(set.ability !== 'No Ability' && set.ability) ||
+								{(set.ability && set.ability !== 'No Ability') ||
 									(!set.ability ? <em>(choose ability)</em> : <em>(no ability)</em>)}
 							</>}
 						</button>
 					</div></td>
 					<td class="set-item"><div class="border-collapse">
-						<button class={`button button-middle${cur('item')}`} onClick={this.setFocus} value={`item|${i}`}>
+						<button
+							class={`button button-middle${cur('item')}`} onClick={this.setFocus} value={`item|${i}`}
+							style={set.item ? undefined : { 'background-color': '#340000' }}
+						>
 							{(editor.gtt.dex.gen >= 2 || set.item) && <>
 								{set.item && <PSIcon item={set.item} />}
 								<strong class="label">Item</strong> {}
@@ -2320,7 +2326,7 @@ class TeamWizard extends preact.Component<{
 		case 13: // enter
 		case 9: // tab
 			const value = editor.selectSearchValue();
-			if (value !== null) {
+			if (value) {
 				if (ev.keyCode === 9 && editor.innerFocus?.type === 'move') {
 					this.changeFocus({
 						setIndex: editor.innerFocus.setIndex,
@@ -2330,7 +2336,7 @@ class TeamWizard extends preact.Component<{
 					this.selectResult(editor.innerFocus?.type || '', value, ev.keyCode === 9 && ev.shiftKey);
 				}
 			} else {
-				//this.clearSearchBox();
+				searchBox.value = '';
 				editor.setSearchValue('');
 				this.resetScroll();
 				this.forceUpdate();
