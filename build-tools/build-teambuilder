@@ -1312,6 +1312,13 @@ for (const format of Dex.formats.all()) {
 	].includes(format.id)) {
 		gtt.rowColors.hiddenpower = 1;
 	}
+	if (/(?<!re)generations/.test(format.id)) {
+		for (const x of [
+			'attract', 'hiddenpower', 'lastrespects', 'shedtail', 'revivalblessing', 'takeheart', 'focusband', 'kingsrock', 'razorfang', 'quickclaw', 'berserkgene', 'shadowtag', 'quickdraw', 'cutecharm',
+		]) {
+			gtt.rowColors[x] = 1;
+		}
+	}
 	if (isEmpty(gtt.rowColors)) {
 		delete gtt.rowColors;
 	}
