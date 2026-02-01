@@ -28,6 +28,18 @@ export class PSSearchResults extends preact.Component<{
 	moveIds: ID[] = [];
 	resultIndex = -1;
 
+	rowColorStyleTable = {
+		0: '',
+		1: ' rowcolor-red',
+		2: ' rowcolor-green',
+		3: ' rowcolor-blue',
+		4: ' rowcolor-yellow',
+	};
+	rowColorStyle(id: ID) {
+		if (id.startsWith('hiddenpower')) id = 'hiddenpower' as ID;
+		return this.rowColorStyleTable[this.props.search.gtt.format.rowColors?.[id] ?? 0];
+	}
+
 	renderPokemonSortRow(index: number) {
 		const search = this.props.search;
 		const sortCol = search.sortCol;
@@ -245,21 +257,19 @@ export class PSSearchResults extends preact.Component<{
 
 		let pp = (move.pp === 1 || move.noPPBoosts ? move.pp : move.pp * 8 / 5);
 		if (search.gtt.dex.gen < 3) pp = Math.min(61, pp);
-		return <li key={index} class="result"><a
+
+		const typesrc = `${Dex.resourcePrefix}sprites/types/${encodeURIComponent(move.type)}.png`;
+		const catsrc = `${Dex.resourcePrefix}sprites/categories/${move.category}.png`;
+
+		return <li key={index} class={`result${this.rowColorStyle(id)}`}><a
 			href={`${this.URL_ROOT}moves/${id}`} class={classes}
 			data-target="push" data-entry={`move|${move.name}`}
 		>
 			<span class="col movenamecol">{this.renderName(move.name, matchStart, matchEnd, tagStart)}</span>
 
 			<span class="col typecol">
-				<img
-					src={`${Dex.resourcePrefix}sprites/types/${encodeURIComponent(move.type)}.png`}
-					alt={move.type} height="14" width="32" class="pixelated"
-				/>
-				<img
-					src={`${Dex.resourcePrefix}sprites/categories/${move.category}.png`}
-					alt={move.category} height="14" width="32" class="pixelated"
-				/>
+				<span class="pixelated img" style={`background:url(${typesrc})`} alt={move.type}></span>
+				<span class="pixelated img" style={`background:url(${catsrc})`} alt={move.category}></span>
 			</span>
 
 			<span class="col labelcol">

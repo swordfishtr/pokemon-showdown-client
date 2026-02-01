@@ -73,6 +73,12 @@ interface GTTFormat {
 	blacklist?: { [species: ID]: 1 },
 	moves?: { [move: ID]: 1 },
 	customNumCol?: { [species: ID]: number },
+	rowColors?: { [id: ID]:
+		| 1 // red
+		| 2 // green
+		| 3 // blue
+		| 4 // yellow
+	},
 
 	items?: GTTMod['items'], // not in use yet
 	itemSet?: GTTMod['itemSet'],
@@ -87,7 +93,18 @@ interface GTTFormat {
 	},
 }
 
-/** Used for keeping dexsearch and teambuilder in sync. Includes related utilities. */
+/**
+ * This is a wrapper around `ModdedDex`, applying information from `GensTeambuilderTable`.
+ * All contexts involving a format should use this for more accurate data.
+ * 
+ * Porting is very simple:
+ * `Dex.forFormat`     -> `new GTTIndex`
+ * `dex`, `dex.gen`    -> `gtt.dex`, `gtt.dex.gen`
+ * `dex.species.get`   -> `gtt.getFormatSpecies`
+ * `dex.moves.get`     -> `gtt.getFormatMove`
+ * `dex.abilities.get` -> `gtt.getFormatAbility`
+ * `dex.items.get`     -> `gtt.getFormatItem`
+ */
 export class GTTIndex {
 	formatid!: ID;
 	format!: GTTFormat;
@@ -280,6 +297,11 @@ export class GTTIndex {
 /** ID, SearchType, index (if alias), offset (if offset alias) */
 declare const BattleSearchIndex: [ID, SearchType, number?, number?][];
 declare const BattleSearchIndexOffset: any;
+
+/**
+ * This is a compilation of mod and format data. Compared to `BattleFormats`, which is mostly an export of `config/formats.ts`,
+ * this holds ruleset information in the form of flags and overrides.
+ */
 export declare const GensTeambuilderTable: {
 	mods: { [mod: ID]: GTTMod },
 	formats: { [format: ID]: ID | GTTFormat },

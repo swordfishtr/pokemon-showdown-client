@@ -268,6 +268,13 @@
 	opacity: 0.6;
 	margin-right: 1px;
 }
+.dexlist .typecol span.img {
+	opacity: 0.6;
+	margin-right: 1px;
+	display: inline-block;
+	height: 14px;
+	width: 32px;
+}
 .dexlist .typecol img.b {
 	opacity: 1;
 	outline: #4488CC solid 1px;
@@ -414,4 +421,11 @@
 }
 .dark .dexlist a:hover .col {
 	color: #FFF;
+}
+
+.result.rowcolor-red {
+	background-color: #eeaaaa;
+}
+.dark .result.rowcolor-red {
+	background-color: #340000;
 }

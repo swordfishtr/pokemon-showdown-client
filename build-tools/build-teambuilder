@@ -1304,6 +1304,17 @@ for (const format of Dex.formats.all()) {
 			}
 		}
 	}
+
+	/** Row colors */
+	gtt.rowColors = {};
+	if (/generations|35pokes/.test(format.id) && ![
+		'gen9nd35pokesperfectvgc1',
+	].includes(format.id)) {
+		gtt.rowColors.hiddenpower = 1;
+	}
+	if (isEmpty(gtt.rowColors)) {
+		delete gtt.rowColors;
+	}
 }
 
 for (const mod of gensmods) {
