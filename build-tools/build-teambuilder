@@ -1315,6 +1315,8 @@ for (const format of Dex.formats.all()) {
 	if (/(?<!re)generations/.test(format.id)) {
 		for (const x of [
 			'attract', 'hiddenpower', 'lastrespects', 'shedtail', 'revivalblessing', 'takeheart', 'focusband', 'kingsrock', 'razorfang', 'quickclaw', 'berserkgene', 'shadowtag', 'quickdraw', 'cutecharm',
+			'confuseray', 'flatter', 'supersonic', 'swagger', 'sweetkiss', 'teeterdance',
+			'flash', 'kinesis', 'sandattack', 'smokescreen',
 		]) {
 			gtt.rowColors[x] = 1;
 		}
