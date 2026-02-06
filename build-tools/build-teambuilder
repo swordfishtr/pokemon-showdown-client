@@ -712,6 +712,7 @@ const check = {
 			/natdex/,
 			/nationaldex/,
 			/^gen\d+nd/,
+			/^ver|^val|^acu|^cor/,
 		].some((regex) => regex.test(id));
 	},
 	idToRowColors(id) {
