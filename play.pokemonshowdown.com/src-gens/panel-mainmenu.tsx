@@ -289,9 +289,6 @@ export class MainMenuRoom extends PSRoom {
 				let teambuilderFormatName = '';
 				if (isTeambuilderFormat) {
 					teambuilderFormatName = name;
-					if (!id.startsWith('gen')) {
-						teambuilderFormatName = '[Gen 6] ' + name;
-					}
 					let parenPos = teambuilderFormatName.indexOf('(');
 					if (parenPos > 0 && name.endsWith(')')) {
 						// variation of existing tier

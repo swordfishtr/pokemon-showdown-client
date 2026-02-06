@@ -428,6 +428,7 @@ class FormatDropdownPanel extends PSRoomPanel {
 		const selectType: SelectType = (
 			room.parentElem.getAttribute('data-selecttype') as any || 'challenge'
 		);
+		console.log(selectType, room);
 		const curFormat = toID((room.parentElem as HTMLButtonElement).value);
 		const formats = Object.values(BattleFormats).filter(format => {
 			if (selectType === 'challenge' && format.challengeShow === false) return false;
