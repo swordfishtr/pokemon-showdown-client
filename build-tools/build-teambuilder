@@ -34,6 +34,7 @@ const GensTeambuilderTable = {
 	mods: {},
 	formats: {},
 	learnsets: {},
+	rowColors: {},
 	build: (new Date()).toUTCString(),
 };
 
@@ -713,6 +714,16 @@ const check = {
 			/^gen\d+nd/,
 		].some((regex) => regex.test(id));
 	},
+	idToRowColors(id) {
+		if (/35pokes/.test(id) && ![
+			'gen9nd35pokesperfectvgc1',
+		].includes(id)) {
+			return '35';
+		}
+		if (/(?<!re)generations/.test(id) || /^ver|^val|^acu|^cor/.test(id)) {
+			return 'gens';
+		}
+	},
 };
 
 const flags = {
@@ -829,6 +840,9 @@ for (const format of Dex.formats.all()) {
 	].includes(format.id)) {
 		gtt.natdex = 'gen9';
 	}
+
+	gtt.rowColors = check.idToRowColors(format.id);
+	if (!gtt.rowColors) delete gtt.rowColors;
 
 	for (const flag in flags) {
 		if (flags[flag](format.id)) {
@@ -1304,26 +1318,6 @@ for (const format of Dex.formats.all()) {
 			}
 		}
 	}
-
-	/** Row colors */
-	gtt.rowColors = {};
-	if (/generations|35pokes/.test(format.id) && ![
-		'gen9nd35pokesperfectvgc1',
-	].includes(format.id)) {
-		gtt.rowColors.hiddenpower = 1;
-	}
-	if (/(?<!re)generations/.test(format.id)) {
-		for (const x of [
-			'attract', 'hiddenpower', 'lastrespects', 'shedtail', 'revivalblessing', 'takeheart', 'focusband', 'kingsrock', 'razorfang', 'quickclaw', 'berserkgene', 'shadowtag', 'quickdraw', 'cutecharm',
-			'confuseray', 'flatter', 'supersonic', 'swagger', 'sweetkiss', 'teeterdance',
-			'flash', 'kinesis', 'sandattack', 'smokescreen',
-		]) {
-			gtt.rowColors[x] = 1;
-		}
-	}
-	if (isEmpty(gtt.rowColors)) {
-		delete gtt.rowColors;
-	}
 }
 
 for (const mod of gensmods) {
@@ -1359,6 +1353,27 @@ function isEmpty(obj) {
 		return false;
 	}
 	return true;
+}
+
+// Row Colors and Groups
+{
+	const rc_gens = GensTeambuilderTable.rowColors['gens'] = {};
+	const rc_35 = GensTeambuilderTable.rowColors['35'] = {};
+
+	for (const x of [
+		'attract', 'hiddenpower', 'lastrespects', 'shedtail', 'revivalblessing', 'takeheart', 'focusband', 'kingsrock', 'razorfang', 'quickclaw', 'berserkgene', 'shadowtag', 'quickdraw', 'cutecharm',
+		'confuseray', 'flatter', 'supersonic', 'swagger', 'sweetkiss', 'teeterdance',
+		'flash', 'kinesis', 'sandattack', 'smokescreen',
+	]) {
+		rc_gens[x] = 1;
+	}
+	for (const x of [
+		'hiddenpower', 'lastrespects', 'shedtail',
+		'battlebond', 'powerconstruct', 'shadowtag',
+		'berserkgene', 'boosterenergy', 'kingsrock', 'quickclaw', 'razorfang',
+	]) {
+		rc_35[x] = 1;
+	}
 }
 
 // endregion

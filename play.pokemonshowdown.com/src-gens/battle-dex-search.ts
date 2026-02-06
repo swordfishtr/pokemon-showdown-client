@@ -27,6 +27,23 @@ type SearchRowBasic = [SearchType, ID];
 
 type SearchFilter = [string, string];
 
+/**
+ * This is a compilation of mod and format data. Compared to `BattleFormats`, which is mostly an export of `config/formats.ts`,
+ * this holds ruleset information in the form of flags and overrides.
+ */
+export declare const GensTeambuilderTable: {
+	mods: { [mod: ID]: GTTMod },
+	formats: { [format: ID]: ID | GTTFormat },
+	learnsets: any, // TODO
+	rowColors: { [group: ID]: { [id: ID]:
+		| 1 // red
+		| 2 // green
+		| 3 // blue
+		| 4 // yellow
+	}},
+	build: string, // Date-compatible
+};
+
 interface GTTMod {
 	items: any, // null after move to itemSet
 	itemSet?: any,
@@ -47,6 +64,7 @@ interface GTTFormat {
 	mod: ID, // keyof GTT.mods
 	natdex: ID | null, // keyof GTT.mods
 	level: 5 | 50 | 100,
+	rowColors?: ID, // keyof GTT.rowColors
 
 	blitz?: 1, // not in use yet
 	doubles?: 1,
@@ -73,12 +91,6 @@ interface GTTFormat {
 	blacklist?: { [species: ID]: 1 },
 	moves?: { [move: ID]: 1 },
 	customNumCol?: { [species: ID]: number },
-	rowColors?: { [id: ID]:
-		| 1 // red
-		| 2 // green
-		| 3 // blue
-		| 4 // yellow
-	},
 
 	items?: GTTMod['items'], // not in use yet
 	itemSet?: GTTMod['itemSet'],
@@ -297,17 +309,6 @@ export class GTTIndex {
 /** ID, SearchType, index (if alias), offset (if offset alias) */
 declare const BattleSearchIndex: [ID, SearchType, number?, number?][];
 declare const BattleSearchIndexOffset: any;
-
-/**
- * This is a compilation of mod and format data. Compared to `BattleFormats`, which is mostly an export of `config/formats.ts`,
- * this holds ruleset information in the form of flags and overrides.
- */
-export declare const GensTeambuilderTable: {
-	mods: { [mod: ID]: GTTMod },
-	formats: { [format: ID]: ID | GTTFormat },
-	learnsets: any, // TODO
-	build: string, // Date-compatible
-};
 
 /**
  * Backend for search UIs.

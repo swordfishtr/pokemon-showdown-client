@@ -9,7 +9,7 @@
 
 import preact from "../js/lib/preact";
 import { Dex, toID, type ID } from "./battle-dex";
-import type { DexSearch, SearchRow, SearchType } from "./battle-dex-search";
+import { GensTeambuilderTable, type DexSearch, type SearchRow, type SearchType } from "./battle-dex-search";
 import { Config } from "./client-main";
 
 export class PSSearchResults extends preact.Component<{
@@ -37,7 +37,11 @@ export class PSSearchResults extends preact.Component<{
 	};
 	rowColorStyle(id: ID) {
 		if (id.startsWith('hiddenpower')) id = 'hiddenpower' as ID;
-		return this.rowColorStyleTable[this.props.search.gtt.format.rowColors?.[id] ?? 0];
+		const group = this.props.search.gtt.format.rowColors;
+		if (!group) return '';
+		const color = GensTeambuilderTable.rowColors[group]?.[id];
+		if (!color) return '';
+		return this.rowColorStyleTable[color];
 	}
 
 	renderPokemonSortRow(index: number) {
