@@ -1103,13 +1103,13 @@ export class BattleLog {
 		this.innerElem.appendChild(this.preemptElem.firstChild);
 	}
 
-	static escapeFormat(formatid = '', fixGen6?: boolean): string {
+	static escapeFormat(formatid = ''): string {
 		let atIndex = formatid.indexOf('@@@');
 		if (atIndex >= 0) {
-			return this.escapeHTML(this.formatName(formatid.slice(0, atIndex), fixGen6)) +
+			return this.escapeHTML(this.formatName(formatid.slice(0, atIndex))) +
 				'<br />Custom rules: ' + this.escapeHTML(formatid.slice(atIndex + 3));
 		}
-		return this.escapeHTML(this.formatName(formatid, fixGen6));
+		return this.escapeHTML(this.formatName(formatid));
 	}
 	static formatId(format: string): ID {
 		const atIndex = format.indexOf('@@@');
@@ -1118,24 +1118,19 @@ export class BattleLog {
 		} else {
 			format = toID(format);
 		}
-		if (!format) return '' as ID;
-		if (!format.startsWith('gen')) format = `${Dex.modid}${format}`;
-		return format as ID;
+		return (format || '') as ID;
 	}
 	/**
 	 * Do not store this output anywhere; it removes the generation number
 	 * for the current gen.
 	 */
-	static formatName(formatid = '', fixGen6?: boolean): string {
+	static formatName(formatid = ''): string {
 		if (!formatid) return '';
 
 		let atIndex = formatid.indexOf('@@@');
 		if (atIndex >= 0) {
-			return this.formatName(formatid.slice(0, atIndex), fixGen6) +
+			return this.formatName(formatid.slice(0, atIndex)) +
 				' (Custom rules: ' + this.escapeHTML(formatid.slice(atIndex + 3)) + ')';
-		}
-		if (fixGen6 && !formatid.startsWith('gen')) {
-			formatid = `gen6${formatid}`;
 		}
 		let name = formatid;
 		if (window.BattleFormats && BattleFormats[formatid]) {

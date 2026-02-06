@@ -18,6 +18,7 @@ import { Dex, toID, type ID } from './battle-dex';
 import { BattleTextParser, type Args } from './battle-text-parser';
 import type { BattleRoom } from './panel-battle';
 import { Teams } from './battle-teams';
+import { DexSearch } from './battle-dex-search';
 
 declare const BattleTextAFD: any;
 declare const BattleTextNotAFD: any;
@@ -475,8 +476,7 @@ class PSTeams extends PSStreamModel<'team' | 'format'> {
 		if (slashIndex < 0) slashIndex = bracketIndex; // line.slice(slashIndex + 1, pipeIndex) will be ''
 		let format = bracketIndex > 0 ? line.slice(
 			(leftBracketIndex ? leftBracketIndex + 1 : 0), isBox ? bracketIndex - 4 : bracketIndex
-		) : 'gen9';
-		if (!format.startsWith('gen')) format = 'gen6' + format;
+		) : DexSearch.DEFAULT_FORMAT;
 		const name = line.slice(slashIndex + 1, pipeIndex);
 		return {
 			name,

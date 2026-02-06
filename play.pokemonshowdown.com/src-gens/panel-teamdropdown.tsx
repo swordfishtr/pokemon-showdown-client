@@ -69,7 +69,6 @@ export class PSTeambuilder {
 					curTeam.isBox = true;
 				}
 				if (curTeam.format.startsWith('[')) curTeam.format = curTeam.format.slice(1) as ID;
-				if (!curTeam.format.startsWith('gen')) curTeam.format = `gen6${curTeam.format}` as ID;
 
 				line = line.trim();
 				[curTeam.folder, curTeam.name] = this.splitPrefix(line, '/');
