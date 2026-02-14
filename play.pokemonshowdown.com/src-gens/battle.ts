@@ -2476,7 +2476,7 @@ export class Battle {
 					if (item.megaStone) {
 						let index = Object.values(item.megaStone).indexOf(species.name);
 						if (index < 0) index = 0;
-						species = this.gtt.getFormatSpecies(Object.keys(item.megaStone)[index]);
+						species = this.gtt.getFormatSpecies(Object.values(item.megaStone)[index]);
 					}
 				} else if (nextArgs[0] === '-primal' && nextArgs.length > 2) {
 					if (nextArgs[2] === 'Red Orb') species = this.gtt.getFormatSpecies('Groudon-Primal');
