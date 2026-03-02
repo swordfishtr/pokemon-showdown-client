@@ -2048,9 +2048,11 @@ export const PS = new class extends PSModel {
 				room = PS.rooms[roomid2] ?? null;
 				if (room && room.connected !== 'expired') {
 					room.connected = false;
+					console.log('DEINIT', room);
 					this.removeRoom(room);
-					room.onDeinit?.();
+					const { onDeinit } = room;
 					delete room.onDeinit;
+					onDeinit?.();
 				}
 				this.updateAutojoin();
 				this.update();
@@ -2084,8 +2086,9 @@ export const PS = new class extends PSModel {
 		if (room) {
 			if (isInit) {
 				room.update(['initdone']);
-				room.onInit?.();
+				const { onInit } = room;
 				delete room.onInit;
+				onInit?.();
 			}
 			else {
 				room.update(null);
