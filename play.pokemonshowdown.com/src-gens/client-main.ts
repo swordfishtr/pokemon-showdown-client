@@ -2035,6 +2035,7 @@ export const PS = new class extends PSModel {
 					this.updateRoomTypes();
 				}
 				if (room) {
+					console.log('INIT', room);
 					if (room.connected === 'autoreconnect') {
 						room.connected = true;
 						if (room.handleReconnect(msg)) return;
