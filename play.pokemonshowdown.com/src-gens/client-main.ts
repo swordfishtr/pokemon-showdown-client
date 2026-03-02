@@ -906,6 +906,10 @@ export class PSRoom extends PSStreamModel<Args | null> implements RoomOptions {
 	noURL: boolean;
 	args: Record<string, unknown> | null;
 
+	// Handlers for external code like Showdex.
+	onInit?: () => void;
+	onDeinit?: () => void;
+
 	constructor(options: RoomOptions) {
 		super();
 		this.id = options.id;
@@ -2045,6 +2049,8 @@ export const PS = new class extends PSModel {
 				if (room && room.connected !== 'expired') {
 					room.connected = false;
 					this.removeRoom(room);
+					room.onDeinit?.();
+					delete room.onDeinit;
 				}
 				this.updateAutojoin();
 				this.update();
@@ -2075,7 +2081,16 @@ export const PS = new class extends PSModel {
 			}
 			room?.receiveLine(args);
 		}
-		room?.update(isInit ? ['initdone'] : null);
+		if (room) {
+			if (isInit) {
+				room.update(['initdone']);
+				room.onInit?.();
+				delete room.onInit;
+			}
+			else {
+				room.update(null);
+			}
+		}
 	}
 	send(msg: string, roomid?: RoomID) {
 		const bracketRoomid = roomid ? `[${roomid}] ` : '';
