@@ -1301,7 +1301,7 @@ export class Battle {
 			if (this.sides[i]) this.sides[i].destroy();
 			this.sides[i] = null!;
 		}
-		console.log('Destroyed battle:', this);
+		// console.log('Destroyed battle:', this);
 		this.mySide = null!;
 		this.nearSide = null!;
 		this.farSide = null!;

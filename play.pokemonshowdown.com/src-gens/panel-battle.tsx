@@ -1079,6 +1079,7 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 
 	override render() {
 		const room = this.props.room;
+		if (!room.connected) return (<></>);
 		this.updateLayout();
 		const id = `room-${room.id}`;
 		const hardcoreStyle = room.battle?.hardcoreMode ? <style
