@@ -612,6 +612,7 @@ export class ChatRoom extends PSRoom {
 		if (this.battle) {
 			// since battle is defined here, we might as well deallocate it here
 			this.battle.destroy();
+			this.battle = null;
 		} else {
 			this.log?.destroy();
 		}
