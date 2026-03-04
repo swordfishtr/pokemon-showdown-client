@@ -790,6 +790,7 @@ export const BattlePokemonIconIndexesLeft: { [id: string]: number } = {
 };
 
 export const GensPokemonIconIndexes: { [id: string]: number } = {
+	// Re-Generations
 	irongoro: 1,
 	ironsoke: 2,
 	beedrillg: 3,
@@ -797,6 +798,21 @@ export const GensPokemonIconIndexes: { [id: string]: number } = {
 	trembler: 5,
 	valkaryia: 6,
 	usurperr: 7,
+
+	// Petpet Battle
+	bloop: 12 + 0,
+	ettaphant: 12 + 1,
+	faellie: 12 + 2,
+	feepit: 12 + 3,
+	griefer: 12 + 4,
+	kadoatie: 12 + 5,
+	meepit: 12 + 6,
+	scado: 12 + 7,
+	snowbunny: 12 + 8,
+	spyder: 12 + 9,
+	ukali: 12 + 10,
+	wuzzle: 12 + 11,
+	yullie: 12 + 12,
 };
 
 export const BattleAvatarNumbers: { [k: string]: string } = {

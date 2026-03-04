@@ -809,7 +809,7 @@ export const Dex = new class implements ModdedDex {
 		return num;
 	}
 
-	getGensPokemonIconNum(id: ID) {
+	getGensPokemonIconNum(id: ID): number {
 		return window.GensPokemonIconIndexes?.[id] ?? 0;
 	}
 
@@ -836,24 +836,15 @@ export const Dex = new class implements ModdedDex {
 			id = toID(pokemon.volatiles.formechange[1]);
 		}
 
-		if(!id || !GensPokemonIconIndexes[id]) {
-			// Regular species
-			const num = this.getPokemonIconNum(id, pokemon?.gender === 'F', facingLeft);
-			const top = Math.floor(num / 12) * 30;
-			const left = (num % 12) * 40;
-			const fainted = ((pokemon as Pokemon | ServerPokemon)?.fainted ?
-				`;opacity:.3;filter:grayscale(100%) brightness(.5)` : ``);
-			return `background:transparent url(${Dex.resourcePrefix}sprites/pokemonicons-sheet.png?v18) no-repeat scroll -${left}px -${top}px${fainted};`;
+		let num = this.getGensPokemonIconNum(id);
+		const isGens = !!num;
+		if (!isGens) {
+			num = this.getPokemonIconNum(id, pokemon?.gender === 'F', facingLeft);
 		}
-		else {
-			// Generations custom species
-			const num = this.getGensPokemonIconNum(id);
-			const top = Math.floor(num / 10) * 32;
-			const left = (num % 10) * 32;
-			const fainted = ((pokemon as Pokemon | ServerPokemon)?.fainted ?
-				`;opacity:.3;filter:grayscale(100%) brightness(.5)` : ``);
-			return `background:transparent url(${Dex.resourcePrefix}sprites/gens-pokemonicons-sheet.png?v18) no-repeat scroll -${left}px -${top}px${fainted}; width:32px; height: 32px; margin-left: 4px;`;
-		}
+		const top = Math.floor(num / 12) * 30;
+		const left = (num % 12) * 40;
+		const fainted = (pokemon as Pokemon | ServerPokemon)?.fainted ? `;opacity:.3;filter:grayscale(100%) brightness(.5)` : ``;
+		return `background:transparent url(${Dex.resourcePrefix}sprites/${isGens ? 'gens-' : ''}pokemonicons-sheet.png) no-repeat scroll -${left}px -${top}px${fainted};`;
 	}
 
 	getTeambuilderSpriteData(pokemon: any, gtt: GTTIndex): TeambuilderSpriteData {
