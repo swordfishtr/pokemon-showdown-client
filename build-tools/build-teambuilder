@@ -857,7 +857,7 @@ for (const format of Dex.formats.all()) {
 			'-pokemontag:ndlc', '-pokemontag:ndnfe', '-pokemontag:ndru', '-pokemontag:ndrubl', '-pokemontag:nduu',
 			'-pokemontag:nduubl', '-pokemontag:ndou', '-pokemontag:ndag', '-pokemontag:nduber',
 		].every((rule) => ruleTable.tagRules.includes(rule)) ||
-		(ruleTable.tagRules.includes('-pokemontag:allpokemon') && !format.team)
+		(ruleTable.has('-pokemontag:allpokemon') && !format.team)
 	) {
 		gtt.whitelist = Object.fromEntries(
 			[...ruleTable.keys()]
