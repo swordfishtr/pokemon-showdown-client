@@ -1804,8 +1804,8 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 		const minGenCode: { [gen: number]: string } = { 6: 'p', 7: 'q', 8: 'g', 9: 'a' };
 
 		let parent: any = GensTeambuilderTable;
-		if(this.gtt.mod.learnsets) parent = this.gtt.mod;
-		if(this.gtt.format.learnsets) parent = this.gtt.format;
+		if (this.gtt.mod.learnsets) parent = this.gtt.mod;
+		if (this.gtt.format.learnsets) parent = this.gtt.format;
 		
 		while (learnsetid) {
 			let learnset = parent.learnsets[learnsetid];
@@ -1834,11 +1834,6 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 					}
 					moves.push(moveid);
 					if (moveid === 'sketch') sketch = true;
-					if (moveid === 'hiddenpower') {
-						moves.push(
-							'hiddenpowerbug', 'hiddenpowerdark', 'hiddenpowerdragon', 'hiddenpowerelectric', 'hiddenpowerfighting', 'hiddenpowerfire', 'hiddenpowerflying', 'hiddenpowerghost', 'hiddenpowergrass', 'hiddenpowerground', 'hiddenpowerice', 'hiddenpowerpoison', 'hiddenpowerpsychic', 'hiddenpowerrock', 'hiddenpowersteel', 'hiddenpowerwater'
-						);
-					}
 				}
 			}
 			learnsetid = this.nextLearnsetid(learnsetid, species.id, true);
@@ -1913,19 +1908,25 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 			}
 		}
 
-		if(this.gtt.format.learnsetDiff) {
-			for(const move in this.gtt.format.learnsetDiff.removals[species.id]) {
+		if (this.gtt.format.learnsetDiff) {
+			for (const move in this.gtt.format.learnsetDiff.removals[species.id]) {
 				const i = moves.indexOf(move);
-				if(i >= 0) moves.splice(i, 1);
+				if (i >= 0) moves.splice(i, 1);
 			}
-			for(const move in this.gtt.format.learnsetDiff.additions[species.id]) {
-				if(!moves.includes(move)) moves.push(move);
+			for (const move in this.gtt.format.learnsetDiff.additions[species.id]) {
+				if (!moves.includes(move)) moves.push(move);
 			}
 		}
 
-		if(ref35Moves) {
+		if (ref35Moves) {
 			moves = moves.filter((move) => (move in ref35Moves))
 			sketchMoves = sketchMoves.filter((move) => (move in ref35Moves))
+		}
+
+		if (moves.includes('hiddenpower')) {
+			moves.push(
+				'hiddenpowerbug', 'hiddenpowerdark', 'hiddenpowerdragon', 'hiddenpowerelectric', 'hiddenpowerfighting', 'hiddenpowerfire', 'hiddenpowerflying', 'hiddenpowerghost', 'hiddenpowergrass', 'hiddenpowerground', 'hiddenpowerice', 'hiddenpowerpoison', 'hiddenpowerpsychic', 'hiddenpowerrock', 'hiddenpowersteel', 'hiddenpowerwater',
+			);
 		}
 
 		moves.sort();
