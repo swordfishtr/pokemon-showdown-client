@@ -581,6 +581,8 @@ export class BattleScene implements BattleSceneStub {
 		if (Dex.prefs('bwgfx') && gen > 5) gen = 5;
 		if([
 			'gen9regenerations10',
+			'gen9regenerations11',
+			'gen9petpetbattleii',
 		].includes(this.battle.gtt.formatid)) {
 			// Hardcoded to match custom sprites
 			gen = 5;
