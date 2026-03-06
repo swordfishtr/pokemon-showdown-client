@@ -61,6 +61,7 @@ const gensmods = [
 	'generationsdraftgen4vgc',
 	'regenerations10',
 	'regenerations11',
+	'petpet',
 ];
 
 //const testmod = 'perfectg1';
