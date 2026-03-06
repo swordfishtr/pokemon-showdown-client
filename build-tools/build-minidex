@@ -104,16 +104,6 @@ function updateSizes(baseid) {
 			}
 		}
 	}
-
-	buf = buf.slice(0, -2) + `
-};
-`;
-	g5buf = g5buf.slice(0, -2) + `
-};
-`;
-
-	fs.writeFileSync('data/pokedex-mini.js', buf);
-	fs.writeFileSync('data/pokedex-mini-bw.js', g5buf);
 }
 
 if (fs.existsSync('sprites/ani/')) {
@@ -123,6 +113,10 @@ if (fs.existsSync('sprites/ani/')) {
 	for (const id of customPokemon) {
 		updateSizes(id);
 	}
+	buf = buf.slice(0, -2) + '\n};\n';
+	g5buf = g5buf.slice(0, -2) + '\n};\n';
+	fs.writeFileSync('data/pokedex-mini.js', buf);
+	fs.writeFileSync('data/pokedex-mini-bw.js', g5buf);
 	console.log('DONE');
 } else {
 	try {
