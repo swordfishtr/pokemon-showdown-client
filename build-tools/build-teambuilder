@@ -590,7 +590,7 @@ function buildOverrides(mod, gtt) {
 	const modData = modDex.data;
 	const parentDex = Dex.forGen(modDex.gen);
 
-	const overrideSpeciesData = (gtt.overrideSpeciesData = {});
+	const overrideSpeciesData = (gtt.overrideSpeciesData ??= {});
 	for (const id in modData.Pokedex) {
 		const modEntry = modDex.species.get(id);
 		const parentEntry = parentDex.species.get(id);
@@ -606,7 +606,7 @@ function buildOverrides(mod, gtt) {
 		}
 	}
 
-	const overrideMoveData = (gtt.overrideMoveData = {});
+	const overrideMoveData = (gtt.overrideMoveData ??= {});
 	for (const id in modData.Moves) {
 		const modEntry = modDex.moves.get(id);
 		const parentEntry = parentDex.moves.get(id);
@@ -623,7 +623,7 @@ function buildOverrides(mod, gtt) {
 		}
 	}
 
-	const overrideAbilityData = (gtt.overrideAbilityData = {});
+	const overrideAbilityData = (gtt.overrideAbilityData ??= {});
 	for (const id in modData.Abilities) {
 		const modEntry = modDex.abilities.get(id);
 		const parentEntry = parentDex.abilities.get(id);
@@ -639,7 +639,7 @@ function buildOverrides(mod, gtt) {
 		}
 	}
 
-	const overrideItemData = (gtt.overrideItemData = {});
+	const overrideItemData = (gtt.overrideItemData ??= {});
 	for (const id in modData.Items) {
 		const modEntry = modDex.items.get(id);
 		const parentEntry = parentDex.items.get(id);
@@ -729,76 +729,84 @@ const check = {
 };
 
 const flags = {
-	doubles(id) {
+	doubles({ id }) {
 		return [
 			/doubles/,
 			/vgc/,
 		].some((regex) => regex.test(id));
 	},
-	cap(id) {
+	cap() {
 		return false;
 	},
-	tradebacks(id) {
+	tradebacks() {
 		return false;
 	},
-	flipped(id) {
+	flipped({ id }) {
 		return /flipped/.test(id);
 	},
-	aaa(id) {
+	aaa() {
 		return false;
 	},
-	hackmons(id) {
+	hackmons({ id }) {
 		return /brokencup|chaoscup|hackmonscup/.test(id);
 	},
-	stabmons(id) {
+	stabmons() {
 		return false;
 	},
-	scalemons(id) {
+	scalemons({ id }) {
 		return [
 			'gen9benjaminbutton',
 		].includes(id);
 	},
+	notera(f, rt) {
+		return rt.has('terastalclause');
+	},
+	noshiny({ id }) {
+		return [
+			'gen9petpetbattleii',
+		].includes(id);
+	},
 	// Filter non LC pokemon from results
-	listlc(id) {
+	listlc({ id }) {
 		return [
 			'gen9ndvgclc',
 			'gen9ndvgclcbo3',
 		].includes(id);
 	},
 	// Filter non current gen pokemon from results
-	listcg(id) {
+	listcg({ id }) {
 		return [
 			'gen94v4duu',
 			'gen94v4duubo3',
 		].includes(id);
 	},
-	listnomegas(id) {
+	listnomegas({ id }) {
 		return [
 			'gen94v4duu',
 			'gen94v4duubo3',
 		].includes(id);
 	},
-	listnomythicals(id) {
+	listnomythicals({ id }) {
 		return [
 			'gen94v4duu',
 			'gen94v4duubo3',
 		].includes(id);
 	},
-	listnolegends(id) {
+	listnolegends({ id }) {
 		return [
 			'gen94v4duu',
 			'gen94v4duubo3',
 		].includes(id);
 	},
 	// Sort pokemon results by evolution stage
-	sortevo(id) {
+	sortevo({ id }) {
 		return [
 			'gen94v4duu',
 			'gen94v4duubo3',
 		].includes(id);
 	},
 	// Misc filters
-	listnogems(id) {
+	listnogems({ id }) {
 		return [
 			'gen535pokesperfectb2',
 			'gen535pokesperfectb3',
@@ -847,7 +855,7 @@ for (const format of Dex.formats.all()) {
 	if (!gtt.rowColors) delete gtt.rowColors;
 
 	for (const flag in flags) {
-		if (flags[flag](format.id)) {
+		if (flags[flag](format, ruleTable)) {
 			gtt[flag] = 1;
 		}
 	}
@@ -1283,7 +1291,27 @@ for (const format of Dex.formats.all()) {
 		];
 	}
 
-	/** Mods using hashtag rules */
+	/** Initial overrides */
+	for (let i = 0; i < gensmods.length; i++) {
+		const mod = gensmods[i];
+		if (format.id.includes(mod)) {
+			gensmods.splice(i, 1);
+			buildFormatOverrides(mod, format.id);
+			const learnsetDiff = (gtt.learnsetDiff = Dex.getLearnsetDiff(Dex.mod(mod), Dex.mod(gtt.mod)));
+			for(const diffType in learnsetDiff) {
+				for(const mon in learnsetDiff[diffType]) {
+					if(!(mon in gtt.whitelist)) {
+						delete learnsetDiff[diffType][mon];
+						continue;
+					}
+					learnsetDiff[diffType][mon] = processDiffMon(learnsetDiff[diffType][mon]);
+				}
+			}
+			break;
+		}
+	}
+
+	/** Additional overrides (mods using hashtag rules) */
 	if (!isEmpty(ruleTable.validatorOverrides)) {
 		for (const species in ruleTable.validatorOverrides) {
 			const speciesid = toID(species.split(':')[1]);
@@ -1321,25 +1349,6 @@ for (const format of Dex.formats.all()) {
 					}
 				}
 			}
-		}
-	}
-}
-
-for (const mod of gensmods) {
-	// Assuming gens mods are used by 1 format only.
-	const formatid = Object.keys(GensTeambuilderTable.formats).find((id) => id.includes(mod));
-
-	buildFormatOverrides(mod, formatid);
-
-	const gtt = GensTeambuilderTable.formats[formatid];
-	const learnsetDiff = (gtt.learnsetDiff = Dex.getLearnsetDiff(Dex.mod(mod), Dex.mod(gtt.mod)));
-	for(const diffType in learnsetDiff) {
-		for(const mon in learnsetDiff[diffType]) {
-			if(!(mon in gtt.whitelist)) {
-				delete learnsetDiff[diffType][mon];
-				continue;
-			}
-			learnsetDiff[diffType][mon] = processDiffMon(learnsetDiff[diffType][mon]);
 		}
 	}
 }

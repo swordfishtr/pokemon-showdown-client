@@ -75,6 +75,8 @@ interface GTTFormat {
 	hackmons?: 1, // not in use yet
 	stabmons?: 1, // not in use yet
 	scalemons?: 1,
+	notera?: 1,
+	noshiny?: 1,
 
 	listlc?: 1,
 	listcg?: 1,
