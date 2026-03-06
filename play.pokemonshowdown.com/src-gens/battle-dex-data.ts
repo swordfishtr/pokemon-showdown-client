@@ -789,6 +789,7 @@ export const BattlePokemonIconIndexesLeft: { [id: string]: number } = {
 	blacephalon: 1440 + 105,
 };
 
+// Please update `build-tools/build-minidex`, too!
 export const GensPokemonIconIndexes: { [id: string]: number } = {
 	// Re-Generations
 	irongoro: 1,
