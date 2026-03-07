@@ -2087,7 +2087,7 @@ class TeamWizard extends preact.Component<{
 							<span class="detailcell">
 								<strong class="label">Level</strong> {}
 								{set.level || editor.gtt.format.level}
-								{PSView.narrowMode && set.shiny && <><br />
+								{PSView.narrowMode && !editor.gtt.format.noshiny && set.shiny && <><br />
 									<img src={`${Dex.resourcePrefix}sprites/misc/shiny.png`} width={22} height={22} alt="Shiny" />
 								</>}
 								{!PSView.narrowMode && set.gender && set.gender !== 'N' && <>
@@ -2096,11 +2096,11 @@ class TeamWizard extends preact.Component<{
 									/>
 								</>}
 							</span>
-							{!!(!PSView.narrowMode && (set.shiny || editor.gtt.dex.gen >= 2)) && <span class="detailcell">
+							{!PSView.narrowMode && editor.gtt.dex.gen > 1 && !editor.gtt.format.noshiny && <span class="detailcell">
 								<strong class="label">Shiny</strong> {}
 								{set.shiny ? <img src={`${Dex.resourcePrefix}sprites/misc/shiny.png`} width={22} height={22} alt="Yes" /> : '\u2014'}
 							</span>}
-							{editor.gtt.dex.gen === 9 && <span class="detailcell">
+							{editor.gtt.dex.gen === 9 && !editor.gtt.format.notera && <span class="detailcell">
 								<strong class="label">Tera</strong> {}
 								<PSIcon type={set.teraType || species.requiredTeraType || species.types[0]} />
 							</span>}
@@ -3272,53 +3272,57 @@ class DetailsForm extends preact.Component<{
 					type="number" inputMode="numeric" min="1" max="100" step="1"
 					class="textbox inputform numform default-placeholder" style="width: 50px"
 					onInput={this.changeLevel} onChange={this.changeLevel}
-				/></label><small>(You probably want to change the team's levels by changing the format, not here)</small></p>
-				{editor.gtt.dex.gen > 1 && (<>
-					<p><div class="label">Shiny: <div class="labeled">
+				/></label></p>
+				{editor.gtt.dex.gen > 1 && !editor.gtt.format.noshiny && <p>
+					<div class="label">Shiny: <div class="labeled">
+						<label class="checkbox inline">
+							<input type="radio" name="shiny" value="true" checked={set.shiny}
+								onInput={this.changeShiny} onChange={this.changeShiny}
+							/>
+							<img src={`${Dex.resourcePrefix}sprites/misc/shiny.png`}
+								width={22} height={22} alt="Shiny"
+							/> Yes
+						</label>
+						<label class="checkbox inline">
+							<input type="radio" name="shiny" value="" checked={!set.shiny}
+								onInput={this.changeShiny} onChange={this.changeShiny}
+							/> No
+						</label>
+					</div></div>
+				</p>}
+				{editor.gtt.dex.gen > 1 && <p><div class="label">Gender: {species.gender ? (
+					<strong>{this.renderGender(species.gender)}</strong>
+				) : (
+					<div class="labeled">
 						<label class="checkbox inline"><input
-							type="radio" name="shiny" value="true" checked={set.shiny}
-							onInput={this.changeShiny} onChange={this.changeShiny}
-						/> <img src={`${Dex.resourcePrefix}sprites/misc/shiny.png`} width={22} height={22} alt="Shiny" /> Yes</label>
+							type="radio" name="gender" value="M" checked={set.gender === 'M'}
+							onInput={this.changeGender} onChange={this.changeGender}
+						/> {this.renderGender('M')}</label>
 						<label class="checkbox inline"><input
-							type="radio" name="shiny" value="" checked={!set.shiny}
-							onInput={this.changeShiny} onChange={this.changeShiny}
-						/> No</label>
-					</div></div></p>
-					<p><div class="label">Gender: {species.gender ? (
-						<strong>{this.renderGender(species.gender)}</strong>
-					) : (
-						<div class="labeled">
-							<label class="checkbox inline"><input
-								type="radio" name="gender" value="M" checked={set.gender === 'M'}
-								onInput={this.changeGender} onChange={this.changeGender}
-							/> {this.renderGender('M')}</label>
-							<label class="checkbox inline"><input
-								type="radio" name="gender" value="F" checked={set.gender === 'F'}
-								onInput={this.changeGender} onChange={this.changeGender}
-							/> {this.renderGender('F')}</label>
-							<label class="checkbox inline"><input
-								type="radio" name="gender" value="" checked={!set.gender || set.gender === 'N'}
-								onInput={this.changeGender} onChange={this.changeGender}
-							/> Random</label>
-						</div>
-					)}</div></p>
-					{editor.gtt.format.mod === 'gen7letsgo' ? (
-						<p><label class="label">Happiness: <input
-							name="happiness" value="" placeholder="70"
-							type="number" inputMode="numeric"
-							class="textbox inputform numform default-placeholder" style="width: 50px"
-							onInput={this.changeHappiness} onChange={this.changeHappiness}
-						/></label></p>
-					) : (editor.gtt.dex.gen < 8 || editor.gtt.format.natdex) && (
-						<p><label class="label">Happiness: <input
-							name="happiness" value={set.happiness ?? ''} placeholder="255"
-							type="number" inputMode="numeric" min="0" max="255" step="1"
-							class="textbox inputform numform default-placeholder" style="width: 50px"
-							onInput={this.changeHappiness} onChange={this.changeHappiness}
-						/></label></p>
-					)}
-				</>
-				)}
+							type="radio" name="gender" value="F" checked={set.gender === 'F'}
+							onInput={this.changeGender} onChange={this.changeGender}
+						/> {this.renderGender('F')}</label>
+						<label class="checkbox inline"><input
+							type="radio" name="gender" value="" checked={!set.gender || set.gender === 'N'}
+							onInput={this.changeGender} onChange={this.changeGender}
+						/> Random</label>
+					</div>
+				)}</div></p>}
+				{editor.gtt.dex.gen > 1 && (editor.gtt.format.mod === 'gen7letsgo' ? (
+					<p><label class="label">Happiness: <input
+						name="happiness" value="" placeholder="70"
+						type="number" inputMode="numeric"
+						class="textbox inputform numform default-placeholder" style="width: 50px"
+						onInput={this.changeHappiness} onChange={this.changeHappiness}
+					/></label></p>
+				) : (editor.gtt.dex.gen < 8 || editor.gtt.format.natdex) && (
+					<p><label class="label">Happiness: <input
+						name="happiness" value={set.happiness ?? ''} placeholder="255"
+						type="number" inputMode="numeric" min="0" max="255" step="1"
+						class="textbox inputform numform default-placeholder" style="width: 50px"
+						onInput={this.changeHappiness} onChange={this.changeHappiness}
+					/></label></p>
+				))}
 				{editor.gtt.dex.gen === 8 && editor.gtt.format.mod !== 'gen8bdsp' && !species.cannotDynamax && (
 					<p>
 						<label class="label" style="display:inline">Dynamax Level: <input
@@ -3347,7 +3351,7 @@ class DetailsForm extends preact.Component<{
 						))}
 					</select></label>
 				</p>}
-				{editor.gtt.dex.gen === 9 && <p>
+				{editor.gtt.dex.gen === 9 && !editor.gtt.format.notera && <p>
 					<label class="label" title="Tera Type">
 						Tera Type: {}
 						{species.requiredTeraType ? (
