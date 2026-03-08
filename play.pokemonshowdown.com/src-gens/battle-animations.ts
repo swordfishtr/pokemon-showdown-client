@@ -612,6 +612,10 @@ export class BattleScene implements BattleSceneStub {
 			bg = 'fx/bg-npa.png';
 			this.setBgm(-101);
 		}
+		else if (typeof rated === 'string' && rated.startsWith('35 test')) {
+			bg = 'fx/35pl_bg2.jpg';
+			this.setBgm(-101);
+		}
 		else if (typeof rated === 'string' && rated.startsWith('Perfect World Championships')) {
 			bg = 'fx/bg-npa.png';
 			this.setBgm(-101);
