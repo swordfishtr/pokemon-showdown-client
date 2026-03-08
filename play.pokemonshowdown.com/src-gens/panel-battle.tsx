@@ -400,8 +400,9 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 		const scene = battle.scene as BattleScene;
 		room.log ||= scene.log;
 		room.log.getHighlight = room.handleHighlight;
-		scene.tooltips.listen($elem.find('.battle-controls-container'));
-		scene.tooltips.listen(scene.log.elem);
+		// scene.tooltips.listen($elem.find('.battle-controls-container'));
+		// scene.tooltips.listen(scene.log.elem);
+		scene.tooltips.listen($elem);
 		super.componentDidMount();
 		battle.seekTurn(Infinity);
 		battle.subscribe(() => this.forceUpdate());

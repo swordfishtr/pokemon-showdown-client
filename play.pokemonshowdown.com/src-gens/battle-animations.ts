@@ -126,7 +126,7 @@ export class BattleScene implements BattleSceneStub {
 		}
 		this.numericId = numericId;
 		this.tooltips = new BattleTooltips(battle);
-		this.tooltips.listen($frame[0]);
+		// this.tooltips.listen($frame[0]);
 
 		this.preloadEffects();
 		// reset() is called during battle initialization, so it doesn't need to be called here
