@@ -126,7 +126,11 @@ export class BattleScene implements BattleSceneStub {
 		}
 		this.numericId = numericId;
 		this.tooltips = new BattleTooltips(battle);
-		// this.tooltips.listen($frame[0]);
+		// On the client, tooltips listen on `BattlePanel`s. On replays, since there are no rooms,
+		// tooltips must listen on the `BattleScene`.
+		if (!('PS' in window)) {
+			this.tooltips.listen($frame[0]);
+		}
 
 		this.preloadEffects();
 		// reset() is called during battle initialization, so it doesn't need to be called here
