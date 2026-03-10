@@ -74,34 +74,28 @@ export class TeamEditorState extends PSModel {
 		this.team.format = toID(format);
 		this.search.setGTT(format);
 	}
-	getFirstSearchResultIndex(type: SearchType) {
-		if(!this.search.results) return 0;
-		
-		// Fixing the search bug hoepfully......,
-		if (this.search.prependResults && this.search.prependResults.length > 0) {
-			const prepended = this.search.prependResults[0];
-			const prependedType = prepended[0];
-			const prependedId = prepended[1];
-			const searchQuery = this.search.query || '';
-			
-			
-			if (prependedType === type && searchQuery && toID(searchQuery) !== prependedId) {
-				let foundPrepend = false;
-				for (let i = 0; i < this.search.results.length; i++) {
-					if (this.search.results[i][0] === type) {
-						if (!foundPrepend) {
-							foundPrepend = true;
-							continue;
-						}
-						return i;
-					}
-				}
-			}
+	resetIndex(): void {
+		if (!this.innerFocus) return;
+		this.innerFocus.index = 0;
+		let { results, prependResults } = this.search;
+		if (!results) return;
+		// cursor should never default to prepends.
+		let prependLength = prependResults?.length ?? 0;
+		if (prependLength) {
+			results = results.slice(prependLength);
 		}
-		
-		const index = this.search.results.findIndex(([cur]) => cur === type);
-		if(index < 0) return 0;
-		return index;
+		// cursor should default to the first result with a matching type.
+		const firstMatching = results.findIndex((row) => row[0] === this.innerFocus!.type);
+		if (firstMatching > -1) {
+			this.innerFocus.index = firstMatching + prependLength;
+			return;
+		}
+		// cursor should default to the first result.
+		const firstValid = results.findIndex((row) => row[1] && !TeamEditorState.ignoreRows.includes(row[0]));
+		if (firstValid > -1) {
+			this.innerFocus.index = firstValid + prependLength;
+			return;
+		}
 	}
 	updatePrependResults() {
 		let value = '';
@@ -156,13 +150,13 @@ export class TeamEditorState extends PSModel {
 		this.search.setType(this.innerFocus.type, set);
 		const value = this.updatePrependResults();
 		this.search.find(value);
-		this.innerFocus.index = this.getFirstSearchResultIndex(this.innerFocus.type);
+		this.resetIndex();
 	}
 	/** user inputs on the search textbox. */
 	setSearchValue(value: string) {
 		if(!this.innerFocus || this.innerFocus.type === 'details' || this.innerFocus.type === 'stats') return;
 		this.search.find(value);
-		this.innerFocus.index = this.getFirstSearchResultIndex(this.innerFocus.type);
+		this.resetIndex();
 	}
 	/** user clicks on a search result. could mean to add a search filter or to choose the result. */
 	selectSearchValue(): string | null {
@@ -172,7 +166,7 @@ export class TeamEditorState extends PSModel {
 		) return null;
 		const row = this.search.results[this.innerFocus.index];
 		if (this.search.addFilter(row)) {
-			this.innerFocus.index = this.getFirstSearchResultIndex(this.innerFocus.type);
+			this.resetIndex();
 			return null;
 		}
 		return this.getResultValue(row);
@@ -297,7 +291,7 @@ export class TeamEditorState extends PSModel {
 
 	/////
 
-	static readonly ignoreRows = ['header', 'sortpokemon', 'sortmove', 'html'];
+	static readonly ignoreRows: SearchRow[0][] = ['header', 'sortpokemon', 'sortmove', 'html'];
 	downSearchValue(): boolean {
 		if(!this.innerFocus || !this.search.results) return false;
 		for(let i = this.innerFocus.index + 1; i < this.search.results.length; i++) {
@@ -2357,7 +2351,8 @@ class TeamWizard extends preact.Component<{
 		const activeSet = editor.sets[setIndex];
 		const userSets = editor.getUserSets(activeSet.species);
 		const selectedSet = structuredClone(userSets[index]);
-		if(!selectedSet) return;
+		if (!selectedSet) return;
+		delete selectedSet.name;
 		editor.sets[setIndex] = selectedSet;
 		editor.save();
 		this.props.onUpdate();
