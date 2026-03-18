@@ -19,7 +19,7 @@ export class PSSearchResults extends preact.Component<{
 	resultSlice?: { start: number, end: number },
 	/** type = '' means a filter was selected,
 	  * null means a sort was selected (clear not needed) */
-	onSelect?: (type: SearchType | '' | null, name: string) => void,
+	onSelect?: (type: SearchType | '' | null, name: string, direction: boolean | null) => void,
 }> {
 	readonly URL_ROOT = `//${Config.routes.dex}/`;
 	speciesId: ID = '' as ID;
@@ -464,13 +464,13 @@ export class PSSearchResults extends preact.Component<{
 					const [type, name] = entry.split('|');
 					if (search.addFilter([type, name])) {
 						if (this.props.onSelect) {
-							this.props.onSelect('', '');
+							this.props.onSelect('', '', true);
 						} else if (search.query) {
 							search.find('');
 							this.forceUpdate();
 						}
 					} else {
-						this.props.onSelect?.(type as SearchType, name);
+						this.props.onSelect?.(type as SearchType, name, true);
 					}
 					ev.preventDefault();
 					ev.stopImmediatePropagation();
@@ -484,7 +484,7 @@ export class PSSearchResults extends preact.Component<{
 					search.find('');
 					ev.preventDefault();
 					ev.stopPropagation();
-					this.props.onSelect?.(null, '');
+					this.props.onSelect?.(null, '', true);
 					break;
 				}
 
@@ -495,7 +495,7 @@ export class PSSearchResults extends preact.Component<{
 					search.find('');
 					ev.preventDefault();
 					ev.stopPropagation();
-					this.props.onSelect?.(null, '');
+					this.props.onSelect?.(null, '', true);
 					break;
 				}
 			}

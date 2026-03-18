@@ -40,10 +40,6 @@ export class TeamEditorState extends PSModel {
 		index: number,
 	} | null = null;
 
-	static readonly selectionTypeOrder = [
-		'pokemon', 'ability', 'item', 'move', 'stats', 'details',
-	] as const satisfies SelectionType[];
-
 	innerFocus: {
 		setIndex: number,
 		type: SelectionType,
@@ -67,143 +63,132 @@ export class TeamEditorState extends PSModel {
 		this.setFormat(team.format);
 		window.editor = this;
 	}
-
-	/////
-
-	setFormat(format: string) {
+	setFormat(format: string): void {
 		this.team.format = toID(format);
 		this.search.setGTT(format);
 	}
-	resetIndex(): void {
-		if (!this.innerFocus) return;
-		this.innerFocus.index = 0;
-		let { results, prependResults } = this.search;
-		if (!results) return;
-		// cursor should never default to prepends.
-		let prependLength = prependResults?.length ?? 0;
-		if (prependLength) {
-			results = results.slice(prependLength);
-		}
-		// cursor should default to the first result with a matching type.
-		const firstMatching = results.findIndex((row) => row[0] === this.innerFocus!.type);
-		if (firstMatching > -1) {
-			this.innerFocus.index = firstMatching + prependLength;
-			return;
-		}
-		// cursor should default to the first result.
-		const firstValid = results.findIndex((row) => row[1] && !TeamEditorState.ignoreRows.includes(row[0]));
-		if (firstValid > -1) {
-			this.innerFocus.index = firstValid + prependLength;
-			return;
+
+	/////
+
+	/**
+	 * Returns this.innerFocus if there is a current value, null otherwise.
+	 * I'm so sorry for the intellisense. It becomes more coherent after checking against null.
+	 */
+	getInnerFocusWithValue(): null | (NonNullable<this['innerFocus']> & {
+		type: Exclude<SelectionType, 'stats' | 'details'>
+	}) {
+		return this.innerFocus && (
+			(this.innerFocus.type !== 'details' && this.innerFocus.type !== 'stats')
+				? this.innerFocus as any
+				: null
+		);
+	}
+	/** Returns the current value of the focused field */
+	getCurrentValue(): string {
+		const innerFocus = this.getInnerFocusWithValue();
+		if (!innerFocus) return '';
+		const set = this.sets[innerFocus.setIndex];
+		if (!set) return '';
+		switch (innerFocus.type) {
+			case 'move': return set.moves[innerFocus.moveSlot] ?? '';
+			case 'pokemon': return set.species;
+			case 'item': return set.item === 'noitem' ? '' : (set.item ?? '');
+			case 'ability': return set.ability === 'noability' ? '' : (set.ability ?? '');
 		}
 	}
-	updatePrependResults() {
-		let value = '';
-		if(!this.innerFocus) return value;
-		const set = this.sets[this.innerFocus.setIndex];
+	/** Returns the search result at the cursor's position */
+	getHighlighted(): SearchRow | null {
+		const innerFocus = this.getInnerFocusWithValue();
+		if (!innerFocus) return null;
+		const { results } = this.search;
+		if (!results) return null;
+		return results[innerFocus.index];
+	}
+	/** should happen after: set change, innerfocus change */
+	updatePrependResults(): void {
 		this.search.prependResults = null;
-		switch(this.innerFocus.type) {
+		const innerFocus = this.getInnerFocusWithValue();
+		if (!innerFocus) return;
+		const set = this.sets[innerFocus.setIndex];
+		switch (innerFocus.type) {
 			case 'move': {
-				value = set?.moves[this.innerFocus.moveSlot] ?? '';
-				const id = toID(value);
+				const id = toID(set?.moves[innerFocus.moveSlot]);
 				if (this.gtt.getFormatMove(id).exists) {
 					this.search.prependResults = [['move', id]];
-					value = '';
 				}
-				break;
+				return;
 			}
 			case 'pokemon': {
-				value = set?.species;
-				const id = toID(value);
+				const id = toID(set?.species);
 				if (this.gtt.getFormatSpecies(id).exists) {
 					this.search.prependResults = [['pokemon', id]];
-					value = '';
 				}
-				break;
+				return;
 			}
 			case 'item': {
+				const id = toID(set.item !== 'noitem' && set.item);
 				this.search.prependResults = [['item', '' as ID]];
-				if(set?.item && set.item !== 'noitem') value = set.item;
-				const id = toID(value);
 				if (this.gtt.getFormatItem(id).exists) {
 					this.search.prependResults.unshift(['item', id]);
-					value = '';
 				}
-				break;
+				return;
 			}
 			case 'ability': {
-				if(set?.ability && set.ability !== 'noability') value = set.ability;
-				const id = toID(value);
+				const id = toID(set.ability !== 'noability' && set.ability);
 				if (this.gtt.getFormatAbility(id).exists) {
 					this.search.prependResults = [['ability', id]];
-					value = '';
 				}
-				break;
+				return;
 			}
 		}
-		return value;
 	}
-	/** user clicked on a part of the inner focus. */
-	updateSearchType() {
-		if(!this.innerFocus || this.innerFocus.type === 'details' || this.innerFocus.type === 'stats') return;
-		const set = this.sets[this.innerFocus.setIndex];
-		this.search.setType(this.innerFocus.type, set);
-		const value = this.updatePrependResults();
-		this.search.find(value);
-		this.resetIndex();
+	/** should happen after: search update, innerfocus change */
+	resetCursor(): void {
+		if (!this.innerFocus) return;
+		this.innerFocus.index = 0;
+		const { results, prependResults } = this.search;
+		if (!results) return;
+		const prependLength = prependResults?.length ?? 0;
+		// cursor should default to the first result after prepends.
+		const first = results.findIndex((row, i) => i >= prependLength && !TeamEditorState.ignoreRows.includes(row[0]));
+		if (first > -1) this.innerFocus.index = first;
+	}
+	/** should happen after: set change, innerfocus change */
+	resetSearch(): void {
+		const innerFocus = this.getInnerFocusWithValue();
+		if (!innerFocus) return;
+		const set = this.sets[innerFocus.setIndex];
+		this.search.setType(innerFocus.type, set);
+		this.search.find('');
 	}
 	/** user inputs on the search textbox. */
-	setSearchValue(value: string) {
-		if(!this.innerFocus || this.innerFocus.type === 'details' || this.innerFocus.type === 'stats') return;
+	setSearchValue(value: string): void {
 		this.search.find(value);
-		this.resetIndex();
-	}
-	/** user clicks on a search result. could mean to add a search filter or to choose the result. */
-	selectSearchValue(): string | null {
-		if(
-			!this.search.results || !this.innerFocus || this.innerFocus.type === 'details' ||
-			this.innerFocus.type === 'stats'
-		) return null;
-		const row = this.search.results[this.innerFocus.index];
-		if (this.search.addFilter(row)) {
-			this.resetIndex();
-			return null;
-		}
-		return this.getResultValue(row);
-	}
-	/** simple SearchRow => string converter. */
-	getResultValue(result: SearchRow): string {
-		switch (result[0]) {
-		case 'pokemon':
-			return this.gtt.getFormatSpecies(result[1]).name;
-		case 'item':
-			return this.gtt.getFormatItem(result[1]).name;
-		case 'ability':
-			return this.gtt.getFormatAbility(result[1]).name;
-		case 'move':
-			return this.gtt.getFormatMove(result[1]).name;
-		case 'html':
-		case 'header':
-			return '';
-		default:
-			return result[1];
-		}
+		this.resetCursor();
 	}
 
 	/////
 
+	/** Returns the set at `index`, creating it if it doesn't exist. */
+	getSet(index: number): Teams.PokemonSet {
+		return this.sets[index] ?? this.resetSet(index);
+	}
+	/** Returns an empty set created at `index`. */
+	resetSet(index: number, species = ''): Teams.PokemonSet {
+		return (this.sets[index] = { species, moves: [] });
+	}
 	/** user chose a species; apply species-specific changes. */
 	changeSpecies(set: Dex.PokemonSet, speciesName: string) {
 		const species = this.gtt.getFormatSpecies(speciesName);
 		set.species = species.name;
-		if(set.name === set.species.split('-')[0]) delete set.name;
+		if (set.name === set.species.split('-')[0]) delete set.name;
 		this.setDefaultAbility(set);
 		this.setDefaultItem(set);
 		this.setDefaultTeraType(set);
 		this.setDefaultGender(set);
 	}
 	setDefaultAbility(set: Dex.PokemonSet) {
-		if(this.gtt.dex.gen < 3 || this.gtt.format.mod === 'gen7letsgo') {
+		if (this.gtt.dex.gen < 3 || this.gtt.format.mod === 'gen7letsgo') {
 			delete set.ability;
 			return;
 		}
@@ -212,28 +197,28 @@ export class TeamEditorState extends PSModel {
 		set.ability = Object.values(species.abilities)[0];
 	}
 	setDefaultItem(set: Dex.PokemonSet) {
-		if(this.gtt.dex.gen < 2 || this.gtt.format.mod === 'gen7letsgo') {
+		if (this.gtt.dex.gen < 2 || this.gtt.format.mod === 'gen7letsgo') {
 			delete set.item;
 			return;
 		}
 		const species = this.gtt.getFormatSpecies(set.species);
-		if(species.requiredItems) set.item = species.requiredItems[0];
+		if (species.requiredItems) set.item = species.requiredItems[0];
 	}
 	setDefaultTeraType(set: Dex.PokemonSet) {
-		if(this.gtt.dex.gen !== 9) {
+		if (this.gtt.dex.gen !== 9) {
 			delete set.teraType;
 			return;
 		}
 		const species = this.gtt.getFormatSpecies(set.species);
-		if(species.requiredTeraType) set.teraType = species.requiredTeraType;
+		if (species.requiredTeraType) set.teraType = species.requiredTeraType;
 	}
 	setDefaultGender(set: Dex.PokemonSet) {
-		if(this.gtt.dex.gen < 2) {
+		if (this.gtt.dex.gen < 2) {
 			delete set.gender;
 			return;
 		}
 		const species = this.gtt.getFormatSpecies(set.species);
-		if(species.gender) set.gender = species.gender;
+		if (species.gender) set.gender = species.gender;
 	}
 	/** user searched and chose a species; check easter eggs. */
 	changeSpeciesEasterEgg(set: Dex.PokemonSet, input: string): boolean {
@@ -271,16 +256,16 @@ export class TeamEditorState extends PSModel {
 		this.deletedSet = null;
 	}
 	copySet(index: number, cut: boolean) {
-		if(index >= this.sets.length) return;
+		if (index >= this.sets.length) return;
 		const set = structuredClone(this.sets[index]);
 		TeamEditorState.clipboard.sets.unshift(set);
 		TeamEditorState.clipboard.index = 0;
-		if(cut && !this.readonly) this.sets.splice(index, 1);
+		if (cut && !this.readonly) this.sets.splice(index, 1);
 	}
 	pasteSet(index: number) {
-		if(this.readonly) return;
+		if (this.readonly) return;
 		const set = structuredClone(TeamEditorState.clipboard.sets[TeamEditorState.clipboard.index]);
-		if(!set) return;
+		if (!set) return;
 		index = Math.min(index, this.sets.length);
 		this.sets.splice(index, 0, set);
 	}
@@ -293,24 +278,36 @@ export class TeamEditorState extends PSModel {
 
 	static readonly ignoreRows: SearchRow[0][] = ['header', 'sortpokemon', 'sortmove', 'html'];
 	downSearchValue(): boolean {
-		if(!this.innerFocus || !this.search.results) return false;
-		for(let i = this.innerFocus.index + 1; i < this.search.results.length; i++) {
-			if(!TeamEditorState.ignoreRows.includes(this.search.results[i][0])) {
-				this.innerFocus.index = i;
+		const innerFocus = this.getInnerFocusWithValue();
+		const { results } = this.search;
+		if (!innerFocus || !results) return false;
+		for (let i = innerFocus.index + 1; i < results.length; i++) {
+			if (!TeamEditorState.ignoreRows.includes(results[i][0])) {
+				innerFocus.index = i;
 				return true;
 			}
 		}
 		return false;
 	}
 	upSearchValue(): boolean {
-		if(!this.innerFocus || !this.search.results) return false;
-		for(let i = this.innerFocus.index - 1; i >= 0; i--) {
-			if(!TeamEditorState.ignoreRows.includes(this.search.results[i][0])) {
-				this.innerFocus.index = i;
+		const innerFocus = this.getInnerFocusWithValue();
+		const { results } = this.search;
+		if (!innerFocus || !results) return false;
+		for (let i = innerFocus.index - 1; i >= 0; i--) {
+			if (!TeamEditorState.ignoreRows.includes(results[i][0])) {
+				innerFocus.index = i;
 				return true;
 			}
 		}
 		return false
+	}
+	/** For the opposite effect, use `resetCursor()` */
+	bottomSearchValue(): boolean {
+		const innerFocus = this.getInnerFocusWithValue();
+		const { results } = this.search;
+		if (!innerFocus || !results) return false;
+		innerFocus.index = results.length - 1;
+		return true;
 	}
 
 	/////
@@ -738,7 +735,6 @@ export class TeamEditor extends preact.Component<{
 		</details>;
 	}
 
-
 	setClipboard = (ev: Event) => {
 		const target = ev.currentTarget as HTMLButtonElement;
 		const index = Number(target.value);
@@ -862,7 +858,7 @@ export class TeamEditor extends preact.Component<{
 				</ul>
 				{this.renderClipboard()}
 				{this.wizard ? (
-					<TeamWizard editor={this.editor} onChange={this.props.onChange} onUpdate={this.forceUpdateBound} />
+					<TeamWizard editor={this.editor} onChange={this.props.onChange} forceUpdateParent={this.forceUpdateBound} />
 				) : (
 					<TeamTextbox editor={this.editor} onChange={this.props.onChange} onUpdate={this.forceUpdateBound} />
 				)}
@@ -888,9 +884,6 @@ export class TeamEditor extends preact.Component<{
 				</>}
 			</div>
 		);
-		// (
-		// 	<TeamTextbox editor={this.editor} onChange={this.props.onChange} onUpdate={this.forceUpdate} />
-		// )
 	}
 }
 
@@ -1017,814 +1010,8 @@ class TeamTextbox extends preact.Component<{
 	}
 }
 
-class TeamTextbox2 extends preact.Component<{
-	editor: TeamEditorState,
-	onChange?: () => void, onUpdate?: () => void,
-}> {
-	static EMPTY_PROMISE = Promise.resolve(null);
-	editor!: TeamEditorState;
-	setInfo: {
-		species: string,
-		bottomY: number,
-		index: number,
-	}[] = [];
-	textbox: HTMLTextAreaElement = null!;
-	heightTester: HTMLTextAreaElement = null!;
-	compat = false;
-	/** we changed the set but are delaying updates until the selection form is closed */
-	setDirty = false;
-	windowing = true;
-	selection: {
-		setIndex: number,
-		type: SelectionType | null,
-		typeIndex: number,
-		lineRange: [number, number] | null,
-	} | null = null;
-	innerFocus: {
-		offsetY: number | null,
-		setIndex: number,
-		type: SelectionType,
-		/** i.e. which move is this */
-		typeIndex: number,
-		range: [number, number],
-		/** if you edit, you'll change the range end, so it needs to be updated with this in mind */
-		rangeEndChar: string,
-	} | null = null;
-	getYAt(index: number, fullLine?: boolean) {
-		if (index < 0) return 10;
-		if (index === 0) return 31;
-		const newValue = this.textbox.value.slice(0, index);
-		this.heightTester.value = fullLine && !newValue.endsWith('\n') ? newValue + '\n' : newValue;
-		return this.heightTester.scrollHeight;
-	}
-	input = () => {
-		this.maybeReplaceLine();
-		this.updateText();
-		this.save();
-	};
-	keyUp = () => this.updateText(true);
-	contextMenu = (ev: MouseEvent) => {
-		if (!ev.shiftKey) {
-			const hadInnerFocus = this.innerFocus?.range[1];
-			this.openInnerFocus();
-			if (hadInnerFocus !== this.innerFocus?.range[1]) {
-				ev.preventDefault();
-				ev.stopImmediatePropagation();
-			}
-		}
-	};
-	openInnerFocus() {
-		const oldRange = this.selection?.lineRange;
-		this.updateText(true, true);
-		if (this.selection) {
-			// this shouldn't actually update anything, so the reference comparison is enough
-			if (this.selection.lineRange === oldRange) return !!this.innerFocus;
-			if (this.textbox.selectionStart === this.textbox.selectionEnd) {
-				const range = this.getSelectionTypeRange();
-				if (range) this.textbox.setSelectionRange(range[0], range[1]);
-			}
-		}
-		return !!this.innerFocus;
-	}
-	keyDown = (ev: KeyboardEvent) => {
-		const editor = this.editor;
-		switch (ev.keyCode) {
-		case 27: // escape
-		case 8: // backspace
-			if (this.innerFocus) {
-				const atStart = (this.innerFocus.range[0] === this.textbox.selectionStart &&
-					this.innerFocus.range[0] === this.textbox.selectionEnd);
-				if (ev.keyCode === 27 || atStart) {
-					if (editor.search.removeFilter()) {
-						editor.setSearchValue(this.getInnerFocusValue());
-						this.resetScroll();
-						this.forceUpdate();
-						ev.stopImmediatePropagation();
-						ev.preventDefault();
-					} else if (this.closeMenu()) {
-						ev.stopImmediatePropagation();
-						ev.preventDefault();
-					}
-				}
-			}
-			break;
-		case 38: // up
-			if (this.innerFocus) {
-				editor.upSearchValue();
-				const resultsUp = this.base!.querySelector('.searchresults');
-				if (resultsUp) {
-					resultsUp.scrollTop = Math.max(0, editor.innerFocus!.index * 33 - Math.trunc((window.innerHeight - 100) * 0.4));
-				}
-				this.forceUpdate();
-				ev.preventDefault();
-			}
-			break;
-		case 40: // down
-			if (this.innerFocus) {
-				editor.downSearchValue();
-				const resultsDown = this.base!.querySelector('.searchresults');
-				if (resultsDown) {
-					resultsDown.scrollTop = Math.max(0, editor.innerFocus!.index * 33 - Math.trunc((window.innerHeight - 100) * 0.4));
-				}
-				this.forceUpdate();
-				ev.preventDefault();
-			}
-			break;
-		case 9: // tab
-		case 13: // enter
-			if (ev.keyCode === 13 && ev.shiftKey) return;
-			if (ev.altKey || ev.metaKey) return;
-			if (!this.innerFocus) {
-				if (
-					this.textbox.selectionStart === this.textbox.value.length &&
-					(this.textbox.value.endsWith('\n\n') || !this.textbox.value)
-				) {
-					this.addPokemon();
-				} else if (!this.openInnerFocus()) {
-					break;
-				}
-				ev.stopImmediatePropagation();
-				ev.preventDefault();
-			} else {
-				const result = this.editor.selectSearchValue();
-				if (result !== null) {
-					const [name, moveSlot] = result.split('|');
-					this.selectResult(this.innerFocus.type, name, moveSlot);
-				} else {
-					this.replaceNoFocus('', this.innerFocus.range[0], this.innerFocus.range[1]);
-					this.editor.setSearchValue('');
-					this.forceUpdate();
-				}
-				this.resetScroll();
-				ev.stopImmediatePropagation();
-				ev.preventDefault();
-			}
-			break;
-		case 80: // p
-			if (ev.metaKey) {
-				window.PS?.alert(editor.export(this.compat));
-				ev.stopImmediatePropagation();
-				ev.preventDefault();
-				break;
-			}
-		}
-	};
-	maybeReplaceLine = () => {
-		if (this.textbox.selectionStart !== this.textbox.selectionEnd) return;
-		const current = this.textbox.selectionEnd;
-		const lineStart = this.textbox.value.lastIndexOf('\n', current) + 1;
-		const value = this.textbox.value.slice(lineStart, current);
-
-		const pokepaste = /^https?:\/\/pokepast.es\/([a-z0-9]+)(?:\/.*)?$/.exec(value)?.[1];
-		if (pokepaste) {
-			this.editor.fetching = true;
-			Net(`https://pokepast.es/${pokepaste}/json`).get().then(json => {
-				const paste = JSON.parse(json);
-				const pasteTxt = paste.paste.replace(/\r\n/g, '\n');
-				if (this.textbox) {
-					// make sure it's still there:
-					const valueIndex = this.textbox.value.indexOf(value);
-					this.replace(paste.paste.replace(/\r\n/g, '\n'), valueIndex, valueIndex + value.length);
-				} else {
-					this.editor.import(pasteTxt);
-				}
-				const notes = paste["notes"] as string;
-				if (notes.startsWith("Format: ")) {
-					const formatid = toID(notes.slice(8));
-					this.editor.setFormat(formatid);
-				}
-				const title = paste["title"] as string;
-				if (title && !title.startsWith('Untitled')) {
-					this.editor.team.name = title.replace(/[|\\/]/g, '');
-				}
-				this.editor.fetching = false;
-				this.props.onUpdate?.();
-			});
-			return true;
-		}
-		return false;
-	};
-	getInnerFocusValue() {
-		if (!this.innerFocus) return '';
-		return this.textbox.value.slice(this.innerFocus.range[0], this.innerFocus.range[1]);
-	}
-	clearInnerFocus() {
-		if (this.innerFocus) {
-			if (this.innerFocus.type === 'pokemon') {
-				const value = this.getInnerFocusValue();
-				if (!toID(value)) {
-					this.replaceNoFocus(this.editor.originalSpecies || '', this.innerFocus.range[0], this.innerFocus.range[1]);
-				}
-			}
-			this.innerFocus = null;
-		}
-	}
-	closeMenu = () => {
-		if (this.innerFocus) {
-			this.clearInnerFocus();
-			if (this.setDirty) {
-				this.updateText();
-				this.save();
-			} else {
-				this.forceUpdate();
-			}
-			this.textbox.focus();
-			return true;
-		}
-		return false;
-	};
-	updateText = (noTextChange?: boolean, autoSelect?: boolean | SelectionType) => {
-		const textbox = this.textbox;
-		let value = textbox.value;
-		let selectionStart = textbox.selectionStart || 0;
-		let selectionEnd = textbox.selectionEnd || 0;
-
-		if (this.innerFocus) {
-			if (!noTextChange) {
-				let lineEnd = this.textbox.value.indexOf('\n', this.innerFocus.range[0]);
-				if (lineEnd < 0) lineEnd = this.textbox.value.length;
-				const line = this.textbox.value.slice(this.innerFocus.range[0], lineEnd);
-				if (this.innerFocus.rangeEndChar) {
-					const index = line.indexOf(this.innerFocus.rangeEndChar);
-					if (index >= 0) lineEnd = this.innerFocus.range[0] + index;
-				}
-				this.innerFocus.range[1] = lineEnd;
-			}
-			const [start, end] = this.innerFocus.range;
-			if (selectionStart >= start && selectionStart <= end && selectionEnd >= start && selectionEnd <= end) {
-				if (!noTextChange) {
-					this.updateSearch();
-					this.setDirty = true;
-				}
-				return;
-			}
-			this.clearInnerFocus();
-			value = textbox.value;
-			selectionStart = textbox.selectionStart || 0;
-			selectionEnd = textbox.selectionEnd || 0;
-		}
-
-		if (this.setDirty) {
-			this.setDirty = false;
-			noTextChange = false;
-		}
-
-		this.heightTester.style.width = `${textbox.offsetWidth}px`;
-		/** index of `value` that we've parsed to */
-		let index = 0;
-		/** for the set we're currently parsing */
-		let setIndex: number | null = null;
-		let nextSetIndex = 0;
-		if (!noTextChange) this.setInfo = [];
-		this.selection = null;
-
-		while (index < value.length) {
-			let nlIndex = value.indexOf('\n', index);
-			if (nlIndex < 0) nlIndex = value.length;
-			const line = value.slice(index, nlIndex);
-
-			if (!line.trim()) {
-				setIndex = null;
-				index = nlIndex + 1;
-				continue;
-			}
-
-			if (setIndex === null && index && !noTextChange && this.setInfo.length) {
-				this.setInfo[this.setInfo.length - 1].bottomY = this.getYAt(index - 1);
-			}
-
-			if (setIndex === null) {
-				if (!noTextChange) {
-					const atIndex = line.indexOf('@');
-					let species = atIndex >= 0 ? line.slice(0, atIndex).trim() : line.trim();
-					if (species.endsWith(' (M)') || species.endsWith(' (F)')) {
-						species = species.slice(0, -4);
-					}
-					if (species.endsWith(')')) {
-						const parenIndex = species.lastIndexOf(' (');
-						if (parenIndex >= 0) {
-							species = species.slice(parenIndex + 2, -1);
-						}
-					}
-					this.setInfo.push({
-						species,
-						bottomY: -1,
-						index,
-					});
-				}
-				setIndex = nextSetIndex;
-				nextSetIndex++;
-			}
-
-			const selectionEndCutoff = (selectionStart === selectionEnd ? nlIndex : nlIndex + 1);
-			let start = index, end = index + line.length;
-			if (index <= selectionStart && selectionEnd <= selectionEndCutoff) {
-				// both ends within range
-				let type: SelectionType | null = null;
-				const lcLine = line.toLowerCase().trim();
-
-				if (lcLine.startsWith('ability:')) {
-					type = 'ability';
-				} else if (lcLine.startsWith('-')) {
-					type = 'move';
-				} else if (
-					!lcLine || lcLine.startsWith('level:') || lcLine.startsWith('gender:') ||
-					(lcLine + ':').startsWith('shiny:') || (lcLine + ':').startsWith('gigantamax:') ||
-					lcLine.startsWith('tera type:') || lcLine.startsWith('dynamax level:')
-				) {
-					type = 'details';
-				} else if (
-					lcLine.startsWith('ivs:') || lcLine.startsWith('evs:') ||
-					lcLine.endsWith(' nature')
-				) {
-					type = 'stats';
-				} else {
-					type = 'pokemon';
-					const atIndex = line.indexOf('@');
-					if (atIndex >= 0) {
-						if (selectionStart > index + atIndex) {
-							type = 'item';
-							start = index + atIndex + 1;
-						} else {
-							end = index + atIndex;
-							if (line.charAt(atIndex - 1) === ']' || line.charAt(atIndex - 2) === ']') {
-								type = 'ability';
-							}
-						}
-					}
-				}
-
-				if (typeof autoSelect === 'string') autoSelect = autoSelect === type;
-				this.selection = {
-					setIndex, type, lineRange: [start, end], typeIndex: 0,
-				};
-				if (autoSelect) this.engageFocus();
-			}
-
-			index = nlIndex + 1;
-		}
-		if (!noTextChange) {
-			const end = value.endsWith('\n\n') ? value.length - 1 : value.length;
-			const bottomY = this.getYAt(end, true);
-			if (this.setInfo.length) {
-				this.setInfo[this.setInfo.length - 1].bottomY = bottomY;
-			}
-
-			textbox.style.height = `${bottomY + 100}px`;
-		}
-		this.forceUpdate();
-	};
-	engageFocus(focus?: this['innerFocus']) {
-		if (this.innerFocus && !focus) return;
-		const editor = this.editor;
-		if (editor.readonly) return;
-
-		if (!focus) {
-			if (!this.selection?.type) return;
-
-			const range = this.getSelectionTypeRange();
-			if (!range) return;
-			const { type, setIndex } = this.selection;
-
-			let rangeEndChar = this.textbox.value.charAt(range[1]);
-			if (rangeEndChar === ' ') rangeEndChar += this.textbox.value.charAt(range[1] + 1);
-			focus = {
-				offsetY: this.getYAt(range[0]),
-				setIndex,
-				type,
-				typeIndex: this.selection.typeIndex,
-				range,
-				rangeEndChar,
-			};
-		}
-		this.innerFocus = focus;
-
-		if (focus.type === 'details' || focus.type === 'stats') {
-			this.forceUpdate();
-			return;
-		}
-
-		const value = this.textbox.value.slice(focus.range[0], focus.range[1]);
-		editor.updateSearchType();
-		this.resetScroll();
-		this.textbox.setSelectionRange(focus.range[0], focus.range[1]);
-		this.forceUpdate();
-	}
-	updateSearch() {
-		if (!this.innerFocus) return;
-		const { range } = this.innerFocus;
-		const editor = this.editor;
-		const value = this.textbox.value.slice(range[0], range[1]);
-
-		editor.setSearchValue(value);
-		this.resetScroll();
-		this.forceUpdate();
-	}
-	selectResult = (type: string | null, name: string, moveSlot?: string) => {
-		if (type === null) {
-			this.resetScroll();
-			this.forceUpdate();
-		} else if (!type) {
-			this.changeSet(this.innerFocus!.type, '');
-		} else {
-			this.changeSet(type as SelectionType, name, moveSlot);
-		}
-	};
-	getSelectionTypeRange(): [number, number] | null {
-		const selection = this.selection;
-		if (!selection?.lineRange) return null;
-
-		let [start, end] = selection.lineRange;
-		let lcLine = this.textbox.value.slice(start, end).toLowerCase();
-		if (lcLine.endsWith('  ')) {
-			end -= 2;
-			lcLine = lcLine.slice(0, -2);
-		}
-
-		switch (selection.type) {
-		case 'pokemon': {
-			// let atIndex = lcLine.lastIndexOf('@');
-			// if (atIndex >= 0) {
-			// 	if (lcLine.charAt(atIndex - 1) === ' ') atIndex--;
-			// 	lcLine = lcLine.slice(0, atIndex);
-			// 	end = start + atIndex;
-			// }
-
-			if (lcLine.endsWith(' ')) {
-				lcLine = lcLine.slice(0, -1);
-				end--;
-			}
-
-			if (lcLine.endsWith(' (m)') || lcLine.endsWith(' (f)')) {
-				lcLine = lcLine.slice(0, -4);
-				end -= 4;
-			}
-
-			if (lcLine.endsWith(')')) {
-				const parenIndex = lcLine.lastIndexOf(' (');
-				if (parenIndex >= 0) {
-					start = start + parenIndex + 2;
-					end--;
-				}
-			}
-
-			return [start, end];
-		}
-		case 'item': {
-			// let atIndex = lcLine.lastIndexOf('@');
-			// if (atIndex < 0) return null;
-
-			// if (lcLine.charAt(atIndex + 1) === ' ') atIndex++;
-			// return { start: start + atIndex + 1, end };
-			if (lcLine.startsWith(' ')) start++;
-			return [start, end];
-		}
-		case 'ability': {
-			if (lcLine.startsWith('[')) {
-				start++;
-				if (lcLine.endsWith(' ')) {
-					end--;
-					lcLine = lcLine.slice(0, -1);
-				}
-				if (lcLine.endsWith(']')) {
-					end--;
-				}
-				return [start, end];
-			}
-			if (!lcLine.startsWith('ability:')) return null;
-			start += lcLine.startsWith('ability: ') ? 9 : 8;
-			return [start, end];
-		}
-		case 'move': {
-			if (!lcLine.startsWith('-')) return null;
-			start += lcLine.startsWith('- ') ? 2 : 1;
-			return [start, end];
-		}
-		}
-		return [start, end];
-	}
-	changeSet(type: SelectionType, name: string, moveSlot?: string) {
-		const focus = this.innerFocus;
-		if (!focus) return;
-
-		if (type === focus.type && type !== 'pokemon') {
-			this.replace(name, focus.range[0], focus.range[1]);
-			this.updateText(false, true);
-			return;
-		}
-
-		switch (type) {
-		case 'pokemon': {
-			const set = this.editor.sets[focus.setIndex] ||= {
-				species: '',
-				moves: [],
-			};
-			this.editor.changeSpecies(set, name);
-			this.replaceSet(focus.setIndex);
-			this.updateText(false, true);
-			break;
-		}
-		case 'ability': {
-			this.editor.sets[focus.setIndex].ability = name;
-			this.replaceSet(focus.setIndex);
-			this.updateText(false, true);
-			break;
-		}
-		}
-	}
-	getSetRange(index: number) {
-		if (!this.setInfo[index]) {
-			if (this.innerFocus?.setIndex === index) {
-				return this.innerFocus.range;
-			}
-			return [this.textbox.value.length, this.textbox.value.length];
-		}
-		const start = this.setInfo[index].index;
-		const end = this.setInfo[index + 1].index;
-		return [start, end];
-	}
-	changeCompat = (ev: Event) => {
-		const checkbox = ev.currentTarget as HTMLInputElement;
-		this.compat = checkbox.checked;
-		this.editor.import(this.textbox.value);
-		this.textbox.value = this.editor.export(this.compat);
-		// this.textbox.select();
-		// document.execCommand('insertText', false, this.editor.export(this.compat));
-		this.updateText();
-	};
-	replaceSet(index: number) {
-		const editor = this.editor;
-		const { team } = editor;
-		if (!team) return;
-
-		let newText = Teams.exportSet(editor.sets[index], editor.search.gtt.dex, !this.compat);
-		const [start, end] = this.getSetRange(index);
-		if (start && start === this.textbox.value.length && !this.textbox.value.endsWith('\n\n')) {
-			newText = (this.textbox.value.endsWith('\n') ? '\n' : '\n\n') + newText;
-		}
-		this.replaceNoFocus(newText, start, end, start + newText.length);
-		// we won't do a full update but we do need to update where the end is,
-		// for future updates
-		if (!this.setInfo[index]) {
-			this.updateText();
-			this.save();
-		} else {
-			if (this.setInfo[index + 1]) {
-				this.setInfo[index + 1].index = start + newText.length;
-			}
-			// others don't need to be updated;
-			// we'll do a full update next time we focus the textbox
-			this.setDirty = true;
-		}
-	}
-	replace(text: string, start: number, end: number, selectionStart = start, selectionEnd = start + text.length) {
-		const textbox = this.textbox;
-		// const value = textbox.value;
-		// textbox.value = value.slice(0, start) + text + value.slice(end);
-		textbox.focus();
-		textbox.setSelectionRange(start, end);
-		document.execCommand('insertText', false, text);
-		// textbox.setSelectionRange(selectionStart, selectionEnd);
-		this.save();
-	}
-	replaceNoFocus(text: string, start: number, end: number, selectionStart = start, selectionEnd = start + text.length) {
-		const textbox = this.textbox;
-		const value = textbox.value;
-		textbox.value = value.slice(0, start) + text + value.slice(end);
-		textbox.setSelectionRange(selectionStart, selectionEnd);
-		this.save();
-	}
-	save() {
-		this.editor.import(this.textbox.value);
-		this.props.onChange?.();
-	}
-	override componentDidMount() {
-		this.textbox = this.base!.getElementsByClassName('teamtextbox')[0] as HTMLTextAreaElement;
-		this.heightTester = this.base!.getElementsByClassName('heighttester')[0] as HTMLTextAreaElement;
-
-		this.editor = this.props.editor;
-		const exportedTeam = this.editor.export(this.compat);
-		this.textbox.value = exportedTeam;
-		this.updateText();
-		setTimeout(() => this.updateText());
-	}
-	override componentWillUnmount() {
-		this.textbox = null!;
-		this.heightTester = null!;
-	}
-	clickDetails = (ev: Event) => {
-		const target = ev.currentTarget as HTMLButtonElement;
-		const i = parseInt(target.value || '0');
-		if (this.innerFocus?.type === target.name) {
-			this.innerFocus = null;
-			this.forceUpdate();
-			return;
-		}
-		this.engageFocus({
-			offsetY: null,
-			setIndex: i,
-			type: target.name as SelectionType,
-			typeIndex: 0,
-			range: [0, 0],
-			rangeEndChar: '',
-		});
-	};
-	addPokemon = () => {
-		if (this.textbox.value && !this.textbox.value.endsWith('\n\n')) {
-			this.textbox.value += this.textbox.value.endsWith('\n') ? '\n' : '\n\n';
-		}
-		const end = this.textbox.value === '\n\n' ? 0 : this.textbox.value.length;
-		this.textbox.setSelectionRange(end, end);
-		this.textbox.focus();
-		this.engageFocus({
-			offsetY: this.getYAt(end, true),
-			setIndex: this.setInfo.length,
-			type: 'pokemon',
-			typeIndex: 0,
-			range: [end, end],
-			rangeEndChar: '@',
-		});
-	};
-	scrollResults = (ev: Event) => {
-		if (!(ev.currentTarget as HTMLElement).scrollTop) return;
-		this.windowing = false;
-		if (document.documentElement.clientWidth === document.documentElement.scrollWidth) {
-			(ev.currentTarget as any).scrollIntoViewIfNeeded?.();
-		}
-		this.forceUpdate();
-	};
-	resetScroll() {
-		this.windowing = true;
-		const searchResults = this.base!.querySelector('.searchresults');
-		if (searchResults) searchResults.scrollTop = 0;
-	}
-	windowResults() {
-		if (this.windowing) {
-			return Math.ceil(window.innerHeight / 33);
-		}
-		return null;
-	}
-
-	renderDetails(set: Dex.PokemonSet, i: number) {
-		const editor = this.editor;
-		const species = editor.gtt.getFormatSpecies(set.species);
-
-		const GenderChart = {
-			'M': 'Male',
-			'F': 'Female',
-			'N': '\u2014', // em dash
-		};
-		const gender = GenderChart[(set.gender || species.gender || 'N') as 'N'];
-
-		return <button class="textbox setdetails" name="details" value={i} onClick={this.clickDetails}>
-			<span class="detailcell">
-				<label>Level</label>{set.level || editor.gtt.format.level}
-			</span>
-			<span class="detailcell">
-				<label>Shiny</label>{set.shiny ? 'Yes' : '\u2014'}
-			</span>
-			{editor.gtt.dex.gen === 9 ? (
-				<span class="detailcell">
-					<label>Tera</label><PSIcon type={set.teraType || species.requiredTeraType || species.types[0]} />
-				</span>
-			) : editor.hpTypeMatters(set) ? (
-				<span class="detailcell">
-					<label>H. Power</label><PSIcon type={editor.getHPType(set)} />
-				</span>
-			) : (
-				<span class="detailcell">
-					<label>Gender</label>{gender}
-				</span>
-			)}
-		</button>;
-	}
-
-	renderStats(set: Dex.PokemonSet, i: number) {
-		const editor = this.editor;
-
-		// stat cell
-		return <button class="textbox setstats" name="stats" value={i} onClick={this.clickDetails}>
-			{StatForm.renderStatGraph(set, editor)}
-		</button>;
-	}
-	handleSetChange = () => {
-		if (this.selection) {
-			this.replaceSet(this.selection.setIndex);
-			this.forceUpdate();
-		}
-	};
-	bottomY() {
-		return this.setInfo[this.setInfo.length - 1]?.bottomY ?? 8;
-	}
-	copyAll = (ev: Event) => {
-		this.textbox.select();
-		document.execCommand('copy');
-		const button = ev?.currentTarget as HTMLButtonElement;
-		if (button) {
-			button.innerHTML = '<i class="fa fa-check" aria-hidden="true"></i> Copied';
-			button.className += ' cur';
-		}
-	};
-	render() {
-		const editor = this.props.editor;
-		const statsDetailsOffset = editor.gtt.dex.gen >= 3 ? 18 : -1;
-		return <div>
-			<p>
-				<button class="button" onClick={this.copyAll}>
-					<i class="fa fa-copy" aria-hidden></i> Copy
-				</button> {}
-				<label class="checkbox inline">
-					<input type="checkbox" name="compat" onChange={this.changeCompat} /> Old export format
-				</label>
-			</p>
-			<div class="teameditor-text">
-				<textarea
-					class="textbox teamtextbox" style={`padding-left:${editor.narrow ? '50px' : '100px'}`}
-					onInput={this.input} onContextMenu={this.contextMenu} onKeyUp={this.keyUp} onKeyDown={this.keyDown}
-					onClick={this.keyUp}
-					placeholder=" Paste exported teams, pokepaste URLs, or JSON here" readOnly={editor.readonly}
-				/>
-				<textarea
-					class="textbox teamtextbox heighttester" tabIndex={-1} aria-hidden
-					style={`padding-left:${editor.narrow ? '50px' : '100px'};visibility:hidden;left:-15px`}
-				/>
-				<div class="teamoverlays">
-					{this.setInfo.slice(0, -1).map(info =>
-						<hr style={`top:${info.bottomY - 18}px;pointer-events:none`} />
-					)}
-					{editor.canAdd() && !!this.setInfo.length && <hr style={`top:${this.bottomY() - 18}px`} />}
-					{this.setInfo.map((info, i) => {
-						if (!info.species) return null;
-						const set = editor.sets[i];
-						if (!set) return null;
-						const prevOffset = i === 0 ? 8 : this.setInfo[i - 1].bottomY;
-						const species = editor.gtt.getFormatSpecies(info.species);
-						const num = Dex.getPokemonIconNum(species.id);
-						if (!num) return null;
-
-						if (editor.narrow) {
-							return <div style={`top:${prevOffset + 1}px;left:5px;position:absolute;text-align:center;pointer-events:none`}>
-								<div><PSIcon pokemon={species.id} /></div>
-								{species.types.map(type => <div><PSIcon type={type} /></div>)}
-								<div><PSIcon item={set.item || null} /></div>
-							</div>;
-						}
-						return [<div
-							style={
-								`top:${prevOffset - 7}px;left:0;position:absolute;text-align:right;` +
-								`width:94px;padding:103px 5px 0 0;min-height:24px;pointer-events:none;` +
-								Dex.getTeambuilderSprite(set, editor.gtt)
-							}
-						>
-							<div>{species.types.map(type => <PSIcon type={type} />)}<PSIcon item={set.item || null} /></div>
-						</div>, <div style={`top:${prevOffset + statsDetailsOffset}px;right:9px;position:absolute`}>
-							{this.renderStats(set, i)}
-						</div>, <div style={`top:${prevOffset + statsDetailsOffset}px;right:145px;position:absolute`}>
-							{this.renderDetails(set, i)}
-						</div>];
-					})}
-					{editor.canAdd() && !(this.innerFocus && this.innerFocus.setIndex >= this.setInfo.length) && (
-						<div style={`top:${this.bottomY() - 3}px;left:${editor.narrow ? 55 : 105}px;position:absolute`}>
-							<button class="button" onClick={this.addPokemon}>
-								<i class="fa fa-plus" aria-hidden></i> Add Pok&eacute;mon
-							</button>
-						</div>
-					)}
-					{this.innerFocus?.offsetY != null && (
-						<div
-							class={`teaminnertextbox teaminnertextbox-${this.innerFocus.type}`}
-							style={`top:${this.innerFocus.offsetY - 21}px;left:${editor.narrow ? 46 : 96}px;`}
-						></div>
-					)}
-				</div>
-				{this.innerFocus && (
-					<div
-						class="searchresults"
-						style={`top:${(this.setInfo[this.innerFocus.setIndex]?.bottomY ?? this.bottomY() + 50) - 12}px`}
-						onScroll={this.scrollResults}
-					>
-						<button class="button closesearch" onClick={this.closeMenu}>
-							{!editor.narrow && <kbd>Esc</kbd>} <i class="fa fa-times" aria-hidden></i> Close
-						</button>
-						{this.innerFocus.type === 'stats' ? (
-							<StatForm editor={editor} set={this.editor.sets[this.innerFocus.setIndex]} onChange={this.handleSetChange} />
-						) : this.innerFocus.type === 'details' ? (
-							<DetailsForm editor={editor} set={this.editor.sets[this.innerFocus.setIndex]} onChange={this.handleSetChange} />
-						) : (
-							<PSSearchResults
-								search={editor.search} resultIndex={editor.searchIndex}
-								windowing={this.windowResults()} onSelect={this.selectResult}
-							/>
-						)}
-					</div>
-				)}
-			</div>
-		</div>;
-	}
-}
-
 class TeamWizard extends preact.Component<{
-	editor: TeamEditorState, onChange?: () => void, onUpdate: (callback?: () => void) => void,
+	editor: TeamEditorState, onChange?: () => void, forceUpdateParent: (callback?: () => void) => void,
 }> {
 	readonly PREFIX_SEARCHBOX = 'innerfocus-searchbox-';
 	readonly exportStates: boolean[] = [];
@@ -1832,6 +1019,9 @@ class TeamWizard extends preact.Component<{
 		super(...arguments);
 		window.wizard = this;
 	}
+
+	/////
+
 	readonly resultSlice: { start: number, end: number } = {
 		start: 0,
 		end: Math.ceil(window.innerHeight / 33),
@@ -1844,7 +1034,7 @@ class TeamWizard extends preact.Component<{
 		throttle() {
 			this.throttling = setTimeout(() => {
 				this.throttling = null;
-				if(this.runAfterThrottling) {
+				if (this.runAfterThrottling) {
 					this.runAfterThrottling = false;
 					this.throttle();
 					this.run();
@@ -1852,7 +1042,7 @@ class TeamWizard extends preact.Component<{
 			}, this.ms);
 		},
 		tryRun() {
-			if(!this.throttling) {
+			if (!this.throttling) {
 				this.throttle();
 				this.run();
 			}
@@ -1862,10 +1052,10 @@ class TeamWizard extends preact.Component<{
 		},
 		run: () => {
 			let start: number, end: number;
-			if(TeamEditor.probablyMobile()) {
+			if (TeamEditor.probablyMobile()) {
 				const el = this.base!;
 				const { editor } = this.props;
-				if(!editor.innerFocus) return;
+				if (!editor.innerFocus) return;
 				const { setIndex, type } = editor.innerFocus;
 				const set = editor.sets[setIndex];
 
@@ -1876,71 +1066,101 @@ class TeamWizard extends preact.Component<{
 			}
 			else {
 				const el = this.base!.querySelector('.wizardsearchresults');
-				if(!el) return;
+				if (!el) return;
 
 				start = Math.floor(el.scrollTop / 33);
 				end = Math.ceil(el.clientHeight / 33) + start;
 			}
 			start -= 4;
-			if(start < 0) start = 0;
+			if (start < 0) start = 0;
 			end += 4;
-			if(end < 0) end = 0;
+			if (end < 0) end = 0;
 			this.resultSlice.start = start;
 			this.resultSlice.end = end;
 			this.forceUpdate();
 		}
 	};
+	updateScroll = () => void this.scrollThrottler.tryRun();
+	resetScroll() {
+		const searchResults = this.base!.querySelector('.wizardsearchresults');
+		if (searchResults) searchResults.scrollTop = 0;
+		this.scrollThrottler.tryRun();
+	}
+
+	/////
+
 	getSearchBox(index = this.props.editor.innerFocus?.moveSlot ?? 0): HTMLInputElement | null {
-		return this.base!.querySelector(`#${this.PREFIX_SEARCHBOX}${index}`);
+		return this.base?.querySelector(`#${this.PREFIX_SEARCHBOX}${index}`) ?? null;
 	}
-	populateSearchBox() {
+	/** Restores all searchboxes to their default state. */
+	restoreSearchbox = () => {
 		const { editor } = this.props;
-		if (!editor.innerFocus) return;
-		switch (editor.innerFocus.type) {
-			case 'move': {
-				for (let i = 0; i < 4; i++) {
-					const searchbox = this.getSearchBox(i);
-					if (!searchbox) continue;
-					searchbox.value = editor.sets[editor.innerFocus.setIndex]?.moves[i] ?? '';
-					if (!TeamEditor.probablyMobile() && i === editor.innerFocus.moveSlot) {
-						searchbox.focus();
-						searchbox.select();
-					}
-				}
-				return;
-			}
-			case 'ability': {
-				const searchbox = this.getSearchBox(0);
-				if (!searchbox) return;
-				searchbox.value = editor.sets[editor.innerFocus.setIndex]?.ability ?? '';
-				if (!TeamEditor.probablyMobile()) {
-					searchbox.focus();
-					searchbox.select();
-				}
-				return;
-			}
-			case 'item': {
-				const searchbox = this.getSearchBox(0);
-				if (!searchbox) return;
-				searchbox.value = editor.sets[editor.innerFocus.setIndex]?.item ?? '';
-				if (!TeamEditor.probablyMobile()) {
-					searchbox.focus();
-					searchbox.select();
-				}
-				return;
-			}
-			case 'pokemon': {
-				const searchbox = this.getSearchBox(0);
-				if (!searchbox) return;
-				searchbox.value = editor.sets[editor.innerFocus.setIndex]?.species ?? '';
-				if (!TeamEditor.probablyMobile()) {
-					searchbox.focus();
-					searchbox.select();
-				}
-				return;
-			}
+		const innerFocus = editor.getInnerFocusWithValue();
+		if (!innerFocus) return;
+		const initialMoveslot = innerFocus.moveSlot;
+		const searchboxCount = innerFocus.type === 'move' ? 4 : 1;
+		for (let i = 0; i < searchboxCount; i++) {
+			const searchbox = this.getSearchBox(i);
+			if (!searchbox) return;
+			innerFocus.moveSlot = i;
+			searchbox.value = editor.getCurrentValue();
 		}
+		innerFocus.moveSlot = initialMoveslot;
+	};
+	restoreSearchboxAndFocus = () => {
+		this.restoreSearchbox();
+		this.tryFocusSearch();
+	};
+	tryFocusSearch(): void {
+		if (TeamEditor.probablyMobile()) return;
+		const searchbox = this.getSearchBox();
+		if (!searchbox) return;
+		searchbox.focus();
+		searchbox.select();
 	}
+	updateSearch = (ev: Event) => {
+		const { editor } = this.props;
+		const innerFocus = editor.getInnerFocusWithValue();
+		if (!innerFocus) return;
+		const { value } = ev.currentTarget as HTMLInputElement;
+		editor.setSearchValue(value);
+		this.resetScroll();
+		// Backspacing to the start means delete. Exception for pokemon because that'd be jarring.
+		if (innerFocus.type !== 'pokemon' && !value) this.selectResult(innerFocus.type, '', null);
+		this.forceUpdate();
+	};
+	focusSearchBox = (ev: Event) => {
+		const { editor } = this.props;
+		const innerFocus = editor.getInnerFocusWithValue();
+		if (!innerFocus) return;
+		const index = parseInt((ev.currentTarget as HTMLElement).id.split('-').pop()!);
+		if (!(index >= 0 && index < 4)) return;
+		if (innerFocus.moveSlot === index) return;
+		innerFocus.moveSlot = index;
+		editor.updatePrependResults();
+		this.props.forceUpdateParent(this.restoreSearchboxAndFocus);
+	};
+	renderSearchBox(type: SelectionType) {
+		const { editor } = this.props;
+		const out: (JSX.Element | null)[] = [];
+		const amount = type === 'move' ? 4 : 1;
+		for(let i = 0; i < amount; i++) {
+			if(editor.innerFocus!.moveSlot === i) {
+				out.push(<span class="searchbox-current-mark"></span>);
+			}
+			out.push(
+				<input
+					id={`${this.PREFIX_SEARCHBOX}${i}`} autocomplete="off"
+					type="search" class="textbox" placeholder="Search or filter"
+					onInput={this.updateSearch} onKeyDown={this.keyDownSearch} onFocus={this.focusSearchBox}
+				/>
+			);
+		}
+		return out;
+	}
+
+	/////
+
 	handleDeleteSet = (ev: Event) => {
 		const target = ev.currentTarget as HTMLButtonElement;
 		const i = parseInt(target.value);
@@ -1959,7 +1179,7 @@ class TeamWizard extends preact.Component<{
 		const { editor } = this.props;
 		editor.copySet(index, cut);
 		editor.innerFocus = null;
-		this.props.onUpdate();
+		this.props.forceUpdateParent();
 		PS.update();
 	}
 	handleCopySet = (ev: Event) => {
@@ -2025,6 +1245,12 @@ class TeamWizard extends preact.Component<{
 		ev.preventDefault();
 		ev.stopPropagation();
 	};
+	handleSetChange = (updateParent?: boolean) => {
+		this.props.editor.save();
+		this.props.onChange?.();
+		if (updateParent) this.props.forceUpdateParent(this.restoreSearchbox);
+		else this.forceUpdate(this.restoreSearchbox);
+	};
 	renderSet(set: Dex.PokemonSet | undefined, i: number) {
 		const { editor } = this.props;
 		if (!set) return null;
@@ -2081,26 +1307,27 @@ class TeamWizard extends preact.Component<{
 							<span class="detailcell">
 								<strong class="label">Level</strong> {}
 								{set.level || editor.gtt.format.level}
-								{PSView.narrowMode && !editor.gtt.format.noshiny && set.shiny && <><br />
-									<img src={`${Dex.resourcePrefix}sprites/misc/shiny.png`} width={22} height={22} alt="Shiny" />
-								</>}
-								{!PSView.narrowMode && set.gender && set.gender !== 'N' && <>
-									<br /><img
-										src={`${Dex.fxPrefix}gender-${set.gender.toLowerCase()}.png`} alt={set.gender} width="7" height="10" class="pixelated"
-									/>
-								</>}
+								<br />
+								{editor.gtt.dex.gen > 1 && !editor.gtt.format.noshiny && set.shiny && <img
+									src={`${Dex.resourcePrefix}sprites/misc/shiny.png`} width={22} height={22} alt="Shiny"
+								/>} {}
+								{set.gender && set.gender !== 'N' && <img
+									src={`${Dex.fxPrefix}gender-${set.gender.toLowerCase()}.png`} alt={set.gender} width="7" height="10" class="pixelated"
+								/>}
 							</span>
-							{!PSView.narrowMode && editor.gtt.dex.gen > 1 && !editor.gtt.format.noshiny && <span class="detailcell">
-								<strong class="label">Shiny</strong> {}
-								{set.shiny ? <img src={`${Dex.resourcePrefix}sprites/misc/shiny.png`} width={22} height={22} alt="Yes" /> : '\u2014'}
-							</span>}
-							{editor.gtt.dex.gen === 9 && !editor.gtt.format.notera && <span class="detailcell">
+							{!species.credits && editor.gtt.dex.gen === 9 && !editor.gtt.format.notera && <span class="detailcell">
 								<strong class="label">Tera</strong> {}
 								<PSIcon type={set.teraType || species.requiredTeraType || species.types[0]} />
 							</span>}
-							{editor.hpTypeMatters(set) && <span class="detailcell">
+							{!species.credits && editor.hpTypeMatters(set) && <span class="detailcell">
 								<strong class="label">H.P.</strong> {}
 								<PSIcon type={editor.getHPType(set)} />
+							</span>}
+							{species.credits && <span class="detailcell">
+								<strong class="label">Credits:</strong> {}
+								<span style={{ 'text-wrap': 'auto' }}>
+									{species.credits.join(', ')}
+								</span>
 							</span>}
 						</button>
 					</div></td>
@@ -2153,15 +1380,14 @@ class TeamWizard extends preact.Component<{
 			</button>
 		</div>;
 	}
-	handleSetChange = () => {
-		this.props.editor.save();
-		this.props.onChange?.();
-		this.forceUpdate();
-	};
-	selectResult = (type: string | null, name: string, reverse?: boolean) => {
+
+	/////
+
+	/** direction: undefined => keep, true => positive, false => negative */
+	selectResult = (type: string | null, name: string, direction: boolean | null = null) => {
 		const { editor } = this.props;
-		if (!editor.innerFocus) return;
-		const searchbox = this.getSearchBox();
+		const innerFocus = editor.getInnerFocusWithValue();
+		if (!innerFocus) return;
 		// sort selected
 		if (type === null) {
 			this.resetScroll();
@@ -2169,176 +1395,138 @@ class TeamWizard extends preact.Component<{
 		}
 		// filter selected
 		else if (!type) {
-			if (searchbox) {
-				searchbox.value = '';
-				if (!TeamEditor.probablyMobile()) {
-					searchbox.focus();
-				}
-			}
-			editor.setSearchValue('');
+			editor.resetSearch();
+			editor.resetCursor();
+			this.restoreSearchbox();
 			this.resetScroll();
 			this.forceUpdate();
 		}
 		// result selected
-		else {
-			const setIndex = editor.innerFocus.setIndex;
-			const set = (editor.sets[setIndex] ||= { species: '', moves: [] });
-			switch (type) {
-			case 'pokemon':
-				if(!(searchbox?.value && editor.changeSpeciesEasterEgg(set, searchbox.value))) {
+		else switch (type) {
+			case 'pokemon': {
+				const set = editor.resetSet(innerFocus.setIndex);
+				if (!editor.changeSpeciesEasterEgg(set, editor.search.query)) {
 					editor.changeSpecies(set, name);
 				}
-				this.changeFocus({
-					setIndex,
-					type: reverse ? 'details' : 'ability',
+				if (direction !== null) this.changeFocus({
+					setIndex: innerFocus.setIndex,
+					type: direction ? 'ability' : 'details',
 				});
-				break;
-			case 'ability':
-				if (toID(name) === 'noability' || editor.gtt.dex.gen < 3) name = '';
-				set.ability = name;
-				this.changeFocus({
-					setIndex,
-					type: reverse ? 'pokemon' : 'item',
+				this.handleSetChange();
+				return;
+			}
+			case 'ability': {
+				const set = editor.getSet(innerFocus.setIndex);
+				const ability = editor.gtt.getFormatAbility(name);
+				set.ability = ability.id === 'noability' ? '' : ability.name;
+				if (direction !== null) this.changeFocus({
+					setIndex: innerFocus.setIndex,
+					type: direction ? 'item' : 'pokemon',
 				});
-				break;
-			case 'item':
-				if (toID(name) === 'noitem' || editor.gtt.dex.gen < 2) name = '';
-				set.item = name;
-				this.changeFocus({
-					setIndex,
-					type: reverse ? 'ability' : 'move',
+				this.handleSetChange();
+				return;
+			}
+			case 'item': {
+				const set = editor.getSet(innerFocus.setIndex);
+				const item = editor.gtt.getFormatItem(name);
+				set.item = item.id === 'noitem' ? '' : item.name;
+				if (direction !== null) this.changeFocus({
+					setIndex: innerFocus.setIndex,
+					type: direction ? 'move' : 'ability',
 				});
-				break;
-			case 'move':
-				set.moves[editor.innerFocus.moveSlot] = name;
-				let nextSlot = -1;
-				for(let i = 0; i < 4; i++) {
-					if(!set.moves[i]) {
-						nextSlot = i;
-						break;
-					}
-				}
-				if(nextSlot < 0 && editor.innerFocus.moveSlot === 3) {
-					this.changeFocus({
-						setIndex,
-						type: reverse ? 'item' : 'stats',
+				this.handleSetChange();
+				return;
+			}
+			case 'move': {
+				const set = editor.getSet(innerFocus.setIndex);
+				const move = editor.gtt.getFormatMove(name);
+				set.moves[innerFocus.moveSlot] = move.name;
+				if (innerFocus.moveSlot >= 3) {
+					if (direction !== null) this.changeFocus({
+						setIndex: innerFocus.setIndex,
+						type: direction ? 'stats' : 'item',
+						moveSlot: 0,
 					});
 				}
 				else {
-					if(nextSlot < 0) editor.innerFocus.moveSlot++;
-					else editor.innerFocus.moveSlot = nextSlot;
-					if(editor.search.query) {
-						this.resetScroll();
-					}
-					editor.setSearchValue('');
-					this.props.onUpdate(() => {
-						this.populateSearchBox();
-					});
+					if (move.name) innerFocus.moveSlot++;
+					editor.resetSearch();
+					editor.updatePrependResults();
+					editor.resetCursor();
+					this.props.forceUpdateParent(this.restoreSearchboxAndFocus);
 				}
-				break;
+				this.handleSetChange();
+				return;
 			}
-			editor.save();
-			this.props.onChange?.();
-			this.forceUpdate();
-		}
-	};
-
-	updateSearch = (ev: Event) => {
-		const searchbox = ev.currentTarget as HTMLInputElement;
-		const { editor } = this.props;
-		editor.setSearchValue(searchbox.value);
-		this.resetScroll();
-		if(!searchbox.value && editor.innerFocus) {
-			const set = editor.sets[editor.innerFocus.setIndex];
-			if(set) {
-				set.moves[editor.innerFocus.moveSlot] = '';
-				editor.save();
-				this.props.onChange?.();
-			}
-		}
-		this.forceUpdate();
-	};
-	handleClickFilters = (ev: Event) => {
-		const { editor } = this.props;
-		let target = ev.target as HTMLElement | null;
-		while (target && target.className !== 'dexlist') {
-			if (target.tagName === 'BUTTON') {
-				const filter = target.getAttribute('data-filter');
-				if (filter) {
-					editor.search.removeFilter(filter.split(':') as any);
-					const searchBox = this.getSearchBox();
-					editor.setSearchValue(searchBox?.value || '');
-					if (!TeamEditor.probablyMobile()) searchBox?.select();
-					this.forceUpdate();
-					ev.preventDefault();
-					ev.stopPropagation();
-					break;
-				}
-			}
-
-			target = target.parentElement;
 		}
 	};
 	keyDownSearch = (ev: KeyboardEvent) => {
-		const searchBox = ev.currentTarget as HTMLInputElement;
 		const { editor } = this.props;
+		const innerFocus = editor.getInnerFocusWithValue();
+		if (!innerFocus) return;
+		const searchbox = ev.currentTarget as HTMLInputElement;
 		switch (ev.keyCode) {
-		case 8: // backspace
-			if (searchBox.selectionStart === 0 && searchBox.selectionEnd === 0) {
-				editor.search.removeFilter();
-				editor.setSearchValue(searchBox.value);
-				this.resetScroll();
-				this.forceUpdate();
-			}
-			break;
-		case 38: // up
-			if(!editor.upSearchValue()) break;
-			const resultsUp = this.base!.querySelector('.wizardsearchresults');
-			if (resultsUp) {
-				resultsUp.scrollTop = Math.max(0, editor.innerFocus!.index * 33 - Math.trunc((window.innerHeight - 300) / 2));
-			}
-			this.forceUpdate();
-			ev.preventDefault();
-			break;
-		case 40: // down
-			if(!editor.downSearchValue()) break;
-			const resultsDown = this.base!.querySelector('.wizardsearchresults');
-			if (resultsDown) {
-				resultsDown.scrollTop = Math.max(0, editor.innerFocus!.index * 33 - Math.trunc((window.innerHeight - 300) / 2));
-			}
-			this.forceUpdate();
-			ev.preventDefault();
-			break;
-		case 37: // left
-			// prevent jumping to other rooms
-			ev.stopImmediatePropagation();
-			break;
-		case 39: // right
-			// prevent jumping to other rooms
-			ev.stopImmediatePropagation();
-			break;
-		case 13: // enter
-		case 9: // tab
-			const value = editor.selectSearchValue();
-			if (value) {
-				if (ev.keyCode === 9 && editor.innerFocus?.type === 'move') {
-					this.changeFocus({
-						setIndex: editor.innerFocus.setIndex,
-						type: ev.shiftKey ? 'item' : 'stats',
-					});
-				} else {
-					this.selectResult(editor.innerFocus?.type || '', value, ev.keyCode === 9 && ev.shiftKey);
+			// backspace
+			// if pressed at line start, remove the latest filter
+			case 8: {
+				if (searchbox.selectionStart === 0 && searchbox.selectionEnd === 0) {
+					editor.search.removeFilter();
+					editor.setSearchValue(searchbox.value);
+					this.resetScroll();
+					this.forceUpdate();
 				}
-			} else {
-				searchBox.value = '';
-				editor.setSearchValue('');
-				this.resetScroll();
-				this.forceUpdate();
+				break;
 			}
-			ev.preventDefault();
-			break;
+			// up, down
+			// moves the cursor and scrolls the screen to center around it
+			case 38: case 40: {
+				ev.preventDefault();
+				const results = this.base!.querySelector('.wizardsearchresults');
+				if (!results) break;
+				if (!(ev.keyCode === 38 ? editor.upSearchValue() : editor.downSearchValue())) break;
+				results.scrollTop = Math.max(0, editor.innerFocus!.index * 33 - Math.trunc((window.innerHeight - 300) / 2));
+				this.forceUpdate();
+				break;
+			}
+			// home, end
+			// moves the cursor and scrolls the screen to either end
+			case 36: case 35: {
+				ev.preventDefault();
+				const results = this.base!.querySelector('.wizardsearchresults');
+				if (!results) break;
+				if (ev.keyCode === 36) {
+					editor.resetCursor();
+					results.scrollTop = 0;
+				}
+				else {
+					editor.bottomSearchValue();
+					results.scrollTop = results.scrollHeight;
+				}
+				this.forceUpdate();
+				break;
+			}
+			// left, right
+			// prevent jumping to other rooms
+			case 37: case 39: {
+				ev.stopImmediatePropagation();
+				break;
+			}
+			// enter, tab
+			case 13: case 9: {
+				ev.preventDefault();
+				const row = editor.getHighlighted();
+				if (row === null) break;
+				if (editor.search.addFilter(row)) {
+					this.selectResult('', '', !ev.shiftKey);
+				}
+				else {
+					this.selectResult(row[0], row[1], !ev.shiftKey);
+				}
+			}
 		}
 	};
+
+	/////
 
 	handleLoadUserSet = (ev: Event) => {
 		const index = parseInt((ev.target as HTMLButtonElement).value);
@@ -2355,40 +1543,7 @@ class TeamWizard extends preact.Component<{
 		delete selectedSet.name;
 		editor.sets[setIndex] = selectedSet;
 		editor.save();
-		this.props.onUpdate();
-	}
-	focusSearchBox = (ev: Event) => {
-		const { editor } = this.props;
-		const { innerFocus } = editor;
-		if(!innerFocus) return;
-		const el = ev.currentTarget as HTMLElement;
-		const index = parseInt(el.id.split('-').pop()!);
-		if(Number.isNaN(index)) return;
-		if(innerFocus.moveSlot === index) return;
-		innerFocus.moveSlot = index;
-		const value = editor.updatePrependResults();
-		editor.setSearchValue(value);
-		this.props.onUpdate(() => {
-			this.populateSearchBox();
-		});
-	}
-	renderSearchBox(type: SelectionType) {
-		const { editor } = this.props;
-		const out: (JSX.Element | null)[] = [];
-		const amount = type === 'move' ? 4 : 1;
-		for(let i = 0; i < amount; i++) {
-			if(editor.innerFocus!.moveSlot === i) {
-				out.push(<span class="searchbox-current-mark"></span>);
-			}
-			out.push(
-				<input
-					id={`${this.PREFIX_SEARCHBOX}${i}`} autocomplete="off"
-					type="search" class="textbox" placeholder="Search or filter"
-					onInput={this.updateSearch} onKeyDown={this.keyDownSearch} onFocus={this.focusSearchBox}
-				/>
-			);
-		}
-		return out;
+		this.props.forceUpdateParent();
 	}
 	renderInnerFocus() {
 		const { editor } = this.props;
@@ -2397,8 +1552,8 @@ class TeamWizard extends preact.Component<{
 		const cur = (i: number) => setIndex === i ? ' cur' : '';
 		const userSets = (set && type === 'ability') ? editor.getUserSets(set.species) : null;
 		const mobileClass = TeamEditor.probablyMobile() ? ' mobile' : '';
-		const scrollResultsDesktop = mobileClass ? undefined: this.scrollResults;
-		const scrollResultsMobile = mobileClass ? this.scrollResults : undefined;
+		const scrollResultsDesktop = mobileClass ? undefined: this.updateScroll;
+		const scrollResultsMobile = mobileClass ? this.updateScroll : undefined;
 		const belowSetClass = set ? (type === 'move' ? ' belowmoves' : ' belowset') : '';
 
 		return <div class={`team-focus-editor${mobileClass}`} onScroll={scrollResultsMobile}>
@@ -2428,7 +1583,7 @@ class TeamWizard extends preact.Component<{
 				<DetailsForm editor={editor} set={set} onChange={this.handleSetChange} />
 			) : (
 				<>
-					<div class="searchboxwrapper pad" onClick={this.handleClickFilters}>
+					<div class="searchboxwrapper pad">
 						{this.renderSearchBox(type)}
 					</div>
 					<div class={`wizardsearchresults${belowSetClass}`} onScroll={scrollResultsDesktop}>
@@ -2463,19 +1618,14 @@ class TeamWizard extends preact.Component<{
 		</div>
 	}
 
-	scrollResults = (ev: Event) => void this.scrollThrottler.tryRun();
-	resetScroll() {
-		const searchResults = this.base!.querySelector('.wizardsearchresults');
-		if (searchResults) searchResults.scrollTop = 0;
-		this.scrollThrottler.tryRun();
-	}
+	/////
 
 	changeFocus(input: Partial<TeamEditorState['innerFocus']>) {
 		const { editor } = this.props;
 		this.exportStates.length = 0;
 		if(!input) {
 			editor.innerFocus = null;
-			this.props.onUpdate();
+			this.props.forceUpdateParent();
 			return;
 		}
 		const cur = editor.innerFocus ?? {
@@ -2490,11 +1640,11 @@ class TeamWizard extends preact.Component<{
 			index: input.index ?? cur.index,
 			moveSlot: input.moveSlot ?? cur.moveSlot,
 		};
-		editor.updateSearchType();
-		this.props.onUpdate(() => {
-			this.resetScroll();
-			this.populateSearchBox();
-		});
+		editor.resetSearch();
+		editor.updatePrependResults();
+		editor.resetCursor();
+		this.resetScroll();
+		this.props.forceUpdateParent(this.restoreSearchboxAndFocus);
 	}
 	/**
 	 * Protocol for button value: `${SelectionType | ''}|${number}`
@@ -2510,13 +1660,17 @@ class TeamWizard extends preact.Component<{
 		}
 		const [rawType, i] = target.value.split('|');
 		const setIndex = parseInt(i);
-		if(Number.isNaN(setIndex)) return;
+		if (Number.isNaN(setIndex)) return;
 		const type = (rawType as SelectionType) || undefined;
 		this.changeFocus({
 			setIndex,
 			type,
+			moveSlot: 0,
 		});
 	};
+
+	/////
+
 	pasteSet = (ev: Event) => {
 		const target = ev.currentTarget as HTMLButtonElement;
 		const i = parseInt(target.value);
@@ -2551,6 +1705,9 @@ class TeamWizard extends preact.Component<{
 			</p>
 		);
 	}
+
+	/////
+
 	override render() {
 		const { editor } = this.props;
 		if (editor.innerFocus) return this.renderInnerFocus();

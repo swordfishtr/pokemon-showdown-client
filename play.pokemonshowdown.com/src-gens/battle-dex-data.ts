@@ -1550,6 +1550,7 @@ export class Species implements Effect {
 	readonly gen: number;
 	readonly exists: boolean;
 	readonly custom?: true;
+	readonly credits?: string[];
 
 	// name
 	readonly baseSpecies: string;
@@ -1609,7 +1610,8 @@ export class Species implements Effect {
 		this.id = id;
 		this.gen = data.gen || 0;
 		this.exists = ('exists' in data ? !!data.exists : true);
-		if('custom' in data) this.custom = true;
+		if ('custom' in data) this.custom = true;
+		if (data.credits) this.credits = data.credits;
 		this.baseSpecies = data.baseSpecies || name;
 		this.forme = data.forme || '';
 		const baseId = toID(this.baseSpecies);
