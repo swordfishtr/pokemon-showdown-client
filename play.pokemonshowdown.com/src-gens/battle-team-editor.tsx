@@ -105,19 +105,19 @@ export class TeamEditorState extends PSModel {
 		switch (innerFocus.type) {
 			case 'move': {
 				const move = BattleMovedex[input];
-				return move.exists ? move.name : null;
+				return move?.exists ? move.name : null;
 			}
 			case 'pokemon': {
 				const pokemon = BattlePokedex[input];
-				return pokemon.exists ? pokemon.name : null;
+				return pokemon?.exists ? pokemon.name : null;
 			}
 			case 'item': {
 				const item = BattleItems[input];
-				return item.exists ? item.name : null;
+				return item?.exists ? item.name : null;
 			}
 			case 'ability': {
 				const ability = BattleAbilities[input];
-				return ability.exists ? ability.name : null;
+				return ability?.exists ? ability.name : null;
 			}
 		}
 	}
