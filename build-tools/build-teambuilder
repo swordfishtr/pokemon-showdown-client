@@ -59,8 +59,8 @@ const sidemods = [
 const gensmods = [
 	'generationsdraftgen4',
 	'generationsdraftgen4vgc',
+	'regenerations',
 	'regenerations10',
-	'regenerations11',
 	'petpet',
 ];
 
