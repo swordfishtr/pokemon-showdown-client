@@ -96,6 +96,31 @@ export class TeamEditorState extends PSModel {
 			case 'ability': return set.ability === 'noability' ? '' : (set.ability ?? '');
 		}
 	}
+	/** If input of the current type exists, returns its name */
+	getNextValue(input: string): string | null {
+		input = toID(input);
+		const innerFocus = this.getInnerFocusWithValue();
+		if (!innerFocus) return null;
+		// We intentionally don't use Dex here, because we don't want to check aliases.
+		switch (innerFocus.type) {
+			case 'move': {
+				const move = BattleMovedex[input];
+				return move.exists ? move.name : null;
+			}
+			case 'pokemon': {
+				const pokemon = BattlePokedex[input];
+				return pokemon.exists ? pokemon.name : null;
+			}
+			case 'item': {
+				const item = BattleItems[input];
+				return item.exists ? item.name : null;
+			}
+			case 'ability': {
+				const ability = BattleAbilities[input];
+				return ability.exists ? ability.name : null;
+			}
+		}
+	}
 	/** Returns the search result at the cursor's position */
 	getHighlighted(): SearchRow | null {
 		const innerFocus = this.getInnerFocusWithValue();
@@ -1125,8 +1150,19 @@ class TeamWizard extends preact.Component<{
 		const { value } = ev.currentTarget as HTMLInputElement;
 		editor.setSearchValue(value);
 		this.resetScroll();
-		// Backspacing to the start means delete. Exception for pokemon because that'd be jarring.
-		if (innerFocus.type !== 'pokemon' && !value) this.selectResult(innerFocus.type, '', null);
+		// Features that are jarring when applied to pokemon search.
+		if (innerFocus.type !== 'pokemon') {
+			// Some players input their desired item into the searchbox and leave, assuming it saved,
+			// only to find out it's missing in battle. So now we save right away if the searched item exists.
+			if (value) {
+				const next = editor.getNextValue(value);
+				if (next) this.selectResult(innerFocus.type, next, null);
+			}
+			// Backspacing to the start means delete.
+			else {
+				this.selectResult(innerFocus.type, '', null);
+			}
+		}
 		this.forceUpdate();
 	};
 	focusSearchBox = (ev: Event) => {
@@ -1137,7 +1173,9 @@ class TeamWizard extends preact.Component<{
 		if (!(index >= 0 && index < 4)) return;
 		if (innerFocus.moveSlot === index) return;
 		innerFocus.moveSlot = index;
+		editor.resetSearch();
 		editor.updatePrependResults();
+		editor.resetCursor();
 		this.props.forceUpdateParent(this.restoreSearchboxAndFocus);
 	};
 	renderSearchBox(type: SelectionType) {
@@ -1449,11 +1487,16 @@ class TeamWizard extends preact.Component<{
 					});
 				}
 				else {
-					if (move.name) innerFocus.moveSlot++;
-					editor.resetSearch();
-					editor.updatePrependResults();
-					editor.resetCursor();
-					this.props.forceUpdateParent(this.restoreSearchboxAndFocus);
+					if (direction !== null) {
+						innerFocus.moveSlot++;
+						editor.resetSearch();
+						editor.updatePrependResults();
+						editor.resetCursor();
+						this.props.forceUpdateParent(this.restoreSearchboxAndFocus);
+					}
+					else {
+						this.props.forceUpdateParent();
+					}
 				}
 				this.handleSetChange();
 				return;
