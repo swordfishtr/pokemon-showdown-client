@@ -100,23 +100,24 @@ export class TeamEditorState extends PSModel {
 	getNextValue(input: string): string | null {
 		const innerFocus = this.getInnerFocusWithValue();
 		if (!innerFocus) return null;
+		input = toID(input);
 		// including a check against aliases
 		switch (innerFocus.type) {
 			case 'move': {
 				const move = this.gtt.getFormatMove(input);
-				return (move.exists && (move.custom || BattleMovedex[move.id])) ? move.name : null;
+				return (move.exists && (move.custom || BattleMovedex[input])) ? move.name : null;
 			}
 			case 'item': {
 				const item = this.gtt.getFormatItem(input);
-				return (item.exists && (item.custom || BattleItems[item.id])) ? item.name : null;
+				return (item.exists && (item.custom || BattleItems[input])) ? item.name : null;
 			}
 			case 'ability': {
 				const ability = this.gtt.getFormatMove(input);
-				return (ability.exists && (ability.custom || BattleAbilities[ability.id])) ? ability.name : null;
+				return (ability.exists && (ability.custom || BattleAbilities[input])) ? ability.name : null;
 			}
 			case 'pokemon': {
 				const pokemon = this.gtt.getFormatSpecies(input);
-				return (pokemon.exists && (pokemon.custom || BattlePokedex[pokemon.id])) ? pokemon.name : null;
+				return (pokemon.exists && (pokemon.custom || BattlePokedex[input])) ? pokemon.name : null;
 			}
 		}
 	}
