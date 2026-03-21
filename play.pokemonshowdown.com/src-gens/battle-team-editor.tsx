@@ -98,26 +98,25 @@ export class TeamEditorState extends PSModel {
 	}
 	/** If input of the current type exists, returns its name */
 	getNextValue(input: string): string | null {
-		input = toID(input);
 		const innerFocus = this.getInnerFocusWithValue();
 		if (!innerFocus) return null;
-		// We intentionally don't use Dex here, because we don't want to check aliases.
+		// including a check against aliases
 		switch (innerFocus.type) {
 			case 'move': {
-				const move = BattleMovedex[input];
-				return move?.exists ? move.name : null;
-			}
-			case 'pokemon': {
-				const pokemon = BattlePokedex[input];
-				return pokemon?.exists ? pokemon.name : null;
+				const move = this.gtt.getFormatMove(input);
+				return (move.exists && (move.custom || BattleMovedex[move.id])) ? move.name : null;
 			}
 			case 'item': {
-				const item = BattleItems[input];
-				return item?.exists ? item.name : null;
+				const item = this.gtt.getFormatItem(input);
+				return (item.exists && (item.custom || BattleItems[item.id])) ? item.name : null;
 			}
 			case 'ability': {
-				const ability = BattleAbilities[input];
-				return ability?.exists ? ability.name : null;
+				const ability = this.gtt.getFormatMove(input);
+				return (ability.exists && (ability.custom || BattleAbilities[ability.id])) ? ability.name : null;
+			}
+			case 'pokemon': {
+				const pokemon = this.gtt.getFormatSpecies(input);
+				return (pokemon.exists && (pokemon.custom || BattlePokedex[pokemon.id])) ? pokemon.name : null;
 			}
 		}
 	}
