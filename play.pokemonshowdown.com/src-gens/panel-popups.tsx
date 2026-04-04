@@ -480,9 +480,9 @@ class UserListPanel extends PSRoomPanel {
 	static readonly noURL = true;
 	override render() {
 		const room = this.props.room;
-		const parentRoom = room.getParent() as ChatRoom;
-		if (parentRoom.type !== 'chat' && parentRoom.type !== 'battle') {
-			throw new Error(`UserListPanel: ${room.id} is not a chat room`);
+		const parentRoom = room.getParent() as ChatRoom | null;
+		if (!parentRoom || (parentRoom.type !== 'chat' && parentRoom.type !== 'battle')) {
+			return <div class="broadcast-red">UserListPanel: ${parentRoom && parentRoom.id} is not a chat room</div>;
 		}
 
 		return <PSPanelWrapper room={room} width={280}><div class="pad">
