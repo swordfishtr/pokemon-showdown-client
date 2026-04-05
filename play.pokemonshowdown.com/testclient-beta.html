@@ -64,13 +64,13 @@
 		window.require = () => window;
 	</script>
 	<script nomodule src="js-gens/lib/ps-polyfill.js"></script>
-	<script src="js-gens/client-core.js" onerror="alert('You must build the client with `node build` before using testclient.html')"></script>
+	<script src="js-gens/client-core.js" onerror="alert('Failed to load client-core.js')"></script>
 
 	<script src="js-gens/battle-dex-data.js"></script>
 	<script src="js-gens/battle-dex.js"></script>
 	<script src="js-gens/battle-teams.js"></script>
 	<script src="js-gens/battle-text-parser.js"></script>
-	<script src="js-gens/client-main.js"></script>
+	<script src="js-gens/client-main.js" onerror="alert('Failed to load client-main.js')"></script>
 	<script nomodule src="js-gens/lib/sockjs-1.4.0-nwjsfix.min.js"></script>
 	<script src="js-gens/client-connection.js"></script>
 
@@ -102,7 +102,7 @@
 	<script src="data/text.js"></script>
 	<script src="data/text-afd.js"></script>
 	<script src="data/commands.js"></script>
-	<script src="data/teambuilder-tables-gens.js" onerror="console.error('Generations custom BattleTeambuilderTable is missing.')"></script>
+	<script src="data/teambuilder-tables-gens.js" onerror="alert('Failed to load teambuilder-tables-gens.js')"></script>
 	<script src="data/pokedex.js"></script>
 	<script src="data/moves.js"></script>
 	<script src="data/items.js"></script>
@@ -128,6 +128,6 @@
 	<script src="js-gens/lib/color-thief.min.js"></script>
 	<script src="js-gens/lib/drag-drop-touch.esm.js" type="module"></script>
 
-	<script src="js-gens/client-endload.js"></script>
+	<script src="js-gens/client-endload.js" onerror="alert('Failed to load client-endload.js')"></script>
 
 </body></html>
