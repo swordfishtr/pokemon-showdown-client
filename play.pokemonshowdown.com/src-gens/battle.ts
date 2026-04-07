@@ -1127,7 +1127,7 @@ export class Battle {
 	ignoreOpponent = !!Dex.prefs('ignoreopp');
 	ignoreSpects = !!Dex.prefs('ignorespects');
 	/** per-battle copy of `PS.prefs.confirmactions`, only applying to this battle */
-	confirmChoice = { ...window.PS?.prefs.confirmchoice };
+	confirmChoice = { ...Dex.prefs('confirmchoice') };
 	/** `data-cmd` attribute of button to confirm */
 	confirmCmd: string | null = null;
 	debug: boolean;
