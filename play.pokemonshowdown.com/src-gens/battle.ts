@@ -35,7 +35,6 @@ import { Dex, toID, toUserid, type ID, type ModdedDex } from './battle-dex';
 import { BattleTextParser, type Args, type KWArgs, type SideID } from './battle-text-parser';
 import { Teams } from './battle-teams';
 import { GTTIndex } from './battle-dex-search';
-import { PS } from './client-main';
 declare const app: { user: AnyObject, rooms: AnyObject, ignore?: AnyObject } | undefined;
 
 /** [id, element?, ...misc] */
@@ -1128,7 +1127,7 @@ export class Battle {
 	ignoreOpponent = !!Dex.prefs('ignoreopp');
 	ignoreSpects = !!Dex.prefs('ignorespects');
 	/** per-battle copy of `PS.prefs.confirmactions`, only applying to this battle */
-	confirmChoice = { ...PS.prefs.confirmchoice };
+	confirmChoice = { ...window.PS?.prefs.confirmchoice };
 	/** `data-cmd` attribute of button to confirm */
 	confirmCmd: string | null = null;
 	debug: boolean;
