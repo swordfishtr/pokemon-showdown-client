@@ -991,14 +991,14 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 				<div class="whatdo">
 					{choices.alreadySwitchingIn.length > 0 ? (
 						[<button data-cmd="/cancel" class="button"><i class="fa fa-chevron-left" aria-hidden></i> Back</button>,
-							" What about the rest of your team? "]
+							` What about the rest of your team? ${confirm}`]
 					) : (
-						"How will you start the battle? "
+						`How will you start the battle? ${confirm}`
 					)}
 				</div>
 				<div class="switchcontrols">
 					<h3 class="switchselect">
-						Choose {choices.alreadySwitchingIn.length <= 0 ? `lead` : `slot ${choices.alreadySwitchingIn.length + 1}`}. {confirm}
+						Choose {choices.alreadySwitchingIn.length <= 0 ? `lead` : `slot ${choices.alreadySwitchingIn.length + 1}`}
 					</h3>
 					<div class="switchmenu">
 						{this.renderTeamPreviewChooser(request, choices)}
