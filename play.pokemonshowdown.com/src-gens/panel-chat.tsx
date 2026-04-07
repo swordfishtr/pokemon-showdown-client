@@ -405,7 +405,7 @@ export class ChatRoom extends PSRoom {
 					if (room.choices.current.move) {
 						if (this.battle.confirmChoice.target && this.battle.confirmCmd !== target) {
 							this.battle.confirmCmd = target;
-							console.log(this.battle.confirmCmd, this.battle.confirmChoice);
+							this.update(null);
 							return;
 						}
 					}
@@ -413,7 +413,7 @@ export class ChatRoom extends PSRoom {
 					else if (cmd === 'switch') {
 						if (this.battle.confirmChoice.switch && this.battle.confirmCmd !== target) {
 							this.battle.confirmCmd = target;
-							console.log(this.battle.confirmCmd, this.battle.confirmChoice);
+							this.update(null);
 							return;
 						}
 					}
@@ -421,7 +421,7 @@ export class ChatRoom extends PSRoom {
 					else {
 						if (this.battle.confirmChoice.move && this.battle.confirmCmd !== target) {
 							this.battle.confirmCmd = target;
-							console.log(this.battle.confirmCmd, this.battle.confirmChoice);
+							this.update(null);
 							return;
 						}
 					}
@@ -431,7 +431,7 @@ export class ChatRoom extends PSRoom {
 					// choosing a switch-in
 					if (this.battle.confirmChoice.switch && this.battle.confirmCmd !== target) {
 						this.battle.confirmCmd = target;
-						console.log(this.battle.confirmCmd, this.battle.confirmChoice);
+						this.update(null);
 						return;
 					}
 					break;
@@ -440,14 +440,13 @@ export class ChatRoom extends PSRoom {
 					// team preview and Revival Blessing
 					if (this.battle.confirmChoice.preview && this.battle.confirmCmd !== target) {
 						this.battle.confirmCmd = target;
-						console.log(this.battle.confirmCmd, this.battle.confirmChoice);
+						this.update(null);
 						return;
 					}
 					break;
 				}
 			}
 			this.battle.confirmCmd = null;
-			console.log(this.battle.confirmCmd, this.battle.confirmChoice);
 			/*****/
 			const possibleError = room.choices.addChoice(target);
 			if (possibleError) {

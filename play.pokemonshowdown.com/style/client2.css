@@ -1886,6 +1886,10 @@ pre.textbox.textbox-empty[placeholder]:before {
 	background: #009AA4;
 }
 
+button.confirm-choice {
+	border: #00af00 3px solid !important;
+}
+
 .movebutton {
 	float: left;
 	display: block;
