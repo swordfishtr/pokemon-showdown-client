@@ -395,6 +395,60 @@ export class ChatRoom extends PSRoom {
 				this.sendDirect('/choose default');
 				return;
 			}
+			/**
+			 * Battle choice confirmation (patch for gens)
+			 * The "choose default" code above appears to be irrelevant to battles.
+			 */
+			switch (room.choices.request.requestType) {
+				case 'move': {
+					// choosing target after move
+					if (room.choices.current.move) {
+						if (this.battle.confirmChoice.target && this.battle.confirmCmd !== target) {
+							this.battle.confirmCmd = target;
+							console.log(this.battle.confirmCmd, this.battle.confirmChoice);
+							return;
+						}
+					}
+					// choosing to switch out
+					else if (cmd === 'switch') {
+						if (this.battle.confirmChoice.switch && this.battle.confirmCmd !== target) {
+							this.battle.confirmCmd = target;
+							console.log(this.battle.confirmCmd, this.battle.confirmChoice);
+							return;
+						}
+					}
+					// choosing a move
+					else {
+						if (this.battle.confirmChoice.move && this.battle.confirmCmd !== target) {
+							this.battle.confirmCmd = target;
+							console.log(this.battle.confirmCmd, this.battle.confirmChoice);
+							return;
+						}
+					}
+					break;
+				}
+				case 'switch': {
+					// choosing a switch-in
+					if (this.battle.confirmChoice.switch && this.battle.confirmCmd !== target) {
+						this.battle.confirmCmd = target;
+						console.log(this.battle.confirmCmd, this.battle.confirmChoice);
+						return;
+					}
+					break;
+				}
+				case 'team': {
+					// team preview and Revival Blessing
+					if (this.battle.confirmChoice.preview && this.battle.confirmCmd !== target) {
+						this.battle.confirmCmd = target;
+						console.log(this.battle.confirmCmd, this.battle.confirmChoice);
+						return;
+					}
+					break;
+				}
+			}
+			this.battle.confirmCmd = null;
+			console.log(this.battle.confirmCmd, this.battle.confirmChoice);
+			/*****/
 			const possibleError = room.choices.addChoice(target);
 			if (possibleError) {
 				this.errorReply(possibleError);
