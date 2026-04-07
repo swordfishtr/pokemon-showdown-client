@@ -543,9 +543,10 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 			return <button class="movebutton" disabled>&nbsp;</button>;
 		}
 		const pp = props.moveData.maxpp ? `${props.moveData.pp!}/${props.moveData.maxpp}` : '\u2014';
+		const confirm = this.props.room.battle.confirmCmd === props.cmd.slice(1) ? ' confirm-choice' : '';
 		return <button
 			data-cmd={props.cmd} data-tooltip={props.tooltip}
-			class={`movebutton has-tooltip ${props.moveData.disabled ? 'disabled' : `type-${props.type}`}`}
+			class={`movebutton has-tooltip ${props.moveData.disabled ? 'disabled' : `type-${props.type}`}${confirm}`}
 			aria-disabled={props.moveData.disabled}
 		>
 			{props.name}<br />
@@ -556,9 +557,10 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 		pokemon: Pokemon | ServerPokemon | null, cmd: string, noHPBar?: boolean, disabled?: boolean | 'fade', tooltip: string,
 	}) {
 		const pokemon = props.pokemon;
+		const confirm = this.props.room.battle.confirmCmd === props.cmd.slice(1) ? ' confirm-choice' : '';
 		if (!pokemon) {
 			return <button
-				data-cmd={props.cmd} class={`${props.disabled ? 'disabled ' : ''}has-tooltip`}
+				data-cmd={props.cmd} class={`${props.disabled ? 'disabled ' : ''}has-tooltip${confirm}`}
 				aria-disabled={props.disabled}
 				style={props.disabled === 'fade' ? 'opacity: 0.5' : ''} data-tooltip={props.tooltip}
 			>
@@ -574,7 +576,7 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 		}
 
 		return <button
-			data-cmd={props.cmd} class={`${props.disabled ? 'disabled ' : ''}has-tooltip`}
+			data-cmd={props.cmd} class={`${props.disabled ? 'disabled ' : ''}has-tooltip${confirm}`}
 			aria-disabled={props.disabled}
 			style={props.disabled === 'fade' ? 'opacity: 0.5' : ''} data-tooltip={props.tooltip}
 		>
@@ -931,6 +933,7 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 			room.battle.myPokemon = request.side.pokemon;
 			this.team = request.side.pokemon;
 		}
+		const confirm = room.battle.confirmCmd !== null && 'Please confirm.';
 		switch (request.requestType) {
 		case 'move': {
 			const index = choices.index();
@@ -941,7 +944,7 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 				return <div class="controls">
 					<div class="whatdo">
 						{this.renderOldChoices(request, choices)}
-						{pokemon.name} should use <strong>{moveName}</strong> at where? {}
+						{pokemon.name} should use <strong>{moveName}</strong> at where? {confirm}
 					</div>
 					<div class="switchcontrols">
 						<div class="switchmenu">
@@ -956,7 +959,7 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 			return <div class="controls">
 				<div class="whatdo">
 					{this.renderOldChoices(request, choices)}
-					What will <strong>{pokemon.name}</strong> do?
+					What will <strong>{pokemon.name}</strong> do? {confirm}
 				</div>
 				<div class="movecontrols">
 					<h3 class="moveselect">Attack</h3>
@@ -976,7 +979,7 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 			return <div class="controls">
 				<div class="whatdo">
 					{this.renderOldChoices(request, choices)}
-					What will <strong>{pokemon.name}</strong> do?
+					What will <strong>{pokemon.name}</strong> do? {confirm}
 				</div>
 				<div class="switchcontrols">
 					<h3 class="switchselect">Switch</h3>
@@ -995,7 +998,7 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 				</div>
 				<div class="switchcontrols">
 					<h3 class="switchselect">
-						Choose {choices.alreadySwitchingIn.length <= 0 ? `lead` : `slot ${choices.alreadySwitchingIn.length + 1}`}
+						Choose {choices.alreadySwitchingIn.length <= 0 ? `lead` : `slot ${choices.alreadySwitchingIn.length + 1}`}. {confirm}
 					</h3>
 					<div class="switchmenu">
 						{this.renderTeamPreviewChooser(request, choices)}

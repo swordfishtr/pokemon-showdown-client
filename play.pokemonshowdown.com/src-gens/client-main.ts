@@ -125,6 +125,13 @@ class PSPrefs extends PSStreamModel<string | null> {
 	autotimer: boolean | null = null;
 	rightpanelbattles: boolean | null = null;
 	disallowspectators: boolean | null = null;
+	confirmchoice = {
+		move: false,
+		target: false,
+		switch: false,
+		preview: false,
+	};
+
 	starredformats: { [formatid: string]: true | undefined } | null = null;
 
 	/**
@@ -166,14 +173,14 @@ class PSPrefs extends PSStreamModel<string | null> {
 	highlights: Record<string, string[]> | null = null;
 	logtimes: { [serverid: ID]: { [roomid: RoomID]: number } } | null = null;
 
+	/** Showdex autostart */
+	showdex = false;
+
 	// PREFS END HERE
 
 	storageEngine: 'localStorage' | 'iframeLocalStorage' | '' = '';
 	storage: { [k: string]: any } = {};
 	readonly origin = `https://${Config.routes.client}`;
-
-	// Showdex autostart
-	showdex = false;
 
 	constructor() {
 		super();
