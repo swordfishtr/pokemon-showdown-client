@@ -62,6 +62,7 @@ const gensmods = [
 	'regenerations',
 	'regenerations10',
 	'petpet',
+	'megaapril',
 ];
 
 //const testmod = 'perfectg1';

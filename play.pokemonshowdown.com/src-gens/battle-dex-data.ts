@@ -814,6 +814,8 @@ export const GensPokemonIconIndexes: { [id: string]: number } = {
 	ukali: 12 + 10,
 	wuzzle: 12 + 11,
 	yullie: 12 + 12,
+
+	alomomolamega: 12 + 23,
 };
 
 export const BattleAvatarNumbers: { [k: string]: string } = {
