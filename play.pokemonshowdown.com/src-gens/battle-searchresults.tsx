@@ -292,17 +292,24 @@ export class PSSearchResults extends preact.Component<{
 	}
 
 	renderTypeRow(index: number, id: ID, matchStart: number, matchEnd: number, errorMessage?: preact.ComponentChildren) {
-		const name = id.charAt(0).toUpperCase() + id.slice(1);
+		let name = id.charAt(0).toUpperCase() + id.slice(1);
+		let tagStart = 0;
+		let type = name;
+		if (id.endsWith('coverage')) {
+			name = name.slice(0, -8) + ' Coverage';
+			tagStart = name.length - 8;
+			type = type.slice(0, -8);
+		}
 		const hover = this.resultIndex === index ? 'hover' : '';
 
 		return <li key={index} class="result">
 			<a href={`${this.URL_ROOT}types/${id}`} class={hover} data-target="push" data-entry={`type|${name}`}>
-				<span class="col namecol">{this.renderName(name, matchStart, matchEnd)}</span>
+				<span class="col pokemonnamecol">{this.renderName(name, matchStart, matchEnd, tagStart)}</span>
 
 				<span class="col typecol">
 					<img
-						src={`${Dex.resourcePrefix}sprites/types/${encodeURIComponent(name)}.png`}
-						alt={name} height="14" width="32" class="pixelated"
+						src={`${Dex.resourcePrefix}sprites/types/${encodeURIComponent(type)}.png`}
+						alt={type} height="14" width="32" class="pixelated"
 					/>
 				</span>
 

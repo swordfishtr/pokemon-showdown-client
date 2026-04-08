@@ -773,6 +773,11 @@ export class DexSearch {
 
 			bufs[typeIndex].push([type, id, matchStart, matchEnd]);
 
+			// Filter for pokemon by learned coverage moves
+			if (searchType === 'pokemon' && type === 'type') {
+				bufs[typeIndex].push([type, `${id}coverage` as ID, matchStart, matchEnd]);
+			}
+
 			count++;
 		}
 
@@ -1270,9 +1275,25 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 		const species = this.gtt.getFormatSpecies(row[1]);
 		for (const [filterType, value] of filters) {
 			switch (filterType) {
-			case 'type':
-				if (species.types[0] !== value && species.types[1] !== value) return false;
+			case 'type': {
+				if (value.endsWith('Coverage')) {
+					const valueType = value.slice(0, -9);
+					let found = false;
+					for (const [type, id] of new BattleMoveSearch('move', this.gtt, species.id).getBaseResults()) {
+						if (type !== 'move' || id.startsWith('hiddenpower')) continue;
+						const move = this.gtt.getFormatMove(id);
+						if (move.type === valueType && move.category !== 'Status') {
+							found = true;
+							break;
+						}
+					}
+					if (!found) return false;
+				}
+				else {
+					if (species.types[0] !== value && species.types[1] !== value) return false;
+				}
 				break;
+			}
 			case 'egggroup':
 				if (species.eggGroups[0] !== value && species.eggGroups[1] !== value) return false;
 				break;
