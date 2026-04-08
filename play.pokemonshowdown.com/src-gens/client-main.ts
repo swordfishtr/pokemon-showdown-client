@@ -123,6 +123,7 @@ class PSPrefs extends PSStreamModel<string | null> {
 	ignorespects: boolean | null = null;
 	ignoreopp: boolean | null = null;
 	autotimer: boolean | null = null;
+	automodchat: boolean | null = null;
 	rightpanelbattles: boolean | null = null;
 	disallowspectators: boolean | null = null;
 	confirmchoice = {

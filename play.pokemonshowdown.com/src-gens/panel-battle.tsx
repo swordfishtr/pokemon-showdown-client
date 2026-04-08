@@ -147,6 +147,7 @@ export class BattleRoom extends ChatRoom {
 	request: BattleRequest | null = null;
 	choices: BattleChoiceBuilder | null = null;
 	autoTimerActivated: boolean | null = null;
+	autoModchatActivated: boolean | null = null;
 
 	loadReplay(url: string, accessreplay?: true) {
 		return Net(`${url}.json`)
@@ -457,6 +458,10 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 		if (PS.prefs.autotimer && !room.battle.kickingInactive && !room.autoTimerActivated) {
 			this.send('/timer on');
 			room.autoTimerActivated = true;
+		}
+		if (PS.prefs.automodchat && !room.autoModchatActivated) {
+			this.send('/modchat player');
+			room.autoModchatActivated = true;
 		}
 
 		BattleChoiceBuilder.fixRequest(request, room.battle);

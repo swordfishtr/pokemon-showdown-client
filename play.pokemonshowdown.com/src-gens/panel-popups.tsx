@@ -1538,6 +1538,13 @@ class BattleOptionsPanel extends PSRoomPanel {
 				}
 				break;
 			}
+			case 'automodchat': {
+				PS.prefs.set('automodchat', value);
+				if (value) {
+					room?.send('/modchat player');
+				}
+				break;
+			}
 			case 'rightpanel': {
 				PS.prefs.set('rightpanelbattles', value);
 				break;
@@ -1714,6 +1721,15 @@ class BattleOptionsPanel extends PSRoomPanel {
 						type="checkbox" onChange={this.handleAllSettings}
 					/>
 					Automatically start timer
+				</label>
+			</p>
+			<p>
+				<label class="checkbox">
+					<input
+						name="automodchat" checked={PS.prefs.automodchat || false}
+						type="checkbox" onChange={this.handleAllSettings}
+					/>
+					Automatically set modchat player
 				</label>
 			</p>
 			{!PS.prefs.onepanel && document.body.offsetWidth >= 800 && <p>
