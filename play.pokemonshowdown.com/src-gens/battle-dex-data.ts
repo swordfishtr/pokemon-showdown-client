@@ -817,6 +817,9 @@ export const GensPokemonIconIndexes: { [id: string]: number } = {
 
 	alomomolamega: 12 + 23,
 };
+export const GensItemIconIndexes: { [id: string]: number } = {
+	alomowhat: 1,
+};
 
 export const BattleAvatarNumbers: { [k: string]: string } = {
 	1: 'lucas',

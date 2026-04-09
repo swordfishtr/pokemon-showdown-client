@@ -938,12 +938,18 @@ export const Dex = new class implements ModdedDex {
 
 	getItemIcon(item: any) {
 		let num = 0;
-		if (typeof item === 'string' && window.BattleItems) item = window.BattleItems[toID(item)];
-		if (item?.spritenum) num = item.spritenum;
-
+		let sheet = 'itemicons-sheet.png';
+		let id = toID(item);
+		if (window.GensItemIconIndexes?.[id]) {
+			num = window.GensItemIconIndexes[id];
+			sheet = 'gens-itemicons-sheet.png';
+		}
+		else if (window.BattleItems?.[id]?.spritenum) {
+			num = window.BattleItems[id].spritenum;
+		}
 		let top = Math.floor(num / 16) * 24;
 		let left = (num % 16) * 24;
-		return `background:transparent url(${Dex.resourcePrefix}sprites/itemicons-sheet.png?v1) no-repeat scroll -${left}px -${top}px`;
+		return `background:transparent url(${Dex.resourcePrefix}sprites/${sheet}) no-repeat scroll -${left}px -${top}px`;
 	}
 
 	getTypeIcon(type: string | null, b?: boolean) { // b is just for utilichart.js
