@@ -1297,6 +1297,11 @@ for (const format of Dex.formats.all()) {
 			'durinberry',
 		];
 	}
+	if (format.id === 'gen9nd35pokesmegaapril') {
+		gtt.newitems = [
+			'alomowhat',
+		];
+	}
 
 	/** Initial overrides */
 	for (let i = 0; i < gensmods.length; i++) {
