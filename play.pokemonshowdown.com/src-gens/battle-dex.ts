@@ -604,7 +604,7 @@ export const Dex = new class implements ModdedDex {
 					isDynamax = true;
 				}
 			}
-			pokemon = pokemon.getSpeciesForme() + (isGigantamax ? '-Gmax' : '');
+			pokemon = pokemon.side.battle.gtt.getFormatSpecies(pokemon.getSpeciesForme() + (isGigantamax ? '-Gmax' : ''));
 		}
 		const species = Dex.species.get(pokemon);
 		// Gmax sprites are already extremely large, so we don't need to double.

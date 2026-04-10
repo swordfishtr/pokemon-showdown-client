@@ -960,6 +960,13 @@ abstract class BattleTypedSearch<T extends SearchType> {
 			for (const [resultType, value] of this.baseResults) {
 				if (resultType === this.searchType) legalityFilter[value] = 1;
 			}
+			// Mega species abilities shouldn't be illegal
+			const species = this.gtt.getFormatSpecies(this.species);
+			if (species.isMega) {
+				for (const x of Object.values(species.abilities)) {
+					legalityFilter[toID(x)] = 1;
+				}
+			}
 			this.baseIllegalResults = [];
 			this.illegalReasons = {};
 
