@@ -2056,28 +2056,27 @@ class StatForm extends preact.Component<{
 	slideEV = (ev: Event) => {
 		const target = ev.currentTarget as HTMLInputElement;
 		const { editor, set } = this.props;
-
 		const statID = target.name.split('-')[1] as Dex.StatName;
-		const evInput = parseInt(target.value) || 0;
+		const evLimit = this.maxEVs();
+		const evTotal = !set.evs ? 0 :
+			(set.evs.hp ?? 0) +
+			(set.evs.atk ?? 0) +
+			(set.evs.def ?? 0) +
+			(set.evs.spa ?? 0) +
+			(set.evs.spd ?? 0) +
+			(set.evs.spe ?? 0) -
+			(set.evs[statID] ?? 0);
+
+		const evInput = Math.min(
+			(parseInt(target.value) || 0), // user input
+			(evLimit - evTotal), // max evs within limit
+		);
 		const stat = editor.getStat(statID, set, undefined, evInput);
 		const evNext = editor.getMinEVsForStat(statID, stat, set);
-		let evOriginal = set.evs?.[statID] ?? 0;
-		evOriginal = evOriginal - (evOriginal % 4);
-
-		const evLimit = this.maxEVs();
-		let evLimitPassed = false;
-		if (evNext && evNext > evOriginal && evLimit !== Infinity) {
-			let total = 0;
-			for (const x of Object.values(set.evs ?? {})) total += x;
-			total += (evNext - evOriginal);
-			if (total > evLimit) evLimitPassed = true;
-		}
 
 		if (evNext) {
-			if (!evLimitPassed) {
-				set.evs ??= {};
-				set.evs[statID] = evNext;
-			}
+			set.evs ??= {};
+			set.evs[statID] = evNext;
 		}
 		else {
 			delete set.evs?.[statID];
@@ -2228,7 +2227,7 @@ class StatForm extends preact.Component<{
 	maxEVs() {
 		const { editor } = this.props;
 		const useEVs = editor.gtt.format.mod !== 'gen7letsgo';
-		return useEVs ? 510 : Infinity;
+		return useEVs ? 508 : Infinity;
 	}
 	override render() {
 		const { editor, set } = this.props;
@@ -2267,7 +2266,7 @@ class StatForm extends preact.Component<{
 			let totalEv = 0;
 			for (const ev of Object.values(set.evs || {})) totalEv += ev;
 			if (totalEv <= maxEVs) {
-				remaining = (totalEv > (maxEVs - 2) ? 0 : (maxEVs - 2) - totalEv);
+				remaining = (totalEv > maxEVs ? 0 : maxEVs - totalEv);
 			} else {
 				remaining = maxEVs - totalEv;
 			}
