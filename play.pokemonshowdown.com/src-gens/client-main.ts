@@ -14,7 +14,7 @@ import { PSModel, PSStreamModel } from './client-core';
 import type { PSRoomPanel, PSRouter } from './panels';
 import { ChatRoom } from './panel-chat';
 import type { MainMenuRoom } from './panel-mainmenu';
-import { Dex, toID, type ID } from './battle-dex';
+import { Dex, PSUtils, toID, type ID } from './battle-dex';
 import { BattleTextParser, type Args } from './battle-text-parser';
 import type { BattleRoom } from './panel-battle';
 import { Teams } from './battle-teams';
@@ -162,6 +162,10 @@ class PSPrefs extends PSStreamModel<string | null> {
 	 */
 	onepanel: boolean | 'vertical' = false;
 	timestamps: { chatrooms?: TimestampOptions, pms?: TimestampOptions } = {};
+	/**
+	 * if not null: on login ensure this is our avatar
+	 */
+	loginavatar: string | null = null;
 
 	mute = false;
 	effectvolume = 50;
@@ -1216,14 +1220,17 @@ export class PSRoom extends PSStreamModel<Args | null> implements RoomOptions {
 			}
 		},
 		'avatar'(target) {
-			target = target.toLowerCase();
-			if (/[^a-z0-9-]/.test(target)) target = toID(target);
-			const avatar = window.BattleAvatarNumbers?.[target] || target;
+			const [input, silent] = PSUtils.splitFirst(target, ',').map(toID);
+			const avatar = window.BattleAvatarNumbers?.[input] || input;
 			PS.user.avatar = avatar;
+			if (Number.isNaN(parseInt(avatar))) {
+				PS.prefs.set('loginavatar', avatar);
+			}
+			const output = `/avatar ${avatar}${silent ? ', 1' : ''}`;
 			if (this.type !== 'chat' && this.type !== 'battle') {
-				PS.send(`/avatar ${avatar}`);
+				PS.send(output);
 			} else {
-				this.sendDirect(`/avatar ${avatar}`);
+				this.sendDirect(output);
 			}
 		},
 		'open,user'(target) {

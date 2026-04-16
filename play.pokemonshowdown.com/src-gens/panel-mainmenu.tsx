@@ -138,10 +138,10 @@ export class MainMenuRoom extends PSRoom {
 			// Players get confused when they're logged in but see `0 users`, especially in an ongoing battle.
 			// This asks the server to confirm or correct that.
 			const [, fullName, namedCode, avatar] = args;
-			if(toID(fullName) !== PS.user.userid) {
-				for(const roomid in PS.rooms) {
+			if (toID(fullName) !== PS.user.userid) {
+				for (const roomid in PS.rooms) {
 					const room = PS.rooms[roomid] as ChatRoom;
-					if(room.classType === 'chat') {
+					if (room.classType === 'chat') {
 						PS.send(`/cmd roomidentity ${room.id}`);
 					}
 				}
@@ -149,6 +149,21 @@ export class MainMenuRoom extends PSRoom {
 			const named = namedCode === '1';
 			if (named) PS.user.initializing = false;
 			PS.user.setName(fullName, named, avatar);
+			if (named) {
+				// non-number avatar means it was explicitly set
+				if (Number.isNaN(parseInt(avatar))) {
+					// unmatch here means we set it on a different browser
+					if (PS.prefs.loginavatar !== avatar) {
+						// sync our browser with the other browser
+						PS.prefs.set('loginavatar', avatar);
+					}
+				}
+				// our avatar has been unset due to user expiry on the server side
+				else if (PS.prefs.loginavatar !== null) {
+					// sync the server with our browser (silently)
+					this.send(`/avatar ${PS.prefs.loginavatar}, 1`);
+				}
+			}
 			return;
 		} case 'updatechallenges': {
 			const [, challengesBuf] = args;
