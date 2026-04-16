@@ -1220,7 +1220,7 @@ export class PSRoom extends PSStreamModel<Args | null> implements RoomOptions {
 			}
 		},
 		'avatar'(target) {
-			const [input, silent] = PSUtils.splitFirst(target, ',').map(toID);
+			const [input, silent] = PSUtils.splitFirst(target, ',').map(x => x.toLowerCase().replace(/[^a-z0-9-.#]+/g, ''));
 			const avatar = window.BattleAvatarNumbers?.[input] || input;
 			PS.user.avatar = avatar;
 			if (Number.isNaN(parseInt(avatar))) {
