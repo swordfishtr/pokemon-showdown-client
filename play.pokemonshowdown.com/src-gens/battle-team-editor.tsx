@@ -1361,7 +1361,7 @@ class TeamWizard extends preact.Component<{
 								<strong class="label">H.P.</strong> {}
 								<PSIcon type={editor.getHPType(set)} />
 							</span>}
-							{species.credits && <span class="detailcell" style={{ 'max-width': '112px' }}>
+							{species.credits && <span class="detailcell" style={{ 'max-width': '100px' }}>
 								<strong class="label">Credits:</strong> {}
 								<span style={{ 'text-wrap': 'auto' }}>
 									{species.credits.join(', ')}
