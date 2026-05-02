@@ -763,7 +763,7 @@ export class BattleScene implements BattleSceneStub {
 		}
 		return (
 			`<div class="trainer trainer-${posStr}"${faded}><strong>${BattleLog.escapeHTML(side.name)}</strong>` +
-			`<div class="trainersprite"${ratinghtml} style="background-image:url(${Dex.resolveAvatar(side.avatar)});background-repeat:no-repeat;background-size:80px;">` +
+			`<div class="trainersprite"${ratinghtml} style="background-image:url(${Dex.resolveAvatar(side.avatar)});background-repeat:no-repeat;background-size:80px;image-rendering:pixelated;">` +
 			`</div>${badgehtml}${pokemonhtml}</div>`
 		);
 	}
