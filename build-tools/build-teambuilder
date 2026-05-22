@@ -894,6 +894,10 @@ for (const format of Dex.formats.all()) {
 
 	if (
 		[
+			'gen9rdlsingles',
+			'gen9rdlvgc',
+		].includes(format.id) ||
+		[
 			'-pokemontag:ndlc', '-pokemontag:ndnfe', '-pokemontag:ndru', '-pokemontag:ndrubl', '-pokemontag:nduu',
 			'-pokemontag:nduubl', '-pokemontag:ndou', '-pokemontag:ndag', '-pokemontag:nduber',
 		].every((rule) => ruleTable.tagRules.includes(rule)) ||
@@ -912,7 +916,7 @@ for (const format of Dex.formats.all()) {
 		);
 	}
 
-	if([
+	if ([
 		'gen94v4duu',
 		'gen94v4duubo3',
 		'gen9ndvgclc',
