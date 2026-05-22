@@ -685,6 +685,12 @@ for (const mod of sidemods) {
 
 const check = {
 	idToMod(id) {
+		if ([
+			'gen9rdlsingles',
+			'gen9rdlvgc',
+		].includes(format.id)) {
+			return 'champions';
+		}
 		const formatsStartingWithNumber = [
 			'35pokes',
 			'35moves',
@@ -856,7 +862,7 @@ for (const format of Dex.formats.all()) {
 	gtt.level = check.idToLevel(format.id);
 
 	gtt.natdex = check.idToNatdex(format.id) ? gtt.mod : null;
-	if([
+	if ([
 		'gen335pokesperfectb1',
 		'gen535pokesperfectb2',
 		'gen535pokesperfectb3',
