@@ -183,7 +183,7 @@ export const PSBackground = new class extends PSStreamModel<string | null> {
 			];
 			attrib = {
 				url: 'https://vgen.co/merionstudio',
-				title: 'Generations Mascot Medley',
+				title: 'Mascot Medley',
 				artist: 'MerionStudio',
 			};
 			break;

@@ -1256,7 +1256,7 @@ class BackgroundListPanel extends PSRoomPanel {
 			<div class="bglist">
 				<button onClick={this.setBg} value="mascotmedley" class={option('mascotmedley')}>
 					<span class="bg" style="background-position: 0 -0px"></span>{}
-					Generations Mascot Medley
+					Mascot Medley
 				</button>
 				<button onClick={this.setBg} value="gensday" class={option('gensday')}>
 					<span class="bg" style="background-position: 0 -90px"></span>{}
