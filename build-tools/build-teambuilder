@@ -53,6 +53,7 @@ const sidemods = [
 	'gen5bw1',
 	'gen7letsgo',
 	'gen8bdsp',
+	'champions',
 ];
 
 /** Mods with a mod folder */
@@ -683,8 +684,7 @@ for (const mod of sidemods) {
 // region *** FORMATS ***
 
 const check = {
-	// TODO: Side mod detection.
-	idToGen(id) {
+	idToMod(id) {
 		const formatsStartingWithNumber = [
 			'35pokes',
 			'35moves',
@@ -692,13 +692,19 @@ const check = {
 			'1v1',
 			'4v4',
 		];
-		for(const x of formatsStartingWithNumber) {
-			const index = id.indexOf(x);
-			if(index < 0) continue;
-			id = id.slice(0, index);
+		let sliced = id;
+		for (const x of formatsStartingWithNumber) {
+			const index = sliced.indexOf(x);
+			if (index < 0) continue;
+			sliced = sliced.slice(0, index);
 		}
-		const gen = /^(gen\d+)/.exec(id)?.[1];
-		return gen ?? `gen${Dex.gen}`;
+		const gen = /^(gen\d+)/.exec(sliced)?.[1] ?? `gen${Dex.gen}`;
+		for (const mod of [...sidemods, ...sidemods.map((x) => `${gen}${x}`)]) {
+			if (id.startsWith(mod)) {
+				return mod;
+			}
+		}
+		return gen ;
 	},
 	idToLevel(id) {
 		if([
@@ -846,7 +852,7 @@ for (const format of Dex.formats.all()) {
 	const gtt = GensTeambuilderTable.formats[format.id] = {};
 
 	gtt.name = format.name;
-	gtt.mod = check.idToGen(format.id);
+	gtt.mod = check.idToMod(format.id);
 	gtt.level = check.idToLevel(format.id);
 
 	gtt.natdex = check.idToNatdex(format.id) ? gtt.mod : null;
@@ -854,6 +860,8 @@ for (const format of Dex.formats.all()) {
 		'gen335pokesperfectb1',
 		'gen535pokesperfectb2',
 		'gen535pokesperfectb3',
+		'gen9rdlsingles',
+		'gen9rdlvgc',
 	].includes(format.id)) {
 		gtt.natdex = 'gen9';
 	}
