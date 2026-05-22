@@ -1252,21 +1252,6 @@ class BackgroundListPanel extends PSRoomPanel {
 		const room = this.props.room;
 		const option = (val: string) => val === PSBackground.id ? 'option cur' : 'option';
 		return this.renderUpload() || <PSPanelWrapper room={room} width={480}><div class="pad">
-			<p><strong>Default</strong></p>
-			<div class="bglist">
-				<button onClick={this.setBg} value="" class={option('')}>
-					<strong
-						style="
-						background: #888888;
-						color: white;
-						padding: 16px 18px;
-						display: block;
-						font-size: 12pt;
-					"
-					>Random</strong>
-				</button>
-			</div>
-			<div style="clear: left"></div>
 			<p><strong>Official</strong></p>
 			<div class="bglist">
 				<button onClick={this.setBg} value="mascotmedley" class={option('mascotmedley')}>
