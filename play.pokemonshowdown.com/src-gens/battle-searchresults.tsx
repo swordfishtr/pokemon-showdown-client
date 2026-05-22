@@ -261,6 +261,10 @@ export class PSSearchResults extends preact.Component<{
 
 		let pp = (move.pp === 1 || move.noPPBoosts ? move.pp : move.pp * 8 / 5);
 		if (search.gtt.dex.gen < 3) pp = Math.min(61, pp);
+		if (search.gtt.format.mod === 'champions') {
+			pp = move.pp > 20 ? 20 : pp;
+			if (!move.noPPBoosts) pp = (pp / 5 + 1) * 4;
+		}
 
 		const typesrc = `${Dex.resourcePrefix}sprites/types/${encodeURIComponent(move.type)}.png`;
 		const catsrc = `${Dex.resourcePrefix}sprites/categories/${move.category}.png`;

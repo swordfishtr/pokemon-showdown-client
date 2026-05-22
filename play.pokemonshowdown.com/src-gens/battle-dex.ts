@@ -300,6 +300,9 @@ export const Dex = new class implements ModdedDex {
 		if (dex.gen === 8 && formatid.includes('bdsp')) {
 			dex = Dex.mod('gen8bdsp' as ID);
 		}
+		if (dex.gen === 9 && formatid.includes('champions')) {
+			dex = Dex.mod('champions' as ID);
+		}
 		return dex;
 	}
 
@@ -1000,8 +1003,9 @@ export class ModdedDex {
 	pokeballs: string[] | null = null;
 	constructor(modid: ID) {
 		this.modid = modid;
-		const gen = parseInt(modid.charAt(3), 10);
-		if (!modid.startsWith('gen') || !gen) throw new Error("Unsupported modid");
+		let gen = parseInt(modid.charAt(3), 10);
+		if (this.modid === 'champions') gen = 9;
+		if ((modid !== 'champions' && !modid.startsWith('gen')) || !gen) throw new Error("Unsupported modid");
 		this.gen = gen;
 	}
 	moves = {

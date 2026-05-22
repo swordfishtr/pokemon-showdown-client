@@ -490,6 +490,17 @@ for (const id in BDSPLearnsets) {
 		GensTeambuilderTable.mods['gen8bdsp'].learnsets[id][moveid] = '8g';
 	}
 }
+console.log('Building champions learnsets ...');
+const ChampionsLearnsets = Dex.mod('champions').data.Learnsets;
+for (const id in ChampionsLearnsets) {
+	const species = Dex.mod('champions').species.get(id);
+	if (species.isNonstandard) continue;
+	const learnset = ChampionsLearnsets[id].learnset;
+	GensTeambuilderTable.mods['champions'].learnsets[id] = {};
+	for (const moveid in learnset) {
+		GensTeambuilderTable.mods['champions'].learnsets[id][moveid] = '9a';
+	}
+}
 
 // endregion
 
