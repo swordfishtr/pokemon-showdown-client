@@ -688,7 +688,7 @@ const check = {
 		if ([
 			'gen9rdlsingles',
 			'gen9rdlvgc',
-		].includes(format.id)) {
+		].includes(id)) {
 			return 'champions';
 		}
 		const formatsStartingWithNumber = [
