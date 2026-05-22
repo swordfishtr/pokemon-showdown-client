@@ -123,22 +123,6 @@ export const PSBackground = new class extends PSStreamModel<string | null> {
 	changeCount = 0;
 	menuColors: string[] | null = null;
 
-	constructor() {
-		super();
-		try {
-			let bg = localStorage.getItem('showdown_bg')?.split('\n') || [''];
-			if (bg.length === 1) {
-				// id
-				this.load('', bg[0]);
-			} else if (bg.length === 2) {
-				// url, id
-				this.load(bg[0], bg[1]);
-			} else if (bg.length >= 7) {
-				// url, id, menuColors
-				this.load(bg[0], bg[1], bg.slice(2));
-			}
-		} catch {}
-	}
 	save(bgUrl: string) {
 		if (this.id !== 'custom') {
 			localStorage.setItem('showdown_bg', this.id);
@@ -377,7 +361,7 @@ PSBackground.subscribe(bgUrl => {
 		let background;
 		if (bgUrl.startsWith('#')) {
 			background = bgUrl;
-		} else if (PSBackground.curId === 'mascotmedley') {
+		} else if (['mascotmedley', 'gensday'].includes(PSBackground.curId)) {
 			background = `#546bac url(${bgUrl}) no-repeat center bottom fixed`;
 		} else if (PSBackground.curId === 'custom') {
 			background = `#546bac url(${bgUrl}) no-repeat center center fixed`;
@@ -414,5 +398,20 @@ PSBackground.subscribe(bgUrl => {
 		buttonStyleElem.textContent = cssBuf;
 	}
 });
+
+try {
+	let bg = localStorage.getItem('showdown_bg')?.split('\n') || [''];
+	if (bg.length === 1) {
+		// id
+		PSBackground.load('', bg[0]);
+	} else if (bg.length === 2) {
+		// url, id
+		PSBackground.load(bg[0], bg[1]);
+	} else if (bg.length >= 7) {
+		// url, id, menuColors
+		PSBackground.load(bg[0], bg[1], bg.slice(2));
+	}
+} catch {}
+
 // '<a href="https://vtas.deviantart.com/art/Pokemon-Horizon-312267168" target="_blank" class="subtle">"Horizon" <small>background by Vivian Zou</small></a>';
 // if (attrib) attrib = '<small style="display:block;padding-bottom:4px">' + attrib + '</small>';
