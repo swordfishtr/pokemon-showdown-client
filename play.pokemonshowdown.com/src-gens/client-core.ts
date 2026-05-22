@@ -154,16 +154,11 @@ export const PSBackground = new class extends PSStreamModel<string | null> {
 	}
 
 	load(bgUrl: string, bgid: string, menuColors: string[] | null = null) {
-		const pngbg = ['mascotmedley'];
-
-		// id
+		const pngbg = ['mascotmedley', 'gensday'];
 		this.id = bgid;
-
-		// curid
-		//const bgs = ['horizon', 'ocean', 'waterfall', 'shaymin', 'charizards'];
-		//bgid = bgs[Math.floor(Math.random() * 5)];
-
-		bgid ||= pngbg[0];
+		const date = new Date();
+		const defaultid = (date.getMonth() === 4 && date.getDate() === 27) ? pngbg[1] : pngbg[0];
+		bgid ||= defaultid;
 		this.curId = bgid;
 
 		bgUrl ||= (bgid === 'solidblue' ? '#344b6c' : Dex.fxPrefix + 'client-bg-' + bgid + (pngbg.includes(bgid) ? '.png' : '.jpg'));
@@ -189,6 +184,21 @@ export const PSBackground = new class extends PSStreamModel<string | null> {
 			attrib = {
 				url: 'https://vgen.co/merionstudio',
 				title: 'Generations Mascot Medley',
+				artist: 'MerionStudio',
+			};
+			break;
+		case 'gensday':
+			menuColors = [
+				"339.4285714285714,13.944223107569718%",
+				"208.74999999999997,28.571428571428566%",
+				"44.16,73.09941520467835%",
+				"33.33333333333323,15.254237288135583%",
+				"26.34146341463415,65.07936507936508%",
+				"170.9090909090909,37.07865168539327%",
+			];
+			attrib = {
+				url: 'https://vgen.co/merionstudio',
+				title: 'Generations Day',
 				artist: 'MerionStudio',
 			};
 			break;

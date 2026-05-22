@@ -1271,26 +1271,30 @@ class BackgroundListPanel extends PSRoomPanel {
 			<div class="bglist">
 				<button onClick={this.setBg} value="mascotmedley" class={option('mascotmedley')}>
 					<span class="bg" style="background-position: 0 -0px"></span>{}
-					Mascot Medley
+					Generations Mascot Medley
+				</button>
+				<button onClick={this.setBg} value="gensday" class={option('gensday')}>
+					<span class="bg" style="background-position: 0 -90px"></span>{}
+					Generations Day
 				</button>
 				<button onClick={this.setBg} value="charizards" class={option('charizards')}>
-					<span class="bg" style="background-position: 0 -90px"></span>{}
+					<span class="bg" style="background-position: 0 -180px"></span>{}
 					Charizards
 				</button>
 				<button onClick={this.setBg} value="horizon" class={option('horizon')}>
-					<span class="bg" style="background-position: 0 -180px"></span>{}
+					<span class="bg" style="background-position: 0 -270px"></span>{}
 					Horizon
 				</button>
 				<button onClick={this.setBg} value="waterfall" class={option('waterfall')}>
-					<span class="bg" style="background-position: 0 -270px"></span>{}
+					<span class="bg" style="background-position: 0 -360px"></span>{}
 					Waterfall
 				</button>
 				<button onClick={this.setBg} value="ocean" class={option('ocean')}>
-					<span class="bg" style="background-position: 0 -360px"></span>{}
+					<span class="bg" style="background-position: 0 -450px"></span>{}
 					Ocean
 				</button>
 				<button onClick={this.setBg} value="shaymin" class={option('shaymin')}>
-					<span class="bg" style="background-position: 0 -450px"></span>{}
+					<span class="bg" style="background-position: 0 -540px"></span>{}
 					Shaymin
 				</button>
 				<button onClick={this.setBg} value="solidblue" class={option('solidblue')}>
