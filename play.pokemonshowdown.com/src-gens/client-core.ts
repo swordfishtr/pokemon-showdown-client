@@ -177,9 +177,7 @@ export const PSBackground = new class extends PSStreamModel<string | null> {
 	load(bgUrl: string, bgid: string, menuColors: string[] | null = null) {
 		const pngbg = ['mascotmedley', 'gensday'];
 		this.id = bgid;
-		const date = new Date();
-		const defaultid = (date.getMonth() === 4 && date.getDate() === 27) ? pngbg[1] : pngbg[0];
-		bgid ||= defaultid;
+		bgid ||= pngbg[0];
 		this.curId = bgid;
 
 		bgUrl ||= (bgid === 'solidblue'
@@ -434,16 +432,22 @@ PSBackground.subscribe(bgUrl => {
 });
 
 try {
-	let bg = localStorage.getItem('showdown_bg')?.split('\n') || [''];
-	if (bg.length === 1) {
-		// id
-		PSBackground.load('', bg[0]);
-	} else if (bg.length === 2) {
-		// url, id
-		PSBackground.load(bg[0], bg[1]);
-	} else if (bg.length >= 7) {
-		// url, id, menuColors
-		PSBackground.load(bg[0], bg[1], bg.slice(2));
+	const date = new Date();
+	if (date.getMonth() === 4 && date.getDate() === 27) {
+		PSBackground.load('', 'gensday');
+	}
+	else {
+		let bg = localStorage.getItem('showdown_bg')?.split('\n') || [''];
+		if (bg.length === 1) {
+			// id
+			PSBackground.load('', bg[0]);
+		} else if (bg.length === 2) {
+			// url, id
+			PSBackground.load(bg[0], bg[1]);
+		} else if (bg.length >= 7) {
+			// url, id, menuColors
+			PSBackground.load(bg[0], bg[1], bg.slice(2));
+		}
 	}
 } catch {}
 
