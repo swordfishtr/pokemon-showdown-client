@@ -1833,9 +1833,21 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 		let gen = `${dex.gen}`;
 		const minGenCode: { [gen: number]: string } = { 6: 'p', 7: 'q', 8: 'g', 9: 'a' };
 
-		let parent: any = GensTeambuilderTable;
-		if (this.gtt.mod.learnsets) parent = this.gtt.mod;
-		if (this.gtt.format.learnsets) parent = this.gtt.format;
+		let parent: AnyObject;
+		if (this.gtt.format.natdex) {
+			if (GensTeambuilderTable.mods[this.gtt.format.natdex]?.learnsets) {
+				parent = GensTeambuilderTable.mods[this.gtt.format.natdex];
+			}
+			else {
+				console.warn(`Invalid natdex format: ${this.gtt.formatid}`);
+				parent = GensTeambuilderTable;
+			}
+		}
+		else {
+			if (this.gtt.format.learnsets) parent = this.gtt.format;
+			else if (this.gtt.mod.learnsets) parent = this.gtt.mod;
+			else parent = GensTeambuilderTable;
+		}
 		
 		while (learnsetid) {
 			let learnset = parent.learnsets[learnsetid];
