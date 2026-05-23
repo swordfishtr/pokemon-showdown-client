@@ -1039,7 +1039,9 @@ abstract class BattleTypedSearch<T extends SearchType> {
 		return results;
 	}
 	protected firstLearnsetid(speciesid: ID) {
-		const learnsets = this.gtt.format.learnsets ?? this.gtt.mod.learnsets ?? GensTeambuilderTable.learnsets;
+		const learnsets = this.gtt.format.natdex
+			? GensTeambuilderTable.learnsets
+			: this.gtt.format.learnsets ?? this.gtt.mod.learnsets ?? GensTeambuilderTable.learnsets;
 		if (speciesid in learnsets) return speciesid;
 		if (this.gtt.format.learnsetDiff && speciesid in this.gtt.format.learnsetDiff.additions) return speciesid;
 
@@ -1854,13 +1856,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 
 		let parent: AnyObject;
 		if (this.gtt.format.natdex) {
-			if (GensTeambuilderTable.mods[this.gtt.format.natdex]?.learnsets) {
-				parent = GensTeambuilderTable.mods[this.gtt.format.natdex];
-			}
-			else {
-				console.warn(`Invalid natdex format: ${this.gtt.formatid}`);
-				parent = GensTeambuilderTable;
-			}
+			parent = GensTeambuilderTable;
 		}
 		else {
 			if (this.gtt.format.learnsets) parent = this.gtt.format;
