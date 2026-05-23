@@ -43,6 +43,17 @@
 	</script>
 	<script src="config/config.js"></script>
 	<script>
+		Config.makeLoadTracker = function() {
+			let resolver;
+			const tracker = new Promise(resolve => {
+				resolver = resolve;
+			});
+			tracker.loaded = () => {
+				resolver();
+			};
+			return tracker;
+		}
+		Config.libsLoaded = Config.makeLoadTracker();
 		Config.testclient = true;
 		(function() {
 			if (location.search !== '') {

@@ -10,7 +10,7 @@
 import preact from "../js/lib/preact";
 import { Dex, toID, type ID } from "./battle-dex";
 import { GensTeambuilderTable, type DexSearch, type SearchRow, type SearchType } from "./battle-dex-search";
-import { Config } from "./client-main";
+import { Config } from "./client-core";
 
 export class PSSearchResults extends preact.Component<{
 	search: DexSearch,

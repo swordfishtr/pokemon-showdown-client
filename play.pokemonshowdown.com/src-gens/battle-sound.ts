@@ -1,4 +1,5 @@
-import { Config, PS } from "./client-main";
+import { Config } from "./client-core";
+import { PS } from "./client-main";
 
 export class BattleBGM {
 	/**

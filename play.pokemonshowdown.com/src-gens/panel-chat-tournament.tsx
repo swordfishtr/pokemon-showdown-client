@@ -1,7 +1,7 @@
 import preact from "../js/lib/preact";
 import { Dex, toRoomid } from "./battle-dex";
 import { BattleLog } from "./battle-log";
-import { PSModel, type PSSubscription } from "./client-core";
+import { Config, PSModel, type PSSubscription } from "./client-core";
 import { PS, type RoomID, type Team } from "./client-main";
 import { TeamForm } from "./panel-mainmenu";
 import type { Args } from "./battle-text-parser";
@@ -713,7 +713,7 @@ export class TournamentTreeBracket extends preact.Component<{
 		}
 		if (!window.d3) {
 			div.innerHTML = `<b>d3 not loaded yet</b>`;
-			this.d3Loader ||= PS.libsLoaded.then(() => {
+			this.d3Loader ||= Config.libsLoaded.then(() => {
 				//this.forceUpdate();
 				// ^ this doesn't actually display the bracket on d3 load.
 				this.base!.replaceChild(this.generateTreeBracket(this.props.data), this.base!.children[0]);

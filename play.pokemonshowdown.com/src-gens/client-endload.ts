@@ -1,3 +1,4 @@
+import { Config } from './client-core';
 import { PS } from './client-main';
 
 setTimeout(() => {
@@ -8,10 +9,10 @@ setTimeout(() => {
 		});
 	}
 
-	PS.libsLoaded.loaded();
+	Config.libsLoaded.loaded();
 }, 1);
 
-// Showdex loads very slowly, so we don't count it towards `PS.libsLoaded`
+// Showdex loads very slowly, so we don't count it towards `Config.libsLoaded`
 if(PS.prefs.showdex) {
 	const script = document.createElement('script');
 	script.src = 'showdex-gens/main.js';

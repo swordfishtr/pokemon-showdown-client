@@ -1,5 +1,5 @@
 declare const SockJS: any;
-import type { ServerInfo } from "./client-main";
+import type { ServerInfo } from "./client-core";
 
 let socket: WebSocket | null = null;
 let serverInfo: ServerInfo;

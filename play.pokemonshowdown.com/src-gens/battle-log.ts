@@ -18,7 +18,7 @@ import type { BattleScene } from './battle-animations';
 import { Dex, toID, toRoomid, toUserid, type ID } from './battle-dex';
 import { Teams } from './battle-teams';
 import { BattleTextParser, type Args, type KWArgs } from './battle-text-parser';
-import { Config } from './client-main';
+import { Config } from './client-core';
 
 // Caja
 declare const html4: any;

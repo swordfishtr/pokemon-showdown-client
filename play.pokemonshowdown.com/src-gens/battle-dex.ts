@@ -22,12 +22,11 @@ import { Pokemon, type ServerPokemon } from "./battle";
 import {
 	BattleAvatarNumbers, BattleBaseSpeciesChart, BattlePokemonIconIndexes, BattlePokemonIconIndexesLeft,
 	Ability, Item, Move, Species, PureEffect, type ID, type Type,
-	GensPokemonIconIndexes,
 } from "./battle-dex-data";
 import type * as DexData from "./battle-dex-data";
 import { GensTeambuilderTable, GTTIndex } from "./battle-dex-search";
 import type { Teams } from "./battle-teams";
-import { Config } from "./client-main";
+import { Config } from "./client-core";
 
 export declare namespace Dex {
 	/* eslint-disable @typescript-eslint/no-shadow */

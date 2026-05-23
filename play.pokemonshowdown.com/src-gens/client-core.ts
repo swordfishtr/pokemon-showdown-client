@@ -13,9 +13,46 @@
  * @license AGPLv3
  */
 
-import { Dex } from "./battle-dex";
-import { PS } from "./client-main";
+import type { ID } from "./battle-dex-data";
 declare const ColorThief: any;
+
+/**********************************************************************
+ * Config
+ *********************************************************************/
+
+export interface ServerInfo {
+	id: ID;
+	protocol: string;
+	host: string;
+	port: number;
+	httpport?: number;
+	altport?: number;
+	prefix: string;
+	afd?: boolean;
+	registered?: boolean;
+}
+export interface PSConfig {
+	server: ServerInfo;
+	defaultserver: ServerInfo;
+	defaultGroup: string; // unused
+	defaultOrder: number; // unused
+	groups: any; // unused
+	routes: {
+		root: string,
+		client: string,
+		dex: string,
+		replays: string,
+		users: string,
+		teams: string,
+	};
+	customcolors: Record<string, string>;
+	whitelist?: string[];
+	testclient?: boolean;
+	newsHTML: string;
+	makeLoadTracker: () => (Promise<void> & { loaded: () => void });
+	libsLoaded: Promise<void> & { loaded: () => void };
+}
+export declare const Config: PSConfig;
 
 /**********************************************************************
  * PS Models
@@ -145,7 +182,9 @@ export const PSBackground = new class extends PSStreamModel<string | null> {
 		bgid ||= defaultid;
 		this.curId = bgid;
 
-		bgUrl ||= (bgid === 'solidblue' ? '#344b6c' : Dex.fxPrefix + 'client-bg-' + bgid + (pngbg.includes(bgid) ? '.png' : '.jpg'));
+		bgUrl ||= (bgid === 'solidblue'
+			? '#344b6c'
+			: `https://generationssd.co.uk/fx/client-bg-${bgid}.${pngbg.includes(bgid) ? 'png' : 'jpg'}`);
 
 		// April Fool's 2016 - Digimon theme
 		// bgid = 'digimon';
@@ -290,15 +329,10 @@ export const PSBackground = new class extends PSStreamModel<string | null> {
 		// We need the image object to load it on a canvas to detect the main color.
 		const img = new Image();
 		img.onload = () => {
-			if (changeCount !== PSBackground.changeCount) return;
-			if (window.ColorThief) {
+			Config.libsLoaded.then(() => {
+				if (changeCount !== PSBackground.changeCount) return;
 				this.extractMenuColorsFromImg(img, bgUrl);
-			} else {
-				PS.libsLoaded.then(() => {
-					if (changeCount !== PSBackground.changeCount) return;
-					this.extractMenuColorsFromImg(img, bgUrl);
-				});
-			}
+			});
 		};
 		img.src = bgUrl;
 	}

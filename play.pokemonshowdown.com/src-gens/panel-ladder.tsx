@@ -7,7 +7,8 @@
  * @license MIT
  */
 
-import { Config, PS, PSRoom } from "./client-main";
+import { Config } from "./client-core";
+import { PS, PSRoom } from "./client-main";
 import { PSPanelWrapper, PSRoomPanel } from "./panels";
 import { BattleLog } from "./battle-log";
 import { toID, type ID } from "./battle-dex";

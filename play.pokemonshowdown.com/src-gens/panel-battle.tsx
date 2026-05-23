@@ -6,7 +6,8 @@
  */
 
 import preact from "../js/lib/preact";
-import { PS, PSRoom, type RoomOptions, type RoomID, Config } from "./client-main";
+import { Config } from "./client-core";
+import { PS, PSRoom, type RoomOptions, type RoomID } from "./client-main";
 import { PSIcon, PSPanelWrapper, PSRoomPanel, PSView } from "./panels";
 import { ChatLog, ChatRoom, ChatTextEntry, ChatUserList } from "./panel-chat";
 import { FormatDropdown } from "./panel-mainmenu";

@@ -6,8 +6,9 @@
  */
 
 import preact from "../js/lib/preact";
+import { Config } from "./client-core";
 import { LoginManager } from "./client-connection";
-import { Config, PS, PSRoom, type RoomID, type RoomOptions, type Team } from "./client-main";
+import { PS, PSRoom, type RoomID, type RoomOptions, type Team } from "./client-main";
 import { PSIcon, PSPanelWrapper, PSRoomPanel } from "./panels";
 import type { BattlesRoom } from "./panel-battle";
 import type { ChatRoom } from "./panel-chat";
@@ -133,12 +134,12 @@ export class MainMenuRoom extends PSRoom {
 			});
 			return;
 		} case 'updateuser': {
+			const [, fullName, namedCode, avatar, settings] = args;
+			const named = namedCode === '1';
 			// Generations
 			// In some cases, the server will fail to communicate that we're part of a chatroom upon joining it.
 			// Players get confused when they're logged in but see `0 users`, especially in an ongoing battle.
 			// This asks the server to confirm or correct that.
-			const [, fullName, namedCode, avatar] = args;
-			const named = namedCode === '1';
 			if (PS.user.userid && toID(fullName) !== PS.user.userid) {
 				for (const roomid in PS.rooms) {
 					const room = PS.rooms[roomid] as ChatRoom;

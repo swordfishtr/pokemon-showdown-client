@@ -10,7 +10,7 @@
  */
 
 import { LoginManager, PSConnection } from './client-connection';
-import { PSModel, PSStreamModel } from './client-core';
+import { Config, PSModel, PSStreamModel } from './client-core';
 import type { PSRoomPanel, PSRouter } from './panels';
 import { ChatRoom } from './panel-chat';
 import type { MainMenuRoom } from './panel-mainmenu';
@@ -22,42 +22,6 @@ import { DexSearch } from './battle-dex-search';
 
 declare const BattleTextAFD: any;
 declare const BattleTextNotAFD: any;
-
-/**********************************************************************
- * Config
- *********************************************************************/
-
-export interface ServerInfo {
-	id: ID;
-	protocol: string;
-	host: string;
-	port: number;
-	httpport?: number;
-	altport?: number;
-	prefix: string;
-	afd?: boolean;
-	registered?: boolean;
-}
-export interface PSConfig {
-	server: ServerInfo;
-	defaultserver: ServerInfo;
-	defaultGroup: string; // unused
-	defaultOrder: number; // unused
-	groups: any; // unused
-	routes: {
-		root: string,
-		client: string,
-		dex: string,
-		replays: string,
-		users: string,
-		teams: string,
-	};
-	customcolors: Record<string, string>;
-	whitelist?: string[];
-	testclient?: boolean;
-	newsHTML: string;
-}
-export declare const Config: PSConfig;
 
 /**********************************************************************
  * Prefs
@@ -838,17 +802,6 @@ type ParsedClientCommands = {
 		this: PSRoom, target: string, cmd: string, element: HTMLElement | null
 	) => string | boolean | null | void,
 };
-
-export function makeLoadTracker() {
-	let resolver: () => void;
-	const tracker: Promise<void> & { loaded: () => void } = new Promise<void>(resolve => {
-		resolver = resolve;
-	}) as any;
-	tracker.loaded = () => {
-		resolver();
-	};
-	return tracker;
-}
 
 /**
  * As a PSStreamModel, PSRoom can emit `Args` to mean "we received a message",
@@ -1846,8 +1799,6 @@ export const PS = new class extends PSModel {
 
 	/** Tracks whether or not to display the "Use arrow keys" hint */
 	arrowKeysUsed = false;
-
-	libsLoaded = makeLoadTracker();
 
 	constructor() {
 		super();
