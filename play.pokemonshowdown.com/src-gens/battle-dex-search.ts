@@ -46,10 +46,11 @@ export declare const GensTeambuilderTable: {
 
 interface GTTMod {
 	items: any, // null after move to itemSet
-	itemSet?: any,
-	// TODO
-	// itemsnatdex, itemSetnatdex
-	// itemsdoubles, itemSetdoubles
+	itemsSet?: any,
+	itemsnatdex: any,
+	itemsnatdexSet: any,
+	itemsdoubles: any,
+	itemsdoublesSet: any,
 	overrideSpeciesData?: any,
 	overrideMoveData?: any,
 	overrideAbilityData?: any,
@@ -95,7 +96,11 @@ interface GTTFormat {
 	customNumCol?: { [species: ID]: number },
 
 	items?: GTTMod['items'], // not in use yet
-	itemSet?: GTTMod['itemSet'],
+	itemsSet?: GTTMod['itemsSet'],
+	itemsnatdex?: GTTMod['items'],
+	itemsnatdexSet?: GTTMod['itemsSet'],
+	itemsdoubles?: GTTMod['items'],
+	itemsdoublesSet?: GTTMod['itemsSet'],
 	overrideSpeciesData?: GTTMod['overrideSpeciesData'],
 	overrideMoveData?: GTTMod['overrideMoveData'],
 	overrideAbilityData?: GTTMod['overrideAbilityData'],
@@ -1450,21 +1455,35 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 		return BattleItems;
 	}
 	getDefaultResults(): SearchRow[] {
-		let parent: any = GensTeambuilderTable.mods[`gen${Dex.gen}` as ID];
-		if(this.gtt.mod.items || this.gtt.mod.itemSet) parent = this.gtt.mod;
-		if(this.gtt.format.items || this.gtt.format.itemSet) parent = this.gtt.format;
+		const items = this.gtt.format.doubles
+			? 'itemsdoubles'
+			: this.gtt.format.natdex
+				? 'itemsnatdex'
+				: 'items';
+		const itemsSet = `${items}Set` as const;
 
-		if(!parent.itemSet) {
-			parent.itemSet = parent.items.map((r: any) => {
+		let parent: AnyObject;
+		if (this.gtt.format.natdex) {
+			// mods always have `items`
+			parent = GensTeambuilderTable.mods[this.gtt.format.natdex];
+		}
+		else {
+			parent = (this.gtt.format[items] || this.gtt.format[itemsSet])
+				? this.gtt.format
+				: this.gtt.mod;
+		}
+
+		if (!parent[itemsSet]) {
+			parent[itemsSet] = parent[items].map((r: any) => {
 				if (typeof r === 'string') {
 					return ['item', r];
 				}
 				return [r[0], r[1]];
 			});
-			parent.items = null;
+			parent[items] = null;
 		}
 
-		return parent.itemSet.slice();
+		return parent[itemsSet].slice();
 	}
 	getBaseResults(): SearchRow[] {
 		if (!this.species) return this.getDefaultResults();
