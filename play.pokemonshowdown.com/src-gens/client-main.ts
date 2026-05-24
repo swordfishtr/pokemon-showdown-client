@@ -88,6 +88,8 @@ class PSPrefs extends PSStreamModel<string | null> {
 	ignoreopp: boolean | null = null;
 	autotimer: boolean | null = null;
 	automodchat: boolean | null = null;
+	autohardcore: boolean | null = null;
+	spectatefromstart: boolean | null = null;
 	rightpanelbattles: boolean | null = null;
 	disallowspectators: boolean | null = null;
 	confirmchoice = {
@@ -137,7 +139,7 @@ class PSPrefs extends PSStreamModel<string | null> {
 	notifvolume = 50;
 	uploadprivacy = false;
 
-	afd: boolean | 'sprites' = false;
+	afd: boolean | 'sprites' = undefined!;
 
 	highlights: Record<string, string[]> | null = null;
 	logtimes: { [serverid: ID]: { [roomid: RoomID]: number } } | null = null;
@@ -1045,16 +1047,19 @@ export class PSRoom extends PSStreamModel<Args | null> implements RoomOptions {
 		},
 		'part,leave,close'(target, cmd, elem) {
 			const roomid = (/[^a-z0-9-]/.test(target) ? toID(target) as any as RoomID : target as RoomID) || this.id;
-			const room = PS.rooms[roomid];
-			const battle = (room as BattleRoom)?.battle;
+			const room = PS.rooms[roomid] as BattleRoom;
+			const battle = room?.battle;
 
-			if (room?.type === "battle" && !battle.ended && battle.mySide.id === PS.user.userid && !battle.isReplay) {
+			if (room?.type === "battle" && !battle.ended && room.users[PS.user.userid]?.startsWith('☆') && !battle.isReplay) {
 				PS.join("forfeitbattle" as RoomID, { parentElem: elem });
 				return;
 			}
 			if (room?.type === "chat" && room.connected === true && PS.prefs.leavePopupRoom && !target) {
 				PS.join("confirmleaveroom" as RoomID, { parentElem: elem });
 				return;
+			}
+			if (room?.type === "chat" && room.challenging) {
+				room.cancelChallenge();
 			}
 
 			PS.leave(roomid);
@@ -2297,6 +2302,21 @@ export const PS = new class extends PSModel {
 		}
 		return this.focusRoom(rooms[index + 1]);
 	}
+	focusUnreadRoom(direction: 'left' | 'right') {
+		const { rooms, index } = this.horizontalNav();
+		if (index === -1) return;
+
+		const unreadRooms = rooms.filter((room, i) =>
+			PS.rooms[room]?.isSubtleNotifying &&
+			(direction === 'left' ? i < index : i > index)
+		);
+
+		if (!unreadRooms.length) return;
+
+		const target = direction === 'left' ? unreadRooms[unreadRooms.length - 1] : unreadRooms[0];
+
+		return this.focusRoom(target);
+	}
 	alert(message: string, opts: { okButton?: string, parentElem?: HTMLElement | null, width?: number } = {}) {
 		this.join(`popup-${this.popups.length}` as RoomID, {
 			args: { message, ...opts, parentElem: null },
@@ -2365,6 +2385,10 @@ export const PS = new class extends PSModel {
 			}
 		}
 		if (options.id.startsWith('battle-') && PS.prefs.rightpanelbattles) options.location = 'right';
+		if (options.id.startsWith('help-')) {
+			options.location = 'right';
+			options.type = 'chat';
+		}
 		options.parentRoomid ??= this.getRoom(options.parentElem)?.id;
 		const parentRoom = options.parentRoomid ? this.rooms[options.parentRoomid] : null;
 		let preexistingRoom = this.rooms[options.id];

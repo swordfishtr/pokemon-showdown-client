@@ -144,7 +144,8 @@ export class ChatRoom extends PSRoom {
 				if (toID(fromUser) === PS.user.userid) break;
 				const message = args[args[0] === 'c:' ? 3 : 2];
 				const noNotify = this.log?.parseChatMessage(message, name, args[1])?.[2];
-				if (!noNotify) {
+				const isIgnored = PS.prefs.ignore?.[toID(fromUser)];
+				if (!noNotify && !isIgnored) {
 					let textContent = message;
 					if (/^\/(log|raw|html|uhtml|uhtmlchange) /.test(message)) {
 						textContent = message.split(' ').slice(1).join(' ')
@@ -154,6 +155,8 @@ export class ChatRoom extends PSRoom {
 						title: `${this.title}`,
 						body: textContent,
 					});
+				} else if (noNotify === 'subtle') {
+					this.subtleNotify();
 				}
 			} else {
 				this.subtleNotify();
@@ -319,6 +322,40 @@ export class ChatRoom extends PSRoom {
 			this.log?.reset();
 			this.update(null);
 		},
+		'togglemessages'(target) {
+			if (this.pmTarget ||
+				this.type !== 'chat') return this.errorReply('This command can only be used in proper chat rooms.');
+			if (this.log) {
+				const userid = toID(target);
+				const classStart = 'revealed chat chatmessage-' + userid;
+				const nodes: HTMLElement[] = [];
+				let isHidden = true;
+				for (const node of this.log.innerElem.childNodes as any as HTMLElement[]) {
+					if (node.className && (node.className + ' ').startsWith(classStart)) {
+						nodes.push(node);
+					}
+				}
+				if (this.log.preemptElem) {
+					for (const node of this.log.preemptElem.childNodes as any as HTMLElement[]) {
+						if (node.className && (node.className + ' ').startsWith(classStart)) {
+							nodes.push(node);
+						}
+					}
+				}
+				isHidden = nodes[0].style.display === 'none';
+				nodes.every(node => {
+					node.style.display = isHidden ? '' : 'none';
+					return true;
+				});
+				isHidden = !isHidden;
+				const toggleButtons = this.log.innerElem.querySelectorAll(`button[name="toggleMessages"][value="${userid}"]`);
+				for (const button of toggleButtons) {
+					button.innerHTML = isHidden ?
+						`<small>(${nodes.length} line${nodes.length > 1 ? 's' : ''} from ${userid} hidden)</small>` :
+						`<small>(Hide ${nodes.length} line${nodes.length > 1 ? 's' : ''} from ${userid})</small>`;
+				}
+			}
+		},
 
 		// battle-specific commands
 		// ------------------------
@@ -359,6 +396,10 @@ export class ChatRoom extends PSRoom {
 			}
 			if (isNaN(turnNum)) {
 				this.errorReply(`Invalid turn number: ${target}`);
+				return;
+			}
+			if (this.battle.hardcoreMode) {
+				this.errorReply(`Turn navigation is disabled in hardcore mode.`);
 				return;
 			}
 			this.battle.seekTurn(turnNum);
@@ -601,11 +642,6 @@ export class ChatRoom extends PSRoom {
 	}
 
 	handleJoinLeave(action: 'join' | 'leave', name: string, silent: boolean) {
-		if (action === 'join') {
-			this.addUser(name);
-		} else if (action === 'leave') {
-			this.removeUser(name);
-		}
 		const showjoins = PS.prefs.showjoins?.[PS.server.id];
 		if (!(showjoins?.[this.id] ?? showjoins?.['global'] ?? !silent)) return;
 
@@ -693,6 +729,19 @@ export class CopyableURLBox extends preact.Component<{ url: string }> {
 	}
 }
 
+interface UserAutoCompleteCandidate {
+	type: "user";
+	userid: string;
+	prefixIndex: number;
+}
+
+interface CmdAutoCompleteCandidate {
+	type: "command";
+	command: string;
+}
+
+export type AutoCompleteCandidate = UserAutoCompleteCandidate | CmdAutoCompleteCandidate;
+
 export class ChatTextEntry extends preact.Component<{
 	room: ChatRoom, onMessage: (msg: string, elem: HTMLElement) => void, onKey: (e: KeyboardEvent) => boolean,
 	left?: number, tinyLayout?: boolean,
@@ -703,7 +752,7 @@ export class ChatTextEntry extends preact.Component<{
 	history: string[] = [];
 	historyIndex = 0;
 	tabComplete: {
-		candidates: { userid: string, prefixIndex: number }[],
+		candidates: AutoCompleteCandidate[],
 		candidateIndex: number,
 		/** the text left of the cursor before tab completing */
 		prefix: string,
@@ -845,6 +894,7 @@ export class ChatTextEntry extends preact.Component<{
 	}
 	handleKey(ev: KeyboardEvent) {
 		const cmdKey = ((ev.metaKey ? 1 : 0) + (ev.ctrlKey ? 1 : 0) === 1) && !ev.altKey && !ev.shiftKey;
+		const altKey = ev.altKey;
 		// const anyModifier = ev.ctrlKey || ev.altKey || ev.metaKey || ev.shiftKey;
 		if (ev.keyCode === 13 && !ev.shiftKey) { // Enter key
 			return this.submit();
@@ -876,7 +926,7 @@ export class ChatTextEntry extends preact.Component<{
 		// 	const newValue = `/pm ${PS.user.lastPM}, `;
 		// 	this.setValue(newValue, newValue.length);
 		// 	return true;
-		} else if (ev.shiftKey && ev.keyCode === 37) {
+		} else if (ev.shiftKey && ev.keyCode === 37 && !altKey) {
 			if (PS.prefs.onepanel === 'vertical' || this.getValue().length > 0) return;
 			const curLoc = PS.room.location;
 			let newLoc = curLoc;
@@ -913,7 +963,7 @@ export class ChatTextEntry extends preact.Component<{
 				PS.update();
 			}
 			return true;
-		} else if (ev.shiftKey && ev.keyCode === 39) {
+		} else if (ev.shiftKey && ev.keyCode === 39 && !altKey) {
 			if (PS.prefs.onepanel === 'vertical' || this.getValue().length > 0) return;
 			const curLoc = PS.room.location;
 			let newLoc = curLoc;
@@ -967,7 +1017,7 @@ export class ChatTextEntry extends preact.Component<{
 		return false;
 	}
 	// TODO - add support for commands tabcomplete
-	handleTabComplete(reverse: boolean) {
+	handleTabComplete(reverse: boolean): boolean {
 		// Don't tab complete at the start of the text box.
 		let { value, start, end } = this.getSelection();
 		if (start !== end || end === 0) return false;
@@ -1002,23 +1052,25 @@ export class ChatTextEntry extends preact.Component<{
 			const match2 = /^([\s\S!/]*?)([A-Za-z0-9][^, \n]* [^, ]*)$/.exec(prefix);
 			if (!match1 && !match2) return true;
 
+			const candidates: AutoCompleteCandidate[] = [];
 			const idprefix = (match1 ? toID(match1[2]) : '');
 			let spaceprefix = (match2 ? match2[2].replace(/[^A-Za-z0-9 ]+/g, '').toLowerCase() : '');
-			const candidates: { userid: string, prefixIndex: number }[] = [];
 			if (match2 && (match2[0] === '/' || match2[0] === '!')) spaceprefix = '';
 			for (const userid in users) {
 				if (spaceprefix && users[userid].slice(1).replace(/[^A-Za-z0-9 ]+/g, '')
 					.toLowerCase()
 					.startsWith(spaceprefix)) {
-					if (match2) candidates.push({ userid, prefixIndex: match2[1].length });
+					if (match2) candidates.push({ type: "user", userid, prefixIndex: match2[1].length });
 				} else if (idprefix && userid.startsWith(idprefix)) {
-					if (match1) candidates.push({ userid, prefixIndex: match1[1].length });
+					if (match1) candidates.push({ type: "user", userid, prefixIndex: match1[1].length });
 				}
 			}
 			// Sort by most recent to speak in the chat, or, in the case of a tie,
 			// in alphabetical order.
 			const userActivity = this.props.room.userActivity;
 			candidates.sort((a, b) => {
+				// command autocomplete options aren't added until after the user autocomplete options are sorted.
+				if (a.type !== "user" || b.type !== "user") return 0;
 				if (a.prefixIndex !== b.prefixIndex) {
 					// shorter prefix length comes first
 					return a.prefixIndex - b.prefixIndex;
@@ -1030,7 +1082,6 @@ export class ChatTextEntry extends preact.Component<{
 				}
 				return (a.userid < b.userid) ? -1 : 1; // alphabetical order
 			});
-
 			if (!candidates.length) {
 				this.tabComplete = null;
 				return true;
@@ -1044,13 +1095,15 @@ export class ChatTextEntry extends preact.Component<{
 		}
 		// Substitute in the tab-completed name
 		const candidate = this.tabComplete.candidates[this.tabComplete.candidateIndex];
-		let name = users[candidate.userid];
-		if (!name) return true;
+		if (candidate.type === "user") {
+			let name = users[candidate.userid];
+			if (!name) return true;
 
-		name = Dex.getShortName(name.slice(1)); // Remove rank and busy characters
-		const cursor = this.tabComplete.prefix.slice(0, candidate.prefixIndex) + name;
-		this.setValue(cursor + value.slice(end), cursor.length);
-		this.tabComplete.cursor = cursor;
+			name = Dex.getShortName(name.slice(1)); // Remove rank and busy characters
+			const cursor = this.tabComplete.prefix.slice(0, candidate.prefixIndex) + name;
+			this.setValue(cursor + value.slice(end), cursor.length);
+			this.tabComplete.cursor = cursor;
+		}
 		return true;
 	}
 	undoTabComplete() {
@@ -1259,7 +1312,7 @@ class ChatPanel extends PSRoomPanel<ChatRoom> {
 			</TeamForm>
 		</div> : null;
 
-		return <PSPanelWrapper room={room} focusClick fullSize>
+		return <PSPanelWrapper room={room} focusClick noScroll fullSize>
 			<ChatLog
 				class={`chat-log${tinyLayout ? '' : ' hasuserlist'}`} room={this.props.room}
 				left={tinyLayout ? 0 : 146} top={room.tour?.info.isActive ? 30 : 0}

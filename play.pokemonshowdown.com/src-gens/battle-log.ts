@@ -141,7 +141,7 @@ export class BattleLog {
 		}
 		let divClass = 'chat';
 		let divHTML = '';
-		let noNotify: boolean | undefined;
+		let noNotify: boolean | 'subtle' | undefined;
 		if (!['name', 'n'].includes(args[0])) this.lastRename = null;
 		switch (args[0]) {
 		case 'chat': case 'c': case 'c:':
@@ -260,6 +260,26 @@ export class BattleLog {
 			divHTML = `<strong data-href="user-${BattleLog.escapeHTML(args[1])}"> ${BattleLog.escapeHTML(args[1])}:</strong> <span class="message-pm"><i style="cursor:pointer" data-href="user-${BattleLog.escapeHTML(args[1], true)}">(Private to ${BattleLog.escapeHTML(args[2])})</i> ${BattleLog.parseMessage(args[3])} </span>`;
 			break;
 
+		case 'b': case 'B': {
+			const showBattlesPref = window.PS?.prefs?.showbattles;
+			if (args[0] === 'B' && showBattlesPref === false) return;
+			const id = args[1];
+			const format = BattleLog.escapeFormat(BattleLog.roomidToFormat(id));
+			let battletype = 'Battle';
+			if (format) {
+				battletype = format + ' battle';
+				if (format === 'Random Battle') battletype = 'Random Battle';
+			}
+			divClass = 'notice';
+			divHTML = `<a href="/${BattleLog.escapeHTML(id)}" class="ilink">` +
+				`${battletype} started between ` +
+				`<strong style="color:${BattleLog.usernameColor(toUserid(args[2]))}">${BattleLog.escapeHTML(args[2])}</strong>` +
+				` and <strong style="color:${BattleLog.usernameColor(toUserid(args[3]))}">${BattleLog.escapeHTML(args[3])}</strong>.` +
+				`</a>`;
+			this.joinLeave = null;
+			break;
+		}
+
 		case 'askreg':
 			this.addDiv('chat', '<div class="broadcast-blue"><b>Register an account to protect your ladder rating!</b><br /><button name="register" value="' + BattleLog.escapeHTML(args[1]) + '"><b>Register</b></button></div>');
 			return;
@@ -327,30 +347,6 @@ export class BattleLog {
 		case 'J': case 'L': case 'N': case 'spectator': case 'spectatorleave':
 		case 'initdone':
 			return;
-
-		// Generations added. (port)
-		case 'b': case 'B':
-			const [, id, name1, name2] = args;
-			const isSilent = (args[0] === args[0].toUpperCase());
-
-			const matches = BattleLog.parseBattleID(id);
-			if (!matches) {
-				return; // bogus room ID could be used to inject JavaScript
-			}
-
-			const format = BattleLog.escapeFormat(matches[1]);
-
-			if (isSilent && !Dex.prefs('showbattles')) return;
-
-			let battleType = 'Battle';
-			if (format) {
-				battleType = format + ' battle';
-				if (format === 'Random Battle') battleType = 'Random Battle';
-			}
-
-			divHTML = `<a href="/${id}" class="ilink">${battleType} started between <strong style="color:${BattleLog.usernameColor(toUserid(name1))};">${BattleLog.escapeHTML(name1)}</strong> and <strong style="color:${BattleLog.usernameColor(toUserid(name2))};">${BattleLog.escapeHTML(name2)}</strong>.</a>`;
-			divClass = 'notice';
-			break;
 
 		default:
 			this.addBattleMessage(args, kwArgs);
@@ -1040,6 +1036,7 @@ export class BattleLog {
 	hideChatFrom(userid: ID, showRevealButton = true, lineCount = 0) {
 		const classStart = 'chat chatmessage-' + userid + ' ';
 		let nodes: HTMLElement[] = [];
+		const lastChild = this.innerElem.lastChild;
 		for (const node of this.innerElem.childNodes as any as HTMLElement[]) {
 			if (node.className && (node.className + ' ').startsWith(classStart)) {
 				nodes.push(node);
@@ -1058,15 +1055,15 @@ export class BattleLog {
 			node.style.display = 'none';
 			node.className = 'revealed ' + node.className;
 		}
-		if (!nodes.length || !showRevealButton) return;
+		if (!nodes.length || !showRevealButton || !lastChild) return;
 		const button = document.createElement('button');
 		button.name = 'toggleMessages';
+		button.setAttribute('data-cmd', '/togglemessages ' + userid);
 		button.value = userid;
 		button.className = 'subtle';
 		button.innerHTML = `<small>(${nodes.length} line${nodes.length > 1 ? 's' : ''} from ${userid} hidden)</small>`;
-		const lastNode = nodes[nodes.length - 1];
-		lastNode.appendChild(document.createTextNode(' '));
-		lastNode.appendChild(button);
+		lastChild.appendChild(document.createTextNode(' '));
+		lastChild.appendChild(button);
 	}
 
 	static unlinkNodeList(nodeList: ArrayLike<HTMLElement>, classStart: string) {
@@ -1175,6 +1172,13 @@ export class BattleLog {
 		return str.replace(/&quot;/g, '"').replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/&amp;/g, '&');
 	}
 
+	static roomidToFormat(id: string): ID | undefined {
+		if (id.lastIndexOf('-') > 6) {
+			return (/^battle-([a-z0-9]*)-?[0-9]*$/.exec(id))?.[1] as ID;
+		}
+		return (/^battle-([a-z0-9]*[a-z])[0-9]*$/.exec(id))?.[1] as ID;
+	}
+
 	static colorCache: { [userid: string]: string } = {};
 
 	/** @deprecated */
@@ -1254,7 +1258,7 @@ export class BattleLog {
 
 	parseChatMessage(
 		message: string, name: string, timestamp: string, isHighlighted?: boolean
-	): [string, string, boolean?] {
+	): [divClass: string, divHTML: string, noNotify?: boolean | 'subtle'] {
 		let showMe = !BattleLog.prefs('chatformatting')?.hideme;
 		let group = ' ';
 		if (!/[A-Za-z0-9]/.test(name.charAt(0))) {
@@ -1342,6 +1346,8 @@ export class BattleLog {
 			return ['chat', BattleLog.sanitizeHTML(target), true];
 		case 'nonotify':
 			return ['chat', BattleLog.sanitizeHTML(target), true];
+		case 'subtlenotify':
+			return ['chat', BattleLog.sanitizeHTML(target), 'subtle'];
 		default:
 			// Not a command or unsupported. Parsed as a normal chat message.
 			if (!name) {
@@ -1844,14 +1850,5 @@ export class BattleLog {
 			return 'javascript:alert("You will need to click Download again once the replay file is at the end.");void 0';
 		}
 		return 'data:text/plain;base64,' + encodeURIComponent(btoa(unescape(encodeURIComponent(replayFile))));
-	}
-
-	// GENERATIONS
-	
-	static parseBattleID(id: string) {
-		if (id.lastIndexOf('-') > 6) {
-			return id.match(/^battle\-([a-z0-9]*)\-?[0-9]*$/);
-		}
-		return id.match(/^battle\-([a-z0-9]*[a-z])[0-9]*$/);
 	}
 }

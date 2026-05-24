@@ -350,6 +350,7 @@ export class MainMenuRoom extends PSRoom {
 					column,
 					searchShow,
 					challengeShow,
+					tournamentShow,
 					bestOfDefault,
 					teraPreviewDefault,
 					itemClauseDefault,
@@ -409,6 +410,7 @@ export class MainMenuRoom extends PSRoom {
 			if (!userdetails) {
 				this.userdetailsCache[userid] = response;
 			} else {
+				response.status ||= '';
 				Object.assign(userdetails, response);
 			}
 			PS.rooms[`user-${userid}`]?.update(null);
@@ -504,7 +506,7 @@ class NewsPanel extends PSRoomPanel {
 	static readonly title = 'News';
 	static readonly location = 'mini-window';
 	override render() {
-		return <PSPanelWrapper room={this.props.room} fullSize scrollable>
+		return <PSPanelWrapper room={this.props.room} fullSize>
 			<div class="readable-bg">
 				<div class="newsentry" dangerouslySetInnerHTML={{ __html: Config.newsHTML }}></div>
 			</div>
@@ -524,7 +526,7 @@ class ShowdexPanel extends PSRoomPanel {
 	};
 	override render() {
 		const enabled = PS.prefs.showdex;
-		return <PSPanelWrapper room={this.props.room} fullSize scrollable>
+		return <PSPanelWrapper room={this.props.room} fullSize>
 			<div class="readable-bg">
 				<div class="newsentry">
 					<h4>This client has built-in Showdex!</h4>
@@ -714,7 +716,7 @@ class MainMenuPanel extends PSRoomPanel<MainMenuRoom> {
 	override render() {
 		const onlineButton = ' button' + (PS.isOffline ? ' disabled' : '');
 		const tinyLayout = this.props.room.width < 620 ? ' tiny-layout' : '';
-		return <PSPanelWrapper room={this.props.room} scrollable onDragEnter={this.handleDragEnter}>
+		return <PSPanelWrapper room={this.props.room} onDragEnter={this.handleDragEnter}>
 			<div class={`mainmenu-mini-windows${tinyLayout}`}>
 				{this.renderMiniRooms()}
 			</div>

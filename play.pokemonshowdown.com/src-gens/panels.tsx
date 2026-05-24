@@ -273,15 +273,31 @@ export class PSRoomPanel<T extends PSRoom = PSRoom> extends preact.Component<{ r
 
 export function PSPanelWrapper(props: {
 	room: PSRoom, children: preact.ComponentChildren,
-	focusClick?: boolean, scrollable?: boolean | 'hidden', width?: number | 'auto',
-	fullSize?: boolean, onDragEnter?: (ev: DragEvent) => void,
+	focusClick?: boolean,
+	/**
+	 * * `true` = overflow: visible
+	 * * `false` = overflow: auto (default)
+	 * * `"hidden"` = overflow: hidden
+	 *
+	 * For panels that manually manage their layout (usually with scrolling subareas)
+	 * rather than having a single scrollable area
+	 */
+	noScroll?: boolean | 'hidden',
+	width?: number | 'auto',
+	/**
+	 * on a mini-window, gives it `height: auto` instead of `height: 500px`
+	 * on a popup, makes it fill 90% of the screen's height/width
+	 */
+	fullSize?: boolean,
+	onDragEnter?: (ev: DragEvent) => void,
 }) {
 	const room = props.room;
 	if (room.location === 'mini-window') {
 		const size = props.fullSize ? ' mini-window-flex' : '';
+		const scrollable = !props.noScroll && !props.fullSize ? ' scrollable' : '';
 		return <div
 			id={`room-${room.id}`}
-			class={`mini-window-contents tiny-layout ps-room-light${props.scrollable === true ? ' scrollable' : ''}${size}`}
+			class={`mini-window-contents tiny-layout ps-room-light${scrollable}${size}`}
 			onClick={props.focusClick ? PSView.focusIfNoSelection : undefined} onDragEnter={props.onDragEnter}
 		>
 			{props.children}
@@ -294,10 +310,10 @@ export function PSPanelWrapper(props: {
 		</div>;
 	}
 	const style = PSView.posStyle(room) as any;
-	if (props.scrollable === 'hidden') style.overflow = 'hidden';
+	if (props.noScroll === 'hidden') style.overflow = 'hidden';
 	const tinyLayout = room.width < 620 ? ' tiny-layout' : '';
 	return <div
-		class={`ps-room${room.id === '' ? '' : ' ps-room-light'}${props.scrollable === true ? ' scrollable' : ''}${tinyLayout}`}
+		class={`ps-room${room.id === '' ? '' : ' ps-room-light'}${!props.noScroll ? ' scrollable' : ''}${tinyLayout}`}
 		id={`room-${room.id}`} role="tabpanel" aria-labelledby={`roomtab-${room.id}`}
 		style={style} onClick={props.focusClick ? PSView.focusIfNoSelection : undefined} onDragEnter={props.onDragEnter}
 	>
@@ -541,6 +557,13 @@ export class PSView extends preact.Component {
 			}
 			const modifierKey = ev.ctrlKey || ev.altKey || ev.metaKey || ev.shiftKey;
 			const altKey = !ev.ctrlKey && ev.altKey && !ev.metaKey && !ev.shiftKey;
+			if (ev.altKey && ev.shiftKey && ev.keyCode === 37) { // alt + shift + left
+				PS.arrowKeysUsed = true;
+				PS.focusUnreadRoom('left');
+			} else if (ev.altKey && ev.shiftKey && ev.keyCode === 39) { // alt + shift + right
+				PS.arrowKeysUsed = true;
+				PS.focusUnreadRoom('right');
+			}
 			if (altKey && ev.keyCode === 38) { // alt + up
 				PS.arrowKeysUsed = true;
 				PS.focusUpRoom();
@@ -711,6 +734,11 @@ export class PSView extends preact.Component {
 			return true;
 		case 'register':
 			PS.join('register' as RoomID, {
+				parentElem: elem,
+			});
+			return true;
+		case 'openOptions':
+			PS.join('options' as RoomID, {
 				parentElem: elem,
 			});
 			return true;
