@@ -1353,7 +1353,8 @@ class TeamWizard extends preact.Component<{
 									src={`${Dex.fxPrefix}gender-${set.gender.toLowerCase()}.png`} alt={set.gender} width="7" height="10" class="pixelated"
 								/>}
 							</span>
-							{!species.credits && editor.gtt.dex.gen === 9 && !editor.gtt.format.notera && <span class="detailcell">
+							{!species.credits && editor.gtt.dex.gen === 9 && editor.gtt.format.mod !== 'champions' &&
+								!editor.gtt.format.notera && <span class="detailcell">
 								<strong class="label">Tera</strong> {}
 								<PSIcon type={set.teraType || species.requiredTeraType || species.types[0]} />
 							</span>}
@@ -1804,7 +1805,7 @@ class StatForm extends preact.Component<{
 	}
 	renderIVMenu() {
 		const { editor, set } = this.props;
-		if (editor.gtt.dex.gen <= 2) return null;
+		if (editor.gtt.dex.gen <= 2 || editor.gtt.format.mod === 'champions') return null;
 
 		const hpType = editor.getHPMove(set);
 		const hpIVdata = hpType && !editor.canHyperTrain(set) && editor.getHPIVs(hpType) || null;
@@ -2226,8 +2227,13 @@ class StatForm extends preact.Component<{
 	};
 	maxEVs() {
 		const { editor } = this.props;
-		const useEVs = editor.gtt.format.mod !== 'gen7letsgo';
-		return useEVs ? 508 : Infinity;
+		if (editor.gtt.format.mod === 'champions') {
+			return 66;
+		}
+		if (editor.gtt.dex.gen >= 3 && editor.gtt.format.mod !== 'gen7letsgo') {
+			return 508;
+		}
+		return Infinity;
 	}
 	override render() {
 		const { editor, set } = this.props;
@@ -2238,9 +2244,10 @@ class StatForm extends preact.Component<{
 
 		const nature = BattleNatures[set.nature || 'Serious'];
 
-		const useEVs = editor.gtt.format.mod !== 'gen7letsgo';
+		const usesStatPoints = editor.gtt.format.mod === 'champions';
+		const useEVs = editor.gtt.format.mod !== 'gen7letsgo' && !usesStatPoints;
 		// const useAVs = !useEVs && team.format.endsWith('norestrictions');
-		const maxEV = useEVs ? 252 : 200;
+		const maxEV = usesStatPoints ? 32 : useEVs ? 252 : 200;
 		const stepEV = useEVs ? 4 : 1;
 		const defaultEV = useEVs && editor.gtt.dex.gen <= 2 && !set.evs ? maxEV : 0;
 		const useIVs = editor.gtt.dex.gen > 2;
@@ -2283,9 +2290,9 @@ class StatForm extends preact.Component<{
 						<th>{/* Stat name */}</th>
 						<th>Base</th>
 						<th class="setstatbar">{/* Stat bar */}</th>
-						<th>{useEVs ? 'EVs' : 'AVs'}</th>
+						<th>{useEVs ? 'EVs' : usesStatPoints ? 'Points' : 'AVs'}</th>
 						<th>{/* EV slider */}</th>
-						<th>{useIVs ? 'IVs' : 'DVs'}</th>
+						<th>{useIVs ? 'IVs' : usesStatPoints ? undefined : 'DVs'}</th>
 						<th>{/* Final stat */}</th>
 					</tr>
 					{stats.map(([statID, statName, stat]) => <tr>
@@ -2302,10 +2309,10 @@ class StatForm extends preact.Component<{
 							type="range" class="evslider" tabIndex={-1} aria-hidden
 							onKeyDown={this.nudgeEV} onInput={this.slideEV}
 						/></td>
-						<td><input
+						{!usesStatPoints && <td><input
 							name={`iv-${statID}`} min={0} max={useIVs ? 31 : 15} placeholder={`${defaultIVs[statID]}`} style="width:40px"
 							type="number" class="textbox default-placeholder" onInput={this.changeIV}
-						/></td>
+						/></td>}
 						<td style="text-align:right"><strong>{stat}</strong></td>
 					</tr>)}
 					<tr>
@@ -2461,12 +2468,12 @@ class DetailsForm extends preact.Component<{
 					name="nickname" class="textbox default-placeholder" placeholder={species.baseSpecies}
 					onInput={this.changeNickname} onChange={this.changeNickname}
 				/></label></p>
-				<p><label class="label">Level: <input
+				{editor.gtt.format.mod !== 'champions' && <p><label class="label">Level: <input
 					name="level" value={set.level ?? ''} placeholder={`${editor.gtt.format.level}`}
 					type="number" inputMode="numeric" min="1" max="100" step="1"
 					class="textbox inputform numform default-placeholder" style="width: 50px"
 					onInput={this.changeLevel} onChange={this.changeLevel}
-				/></label></p>
+				/></label></p>}
 				{editor.gtt.dex.gen > 1 && !editor.gtt.format.noshiny && <p>
 					<div class="label">Shiny: <div class="labeled">
 						<label class="checkbox inline">
@@ -2545,7 +2552,7 @@ class DetailsForm extends preact.Component<{
 						))}
 					</select></label>
 				</p>}
-				{editor.gtt.dex.gen === 9 && !editor.gtt.format.notera && <p>
+				{editor.gtt.dex.gen === 9 && !editor.gtt.format.notera && editor.gtt.format.mod !== 'champions' && <p>
 					<label class="label" title="Tera Type">
 						Tera Type: {}
 						{species.requiredTeraType ? (

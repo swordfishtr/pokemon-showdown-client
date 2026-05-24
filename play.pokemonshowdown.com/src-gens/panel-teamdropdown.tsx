@@ -336,8 +336,12 @@ export interface FormatData {
 	searchShow?: boolean;
 	challengeShow?: boolean;
 	tournamentShow?: boolean;
+	bestOfDefault?: boolean;
+	teraPreviewDefault?: boolean;
+	itemClauseDefault?: boolean;
 	rated: boolean;
 	teambuilderLevel?: number | null;
+	partner?: boolean;
 	teambuilderFormat?: ID;
 	battleFormat?: string;
 	isTeambuilderFormat: boolean;

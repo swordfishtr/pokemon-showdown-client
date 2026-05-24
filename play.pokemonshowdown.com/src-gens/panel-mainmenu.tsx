@@ -15,7 +15,7 @@ import type { ChatRoom } from "./panel-chat";
 import type { LadderFormatRoom } from "./panel-ladder";
 import type { RoomsRoom } from "./panel-rooms";
 import { TeamBox, type SelectType } from "./panel-teamdropdown";
-import { Dex, toID, type ID } from "./battle-dex";
+import { toID, type ID } from "./battle-dex";
 import type { Args } from "./battle-text-parser";
 import { BattleLog } from "./battle-log";
 
@@ -274,6 +274,10 @@ export class MainMenuRoom extends PSRoom {
 				let searchShow = true;
 				let challengeShow = true;
 				let tournamentShow = true;
+				let partner = false;
+				let bestOfDefault = false;
+				let teraPreviewDefault = false;
+				let itemClauseDefault = false;
 				let team: 'preset' | null = null;
 				let teambuilderLevel: number | null = null;
 				let lastCommaIndex = name.lastIndexOf(',');
@@ -285,6 +289,10 @@ export class MainMenuRoom extends PSRoom {
 					if (!(code & 4)) challengeShow = false;
 					if (!(code & 8)) tournamentShow = false;
 					if (code & 16) teambuilderLevel = 50;
+					if (code & 32) partner = true;
+					if (code & 64) bestOfDefault = true;
+					if (code & 128) teraPreviewDefault = true;
+					if (code & 256) itemClauseDefault = true;
 				} else {
 					// Backwards compatibility: late 0.9.0 -> 0.10.0
 					if (name.substr(name.length - 2) === ',#') { // preset teams
@@ -342,9 +350,12 @@ export class MainMenuRoom extends PSRoom {
 					column,
 					searchShow,
 					challengeShow,
-					tournamentShow,
+					bestOfDefault,
+					teraPreviewDefault,
+					itemClauseDefault,
 					rated: searchShow && id.substr(4, 7) !== 'unrated',
 					teambuilderLevel,
+					partner,
 					teambuilderFormat,
 					isTeambuilderFormat,
 					effectType: 'Format',
