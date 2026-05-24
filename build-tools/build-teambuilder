@@ -56,14 +56,14 @@ const sidemods = [
 	'champions',
 ];
 
-/** Mods with a mod folder */
-const gensmods = [
-	'generationsdraftgen4',
-	'generationsdraftgen4vgc',
-	'regenerations',
-	'regenerations10',
-	'petpet',
-	'megaapril',
+/** Modded formats that need format overrides */
+const gensmodformats = [
+	'[Gen 9] ND Generations Draft [2026 Anniversary]',
+	'[Gen 9] ND Generations Draft [2026 Anniversary VGC]',
+	'[Gen 9] ND Generations Draft [Gen 4]',
+	'[Gen 9] ND Generations Draft [Gen 4 VGC]',
+	'[Gen 9] Petpet Battle II',
+	'[Gen 9] ND 35 Pokes [Mega April]',
 ];
 
 //const testmod = 'perfectg1';
@@ -732,6 +732,7 @@ const check = {
 		if([
 			/bss/,
 			/vgc/,
+			/rdl/,
 		].some((regex) => regex.test(id))) {
 			return 50;
 		}
@@ -1333,22 +1334,17 @@ for (const format of Dex.formats.all()) {
 	}
 
 	/** Initial overrides */
-	for (let i = 0; i < gensmods.length; i++) {
-		const mod = gensmods[i];
-		if (format.id.includes(mod)) {
-			gensmods.splice(i, 1);
-			buildFormatOverrides(mod, format.id);
-			const learnsetDiff = (gtt.learnsetDiff = Dex.getLearnsetDiff(Dex.mod(mod), Dex.mod(gtt.mod)));
-			for(const diffType in learnsetDiff) {
-				for(const mon in learnsetDiff[diffType]) {
-					if(!(mon in gtt.whitelist)) {
-						delete learnsetDiff[diffType][mon];
-						continue;
-					}
-					learnsetDiff[diffType][mon] = processDiffMon(learnsetDiff[diffType][mon]);
+	if (gensmodformats.map(toID).includes(format.id)) {
+		buildFormatOverrides(format.mod, format.id);
+		const learnsetDiff = (gtt.learnsetDiff = Dex.getLearnsetDiff(Dex.mod(format.mod), Dex.mod(gtt.mod)));
+		for(const diffType in learnsetDiff) {
+			for(const mon in learnsetDiff[diffType]) {
+				if(!(mon in gtt.whitelist)) {
+					delete learnsetDiff[diffType][mon];
+					continue;
 				}
+				learnsetDiff[diffType][mon] = processDiffMon(learnsetDiff[diffType][mon]);
 			}
-			break;
 		}
 	}
 
