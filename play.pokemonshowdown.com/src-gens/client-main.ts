@@ -88,8 +88,6 @@ class PSPrefs extends PSStreamModel<string | null> {
 	ignoreopp: boolean | null = null;
 	autotimer: boolean | null = null;
 	automodchat: boolean | null = null;
-	autohardcore: boolean | null = null;
-	spectatefromstart: boolean | null = null;
 	rightpanelbattles: boolean | null = null;
 	disallowspectators: boolean | null = null;
 	confirmchoice = {
@@ -1047,19 +1045,23 @@ export class PSRoom extends PSStreamModel<Args | null> implements RoomOptions {
 		},
 		'part,leave,close'(target, cmd, elem) {
 			const roomid = (/[^a-z0-9-]/.test(target) ? toID(target) as any as RoomID : target as RoomID) || this.id;
-			const room = PS.rooms[roomid] as BattleRoom;
-			const battle = room?.battle;
+			const room = PS.rooms[roomid];
+			const battleroom = room as BattleRoom;
+			const chatroom = room as ChatRoom;
 
-			if (room?.type === "battle" && !battle.ended && room.users[PS.user.userid]?.startsWith('☆') && !battle.isReplay) {
+			if (
+				room?.type === "battle" && !battleroom.battle.ended && !battleroom.battle.isReplay &&
+				battleroom.battle.sides.some(({ id }) => id === PS.user.userid)
+			) {
 				PS.join("forfeitbattle" as RoomID, { parentElem: elem });
 				return;
 			}
-			if (room?.type === "chat" && room.connected === true && PS.prefs.leavePopupRoom && !target) {
+			if (room?.type === "chat" && chatroom.connected === true && PS.prefs.leavePopupRoom && !target) {
 				PS.join("confirmleaveroom" as RoomID, { parentElem: elem });
 				return;
 			}
-			if (room?.type === "chat" && room.challenging) {
-				room.cancelChallenge();
+			if (room?.type === "chat" && chatroom.challenging) {
+				chatroom.cancelChallenge();
 			}
 
 			PS.leave(roomid);

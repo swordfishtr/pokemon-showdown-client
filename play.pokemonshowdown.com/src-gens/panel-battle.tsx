@@ -406,10 +406,6 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 		// scene.tooltips.listen(scene.log.elem);
 		scene.tooltips.listen($elem);
 		super.componentDidMount();
-		if (!PS.prefs.spectatefromstart) battle.seekTurn(Infinity);
-		if (PS.prefs.autohardcore) {
-			battle.setHardcoreMode(true);
-		}
 		battle.subscribe(() => this.forceUpdate());
 	}
 	battleHeight = 360;
@@ -430,7 +426,7 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 		const room = this.props.room;
 		switch (args[0]) {
 		case 'initdone':
-			if (!PS.prefs.spectatefromstart) room.battle.seekTurn(Infinity);
+			room.battle.seekTurn(Infinity);
 			return;
 		case 'request':
 			this.receiveRequest(args[1] ? JSON.parse(args[1]) : null);
