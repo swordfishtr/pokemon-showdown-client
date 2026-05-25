@@ -1319,7 +1319,10 @@ for (const format of Dex.formats.all()) {
 	}
 
 	/** Item unbans */
-	if (format.id === 'gen9ndgenerationsdraftgen4') {
+	if ([
+		'gen9ndgenerationsdraftgen4',
+		'gen9ndgenerationsdraftgen4vgc',
+	].includes(format.id)) {
 		gtt.newitems = [
 			'belueberry',
 			'watmelberry',
@@ -1330,6 +1333,17 @@ for (const format of Dex.formats.all()) {
 	if (format.id === 'gen9nd35pokesmegaapril') {
 		gtt.newitems = [
 			'alomowhat',
+		];
+	}
+	if (format.id === 'gen9rdlsingles') {
+		gtt.newitems = [
+			'Feraligite',
+			'Froslassite',
+		];
+	}
+	if (format.id === 'gen9rdlvgc') {
+		gtt.newitems = [
+			'Froslassite',
 		];
 	}
 

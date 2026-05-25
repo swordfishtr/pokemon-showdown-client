@@ -12,7 +12,7 @@
  */
 
 import { Dex, type ModdedDex, toID, type ID, PSUtils } from "./battle-dex";
-import { Ability, Item, Move, Species } from "./battle-dex-data";
+import { Ability, Item, Move, PureEffect, Species } from "./battle-dex-data";
 
 export type SearchType = (
 	'pokemon' | 'type' | 'tier' | 'move' | 'item' | 'ability' | 'egggroup' | 'category' | 'article'
@@ -208,6 +208,22 @@ export class GTTIndex {
 		}
 		this.customRows.sort(([, id1], [, id2]) => (id1 === id2) ? 0 : (id1 > id2) ? 1 : -1);
 	}
+	/**
+	 * Replacement for `Dex.getEffect`
+	 */
+	getFormatEffect(name: string | null | undefined): PureEffect | Item | Ability | Move {
+			name = (name || '').trim();
+			if (name.startsWith('item:')) {
+				return this.getFormatItem(name.slice(5));
+			}
+			else if (name.startsWith('ability:')) {
+				return this.getFormatAbility(name.slice(8));
+			}
+			else if (name.startsWith('move:')) {
+				return this.getFormatMove(name.slice(5));
+			}
+			return new PureEffect(toID(name), name);
+		}
 	/**
 	 * Returns species from the specified dex with any format specific overrides applied.
 	 */

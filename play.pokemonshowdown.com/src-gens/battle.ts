@@ -872,7 +872,7 @@ export class Side {
 		pokemon.clearVolatile();
 		pokemon.lastMove = '';
 		this.battle.lastMove = 'switch-in';
-		const effect = Dex.getEffect(kwArgs.from);
+		const effect = this.battle.gtt.getFormatEffect(kwArgs.from);
 		if (['batonpass', 'zbatonpass', 'shedtail'].includes(effect.id)) {
 			pokemon.copyVolatileFrom(this.lastPokemon!, effect.id === 'shedtail' ? 'shedtail' : 'batonpass');
 		} else if (this.battle.gtt.format.name.includes(`Relay Race`) && !effect.id) {
@@ -931,7 +931,7 @@ export class Side {
 		this.battle.scene.animSummon(pokemon, slot, true);
 	}
 	switchOut(pokemon: Pokemon, kwArgs: KWArgs, slot = pokemon.slot) {
-		const effect = Dex.getEffect(kwArgs.from);
+		const effect = this.battle.gtt.getFormatEffect(kwArgs.from);
 		if (!['batonpass', 'zbatonpass'].includes(effect.id) &&
 			!(this.battle.gtt.format.name.includes(`Relay Race`) && !effect.id)) {
 			pokemon.clearVolatile();
@@ -1542,7 +1542,7 @@ export class Battle {
 		this.scene.updateWeather();
 	}
 	useMove(pokemon: Pokemon, move: Dex.Move, target: Pokemon | null, kwArgs: KWArgs) {
-		let fromeffect = Dex.getEffect(kwArgs.from);
+		let fromeffect = this.gtt.getFormatEffect(kwArgs.from);
 		this.activateAbility(pokemon, fromeffect);
 		pokemon.clearMovestatuses();
 		if (move.id === 'focuspunch') {
@@ -1776,7 +1776,7 @@ export class Battle {
 			let range = poke.getDamageRange(damage);
 
 			if (kwArgs.from) {
-				let effect = Dex.getEffect(kwArgs.from);
+				let effect = this.gtt.getFormatEffect(kwArgs.from);
 				let ofpoke = this.getPokemon(kwArgs.of);
 				this.activateAbility(ofpoke, effect);
 				if (effect.effectType === 'Item') {
@@ -1829,13 +1829,13 @@ export class Battle {
 			break;
 		}
 		case '-heal': {
-			let poke = this.getPokemon(args[1], Dex.getEffect(kwArgs.from).id === 'revivalblessing')!;
+			let poke = this.getPokemon(args[1], this.gtt.getFormatEffect(kwArgs.from).id === 'revivalblessing')!;
 			let damage = poke.healthParse(args[2], true, true);
 			if (damage === null) break;
 			let range = poke.getDamageRange(damage);
 
 			if (kwArgs.from) {
-				let effect = Dex.getEffect(kwArgs.from);
+				let effect = this.gtt.getFormatEffect(kwArgs.from);
 				let ofpoke = this.getPokemon(kwArgs.of);
 				this.activateAbility(ofpoke || poke, effect);
 				if (effect.effectType === 'Item' && !CONSUMED.includes(poke.prevItemEffect)) {
@@ -1909,7 +1909,7 @@ export class Battle {
 			poke.boosts[stat] += amount;
 
 			if (!kwArgs.silent && kwArgs.from) {
-				let effect = Dex.getEffect(kwArgs.from);
+				let effect = this.gtt.getFormatEffect(kwArgs.from);
 				let ofpoke = this.getPokemon(kwArgs.of);
 				if (!(effect.id === 'weakarmor' && stat === 'spe')) {
 					this.activateAbility(ofpoke || poke, effect);
@@ -1936,7 +1936,7 @@ export class Battle {
 			poke.boosts[stat] -= amount;
 
 			if (!kwArgs.silent && kwArgs.from) {
-				let effect = Dex.getEffect(kwArgs.from);
+				let effect = this.gtt.getFormatEffect(kwArgs.from);
 				let ofpoke = this.getPokemon(kwArgs.of);
 				this.activateAbility(ofpoke || poke, effect);
 			}
@@ -1973,7 +1973,7 @@ export class Battle {
 		case '-clearpositiveboost': {
 			let poke = this.getPokemon(args[1])!;
 			let ofpoke = this.getPokemon(args[2]);
-			let effect = Dex.getEffect(args[3]);
+			let effect = this.gtt.getFormatEffect(args[3]);
 			for (const stat in poke.boosts) {
 				if (poke.boosts[stat] > 0) delete poke.boosts[stat];
 			}
@@ -2004,7 +2004,7 @@ export class Battle {
 			let poke = this.getPokemon(args[1])!;
 			let frompoke = this.getPokemon(args[2])!;
 			if (!kwArgs.silent && kwArgs.from) {
-				let effect = Dex.getEffect(kwArgs.from);
+				let effect = this.gtt.getFormatEffect(kwArgs.from);
 				this.activateAbility(poke, effect);
 			}
 			let stats = args[3] ? args[3].split(', ') : ['atk', 'def', 'spa', 'spd', 'spe', 'accuracy', 'evasion'];
@@ -2031,7 +2031,7 @@ export class Battle {
 			let poke = this.getPokemon(args[1])!;
 			poke.boosts = {};
 			if (!kwArgs.silent && kwArgs.from) {
-				let effect = Dex.getEffect(kwArgs.from);
+				let effect = this.gtt.getFormatEffect(kwArgs.from);
 				let ofpoke = this.getPokemon(kwArgs.of);
 				this.activateAbility(ofpoke || poke, effect);
 			}
@@ -2090,7 +2090,7 @@ export class Battle {
 		}
 		case '-immune': {
 			let poke = this.getPokemon(args[1])!;
-			let fromeffect = Dex.getEffect(kwArgs.from);
+			let fromeffect = this.gtt.getFormatEffect(kwArgs.from);
 			this.activateAbility(this.getPokemon(kwArgs.of) || poke, fromeffect);
 			this.log(args, kwArgs);
 			this.scene.resultAnim(poke, 'Immune', 'neutral');
@@ -2106,8 +2106,8 @@ export class Battle {
 		}
 		case '-fail': {
 			let poke = this.getPokemon(args[1])!;
-			let effect = Dex.getEffect(args[2]);
-			let fromeffect = Dex.getEffect(kwArgs.from);
+			let effect = this.gtt.getFormatEffect(args[2]);
+			let fromeffect = this.gtt.getFormatEffect(kwArgs.from);
 			let ofpoke = this.getPokemon(kwArgs.of);
 			if (fromeffect.id === 'clearamulet') {
 				ofpoke!.item = 'Clear Amulet';
@@ -2151,7 +2151,7 @@ export class Battle {
 		case '-block': {
 			let poke = this.getPokemon(args[1])!;
 			let ofpoke = this.getPokemon(kwArgs.of);
-			let effect = Dex.getEffect(args[2]);
+			let effect = this.gtt.getFormatEffect(args[2]);
 			this.activateAbility(ofpoke || poke, effect);
 			switch (effect.id) {
 			case 'quickguard':
@@ -2211,7 +2211,7 @@ export class Battle {
 		}
 		case '-status': {
 			let poke = this.getPokemon(args[1])!;
-			let effect = Dex.getEffect(kwArgs.from);
+			let effect = this.gtt.getFormatEffect(kwArgs.from);
 			let ofpoke = this.getPokemon(kwArgs.of) || poke;
 			poke.status = args[2] as Dex.StatusName;
 			this.activateAbility(ofpoke || poke, effect);
@@ -2256,7 +2256,7 @@ export class Battle {
 		}
 		case '-curestatus': {
 			let poke = this.getPokemon(args[1])!;
-			let effect = Dex.getEffect(kwArgs.from);
+			let effect = this.gtt.getFormatEffect(kwArgs.from);
 
 			if (effect.id) {
 				switch (effect.id) {
@@ -2313,7 +2313,7 @@ export class Battle {
 		case '-item': {
 			let poke = this.getPokemon(args[1])!;
 			let item = this.gtt.getFormatItem(args[2]);
-			let effect = Dex.getEffect(kwArgs.from);
+			let effect = this.gtt.getFormatEffect(kwArgs.from);
 			let ofpoke = this.getPokemon(kwArgs.of);
 			if (!poke) {
 				if (effect.id === 'frisk') {
@@ -2395,7 +2395,7 @@ export class Battle {
 		case '-enditem': {
 			let poke = this.getPokemon(args[1])!;
 			let item = this.gtt.getFormatItem(args[2]);
-			let effect = Dex.getEffect(kwArgs.from);
+			let effect = this.gtt.getFormatEffect(kwArgs.from);
 			if (this.gtt.dex.gen > 4 || effect.id !== 'knockoff') {
 				poke.item = '';
 				poke.itemEffect = '';
@@ -2464,7 +2464,7 @@ export class Battle {
 			let poke = this.getPokemon(args[1])!;
 			let ability = this.gtt.getFormatAbility(args[2]);
 			let oldAbility = this.gtt.getFormatAbility(args[3]);
-			let effect = Dex.getEffect(kwArgs.from);
+			let effect = this.gtt.getFormatEffect(kwArgs.from);
 			let ofpoke = this.getPokemon(kwArgs.of);
 			poke.rememberAbility(ability.name, effect.id && !kwArgs.fail);
 
@@ -2551,7 +2551,7 @@ export class Battle {
 		case '-transform': {
 			let poke = this.getPokemon(args[1])!;
 			let tpoke = this.getPokemon(args[2])!;
-			let effect = Dex.getEffect(kwArgs.from);
+			let effect = this.gtt.getFormatEffect(kwArgs.from);
 			if (poke === tpoke) throw new Error("Transforming into self");
 
 			if (!kwArgs.silent) {
@@ -2581,7 +2581,7 @@ export class Battle {
 		case '-formechange': {
 			let poke = this.getPokemon(args[1])!;
 			let species = this.gtt.getFormatSpecies(args[2]);
-			let fromeffect = Dex.getEffect(kwArgs.from);
+			let fromeffect = this.gtt.getFormatEffect(kwArgs.from);
 			if (!poke.getSpeciesForme().endsWith('-Gmax') && !species.name.endsWith('-Gmax')) {
 				poke.removeVolatile('typeadd' as ID);
 				poke.removeVolatile('typechange' as ID);
@@ -2632,9 +2632,9 @@ export class Battle {
 		}
 		case '-start': {
 			let poke = this.getPokemon(args[1])!;
-			let effect = Dex.getEffect(args[2]);
+			let effect = this.gtt.getFormatEffect(args[2]);
 			let ofpoke = this.getPokemon(kwArgs.of);
-			let fromeffect = Dex.getEffect(kwArgs.from);
+			let fromeffect = this.gtt.getFormatEffect(kwArgs.from);
 
 			this.activateAbility(poke, effect);
 			this.activateAbility(ofpoke || poke, fromeffect);
@@ -2811,8 +2811,8 @@ export class Battle {
 		}
 		case '-end': {
 			let poke = this.getPokemon(args[1])!;
-			let effect = Dex.getEffect(args[2]);
-			let fromeffect = Dex.getEffect(kwArgs.from);
+			let effect = this.gtt.getFormatEffect(args[2]);
+			let fromeffect = this.gtt.getFormatEffect(kwArgs.from);
 			poke.removeVolatile(effect.id);
 
 			if (kwArgs.silent && !(effect.id === 'protosynthesis' || effect.id === 'quarkdrive')) {
@@ -2918,7 +2918,7 @@ export class Battle {
 		}
 		case '-singleturn': {
 			let poke = this.getPokemon(args[1])!;
-			let effect = Dex.getEffect(args[2]);
+			let effect = this.gtt.getFormatEffect(args[2]);
 			if (effect.id === 'roost' && !poke.getTypeList().includes('Flying')) {
 				break;
 			}
@@ -2967,7 +2967,7 @@ export class Battle {
 		}
 		case '-singlemove': {
 			let poke = this.getPokemon(args[1])!;
-			let effect = Dex.getEffect(args[2]);
+			let effect = this.gtt.getFormatEffect(args[2]);
 			poke.addMovestatus(effect.id);
 			switch (effect.id) {
 			case 'grudge':
@@ -2983,7 +2983,7 @@ export class Battle {
 		}
 		case '-activate': {
 			let poke = this.getPokemon(args[1])!;
-			let effect = Dex.getEffect(args[2]);
+			let effect = this.gtt.getFormatEffect(args[2]);
 			let target = this.getPokemon(args[3]);
 			this.activateAbility(poke, effect);
 			switch (effect.id) {
@@ -3125,7 +3125,7 @@ export class Battle {
 		}
 		case '-sidestart': {
 			let side = this.getSide(args[1]);
-			let effect = Dex.getEffect(args[2]);
+			let effect = this.gtt.getFormatEffect(args[2]);
 			side.addSideCondition(effect, !!kwArgs.persistent);
 
 			switch (effect.id) {
@@ -3152,8 +3152,8 @@ export class Battle {
 		}
 		case '-sideend': {
 			let side = this.getSide(args[1]);
-			let effect = Dex.getEffect(args[2]);
-			// let from = Dex.getEffect(kwArgs.from);
+			let effect = this.gtt.getFormatEffect(args[2]);
+			// let from = this.gtt.getFormatEffect(kwArgs.from);
 			// let ofpoke = this.getPokemon(kwArgs.of);
 			side.removeSideCondition(effect.name);
 			this.log(args, kwArgs);
@@ -3166,9 +3166,9 @@ export class Battle {
 			break;
 		}
 		case '-weather': {
-			let effect = Dex.getEffect(args[1]);
+			let effect = this.gtt.getFormatEffect(args[1]);
 			let poke = this.getPokemon(kwArgs.of) || undefined;
-			let ability = Dex.getEffect(kwArgs.from);
+			let ability = this.gtt.getFormatEffect(kwArgs.from);
 			if (!effect.id || effect.id === 'none') {
 				kwArgs.from = this.weather;
 			}
@@ -3177,9 +3177,9 @@ export class Battle {
 			break;
 		}
 		case '-fieldstart': {
-			let effect = Dex.getEffect(args[1]);
+			let effect = this.gtt.getFormatEffect(args[1]);
 			let poke = this.getPokemon(kwArgs.of);
-			let fromeffect = Dex.getEffect(kwArgs.from);
+			let fromeffect = this.gtt.getFormatEffect(kwArgs.from);
 			this.activateAbility(poke, fromeffect);
 			let minTimeLeft = 5;
 			let maxTimeLeft = 0;
@@ -3208,14 +3208,14 @@ export class Battle {
 			break;
 		}
 		case '-fieldend': {
-			let effect = Dex.getEffect(args[1]);
+			let effect = this.gtt.getFormatEffect(args[1]);
 			// let poke = this.getPokemon(kwArgs.of);
 			this.removePseudoWeather(effect.name);
 			this.log(args, kwArgs);
 			break;
 		}
 		case '-fieldactivate': {
-			let effect = Dex.getEffect(args[1]);
+			let effect = this.gtt.getFormatEffect(args[1]);
 			switch (effect.id) {
 			case 'perishsong':
 				this.scene.updateStatbars();
@@ -3802,7 +3802,7 @@ export class Battle {
 			this.endLastTurn();
 			this.resetTurnsSinceMoved();
 			let poke = this.getPokemon(args[1])!;
-			let effect = Dex.getEffect(args[2]);
+			let effect = this.gtt.getFormatEffect(args[2]);
 			let move = this.gtt.getFormatMove(args[3]);
 			this.cantUseMove(poke, effect, move, kwArgs);
 			this.log(args, kwArgs);
