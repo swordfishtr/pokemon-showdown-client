@@ -362,7 +362,7 @@ export class TeamEditorState extends PSModel {
 			// }
 			return hpTypes[4 * (atkDV % 4) + (defDV % 4)];
 		} else {
-			const ivs = set.ivs || this.defaultIVs(set);
+			const ivs = this.getIVs(set);
 			let hpTypeX = 0;
 			let i = 1;
 			// n.b. this is not our usual order (Spe and SpD are flipped)
@@ -388,10 +388,10 @@ export class TeamEditorState extends PSModel {
 	}
 	getHPMove(set: Dex.PokemonSet): Dex.TypeName | null {
 		if (set.moves) {
-			for (const move of set.moves) {
-				const moveid = toID(move);
-				if (moveid.startsWith('hiddenpower')) {
-					return moveid.charAt(11).toUpperCase() + moveid.slice(12) as Dex.TypeName;
+			for (const moveslot of set.moves) {
+				const move = this.gtt.getFormatMove(moveslot);
+				if (move.exists && move.id.startsWith('hiddenpower')) {
+					return move.name.slice(13) as Dex.TypeName || 'Normal';
 				}
 			}
 		}
@@ -403,8 +403,9 @@ export class TeamEditorState extends PSModel {
 		return ivs;
 	}
 	defaultIVs(set: Dex.PokemonSet, noGuess = !!set.ivs): Record<Dex.StatName, number> {
-		const useIVs = this.gtt.dex.gen > 2;
 		const defaultIVs = { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 };
+		if (this.gtt.format.mod === 'champions') return defaultIVs;
+		const useIVs = this.gtt.dex.gen > 2;
 		if (!useIVs) {
 			for (const stat of Dex.statNames) defaultIVs[stat] = 15;
 		}
@@ -543,28 +544,41 @@ export class TeamEditorState extends PSModel {
 	getStat(
 		statID: StatName, set: Dex.PokemonSet, iv = this.getIVs(set)[statID],
 		ev = set.evs?.[statID] ?? (this.gtt.dex.gen > 2 ? 0 : 252),
-		nature = BattleNatures[set.nature!]?.plus === statID ? 1.1 : BattleNatures[set.nature!]?.minus === statID ? 0.9 : 1,
+		nature = BattleNatures[set.nature!]?.plus === statID
+			? 1.1
+			: BattleNatures[set.nature!]?.minus === statID
+				? 0.9
+				: 1,
 	) {
+		const species = this.gtt.getFormatSpecies(set.species);
+		if (species.id === 'shedinja' && statID === 'hp') return 1;
 		const level = set.level || this.gtt.format.level;
-		const baseStat = this.gtt.getFormatSpecies(set.species).baseStats[statID];
+		const baseStat = species.baseStats[statID];
 
-		// TODO gen 1, 2, gen7letsgo
-		if (this.gtt.format.mod === 'gen7letsgo') {
-			return 0;
+		if (['gen1', 'gen2'].includes(this.gtt.format.mod)) {
+			// ivs === dvs * 2
+			// evs === Math.trunc(Math.sqrt(statexp))
+			iv &= 30;
+			return statID === 'hp'
+				? Math.trunc((baseStat * 2 + iv + Math.trunc(ev / 4)) * level / 100) + level + 10
+				: Math.trunc((baseStat * 2 + iv + Math.trunc(ev / 4)) * level / 100) + 5;
 		}
-		// Gen 3 onwards
+		else if (this.gtt.format.mod === 'gen7letsgo') {
+			// evs === avs
+			const friendshipBoost = 1.1;
+			return statID === 'hp'
+				? Math.trunc((baseStat * 2 + iv) * level / 100) + level + ev
+				: Math.trunc((baseStat * 2 + iv) * level / 100 + 5) * nature * friendshipBoost + ev;
+		}
+		else if (this.gtt.format.mod === 'champions') {
+			return statID === 'hp'
+				? baseStat + ev + 75
+				: Math.trunc((baseStat + ev + 20) * nature);
+		}
 		else {
-			if (statID === 'hp') {
-				if (baseStat === 1) return 1;
-				return Math.trunc(
-					(2 * baseStat + iv + Math.trunc(ev / 4)) * level / 100
-				) + level + 10;
-			}
-			return Math.trunc(
-				Math.trunc(
-					(2 * baseStat + iv + Math.trunc(ev / 4)) * level / 100 + 5
-				) * nature
-			);
+			return statID === 'hp'
+				? Math.trunc((baseStat * 2 + iv + Math.trunc(ev / 4)) * level / 100) + level + 10
+				: Math.trunc(Math.trunc((baseStat * 2 + iv + Math.trunc(ev / 4)) * level / 100 + 5) * nature);
 		}
 	}
 	/**
@@ -575,30 +589,42 @@ export class TeamEditorState extends PSModel {
 		statID: StatName, stat: number, set: Dex.PokemonSet, iv = this.getIVs(set)[statID],
 		nature = BattleNatures[set.nature!]?.plus === statID ? 1.1 : BattleNatures[set.nature!]?.minus === statID ? 0.9 : 1,
 	) {
+		const species = this.gtt.getFormatSpecies(set.species);
+		if (species.id === 'shedinja' && statID === 'hp') return stat === 1 ? 0 : null;
 		const level = set.level || this.gtt.format.level;
-		const baseStat = this.gtt.getFormatSpecies(set.species).baseStats[statID];
-		let ev: number;
+		const baseStat = species.baseStats[statID];
 
 		// We're going to just do the math backwards for this.
 
-		// TODO gen 1, 2, gen7letsgo
-		if (this.gtt.format.mod === 'gen7letsgo') {
-			return null;
+		if (['gen1', 'gen2'].includes(this.gtt.format.mod)) {
+			// ivs === dvs * 2
+			// evs === Math.trunc(Math.sqrt(statexp))
+			iv &= 30;
+			const ev = statID === 'hp'
+				? (Math.ceil((stat - level - 10) / level * 100) - iv - baseStat * 2) * 4
+				: (Math.ceil((stat - 5) / level * 100) - iv - baseStat * 2) * 4;
+			return (ev < 0 || ev > 252) ? null : ev;
+		}
+		else if (this.gtt.format.mod === 'gen7letsgo') {
+			// evs === avs
+			const friendshipBoost = 1.1;
+			const ev = statID === 'hp'
+				? stat - Math.ceil((baseStat * 2 + iv) * level / 100) - level - 10
+				: stat - (Math.ceil((baseStat * 2 + iv) * level / 100 + 5) * nature * friendshipBoost);
+			return (ev < 0 || ev > 200) ? null : ev;
+		}
+		else if (this.gtt.format.mod === 'champions') {
+			const points = statID === 'hp'
+				? stat - baseStat - 75
+				: Math.ceil(stat / nature) - baseStat - 20;
+			return (points < 0 || points > 32) ? null : points;
 		}
 		else {
-			if (statID === 'hp') {
-				if (baseStat === 1) return stat === 1 ? 0 : null;
-				if (stat < 11) return null;
-				ev = (Math.ceil((stat - level - 10) * 100 / level) - iv - 2 * baseStat) * 4;
-			}
-			else {
-				if (stat < 4) return null;
-				ev = (Math.ceil(Math.ceil(stat / nature - 5) * 100 / level) - iv - 2 * baseStat) * 4;
-			}
-			if (ev < 0 || ev > 252) return null;
+			const evs = statID === 'hp'
+				? (Math.ceil((stat - level - 10) / level * 100) - iv - baseStat * 2) * 4
+				: (Math.ceil(Math.ceil(stat / nature - 5) / level * 100) - iv - baseStat * 2) * 4;
+			return (evs < 0 || evs > 252) ? null : evs;
 		}
-
-		return ev;
 	}
 	export(compat?: boolean) {
 		return Teams.export(this.sets, this.gtt.dex, !compat);
