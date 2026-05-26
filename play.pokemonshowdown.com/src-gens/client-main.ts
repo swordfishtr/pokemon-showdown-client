@@ -555,7 +555,7 @@ class PSUser extends PSStreamModel<PSLoginState | null> {
 		}
 		this.loggingIn = name;
 		this.update(null);
-		LoginManager.getassertion({ userid, challstr: this.challstr });
+		LoginManager.getassertion({ name, challstr: this.challstr });
 	}
 	changeNameWithPassword(name: string, password: string, special: PSLoginState = { needsPassword: true }) {
 		this.loggingIn = name;

@@ -5,6 +5,7 @@
  * @license MIT
  */
 
+import { toID } from "./battle-dex";
 import { PS } from "./client-main";
 
 declare const SockJS: any;
@@ -288,7 +289,7 @@ export const LoginManager = new class {
 		PS.user.handleAssertion(username, assertion);
 	}
 
-	async getassertion(input: { userid: string, challstr: string }) {
+	async getassertion(input: { name: string, challstr: string }) {
 		this.count++;
 		const msgid = this.count;
 		const cryptokey = await window.crypto.subtle.generateKey({ name: 'AES-CBC', length: 128 }, false, ['encrypt', 'decrypt']);
@@ -296,14 +297,14 @@ export const LoginManager = new class {
 			msgid,
 			act: 'getassertion',
 			cryptokey,
-			userid: input.userid,
+			userid: toID(input.name),
 			challstr: input.challstr,
 		}, this.child);
 
 		const { assertionIV, assertionEncrypted } = await this.await(msgid);
 		const assertionEncoded = await window.crypto.subtle.decrypt({ name: 'AES-CBC', iv: assertionIV }, cryptokey, assertionEncrypted);
 		const assertion = this.decoder.decode(assertionEncoded);
-		PS.user.handleAssertion(input.userid, assertion);
+		PS.user.handleAssertion(input.name, assertion);
 		// if ws doesn't receive `updateuser`, run `PS.user.updateRegExp();` ?
 	}
 
