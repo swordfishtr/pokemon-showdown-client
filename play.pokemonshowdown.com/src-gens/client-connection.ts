@@ -338,6 +338,12 @@ export const LoginManager = new class {
 		PS.user.handleAssertion(username, assertion);
 	}
 
+	rename(input: { name: string }) {
+		this.count++;
+		const msgid = this.count;
+		this.window.postMessage({ msgid, act: 'rename', name: input.name }, this.child);
+	}
+
 	logout() {
 		this.count++;
 		const msgid = this.count;

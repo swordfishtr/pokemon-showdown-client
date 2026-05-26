@@ -166,6 +166,11 @@ else if(window.top) {
 			};
 		},
 
+		rename(data) {
+			const { name } = data;
+			window.localStorage.setItem('name', name);
+		},
+
 		logout() {
 			window.localStorage.removeItem('name');
 			window.localStorage.removeItem('pass');

@@ -549,6 +549,7 @@ class PSUser extends PSStreamModel<PSLoginState | null> {
 		}
 
 		if (userid === this.userid) {
+			LoginManager.rename({ name });
 			PS.send(`/trn ${name}`);
 			this.update({ success: true });
 			return;
