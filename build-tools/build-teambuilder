@@ -895,10 +895,6 @@ for (const format of Dex.formats.all()) {
 
 	if (
 		[
-			'gen9rdlsingles',
-			'gen9rdlvgc',
-		].includes(format.id) ||
-		[
 			'-pokemontag:ndlc', '-pokemontag:ndnfe', '-pokemontag:ndru', '-pokemontag:ndrubl', '-pokemontag:nduu',
 			'-pokemontag:nduubl', '-pokemontag:ndou', '-pokemontag:ndag', '-pokemontag:nduber',
 		].every((rule) => ruleTable.tagRules.includes(rule)) ||
@@ -915,6 +911,24 @@ for (const format of Dex.formats.all()) {
 			.filter((x) => x)
 			.map((id) => [id, 1])
 		);
+	}
+
+	// We do these here because the formats have to explicitly unban the gen 9 future species.
+	if (format.id === 'gen9rdlsingles') {
+		gtt.whitelist = Object.fromEntries([
+			'alakazam', 'ambipom', 'annihilape', 'araquanid', 'arcanine', 'arctozolt', 'azelf', 'azumarill', 'banettemega', 'bastiodon', 'bellossom', 'bewear', 'blaziken', 'braviary', 'breloom', 'celesteela', 'centiskorch', 'chandelure', 'charizardmegay', 'chiyu', 'claydol', 'clefable', 'clodsire', 'cloyster', 'copperajah', 'cramorant', 'crawdaunt', 'cryogonal', 'donphan', 'drednaw', 'dubwool', 'emolga', 'espathra', 'exeggutor', 'fearow', 'feraligatrmega', 'fezandipiti', 'froslassmega', 'furret', 'galvantula', 'garchompmega', 'gastrodon', 'gholdengo', 'gogoat', 'golem', 'gothitelle', 'gourgeist', 'granbull', 'greattusk', 'gyarados', 'hatterene', 'haxorus', 'hippowdon', 'honchkrow', 'hypno', 'ironhands', 'irontreads', 'jirachi', 'jumpluff', 'kabutops', 'keldeo', 'keldeoresolute', 'kingdra', 'kleavor', 'leafeon', 'lilligant', 'lokix', 'lurantis', 'magneton', 'mamoswine', 'manectricmega', 'marowak', 'mawilemega', 'meloetta', 'meowsticf', 'meowsticm', 'mienshao', 'mrmime', 'munkidori', 'nidoking', 'noctowl', 'noivern', 'octillery', 'omastar', 'palossand', 'pincurchin', 'plusle', 'politoed', 'porygonz', 'primarina', 'purugly', 'quagsire', 'quaquaval', 'ragingbolt', 'raichu', 'regice', 'registeel', 'relicanth', 'reuniclus', 'revavroom', 'rhydon', 'rhyperior', 'sandaconda', 'sandslash', 'sandyshocks', 'sawk', 'scolipede', 'seviper', 'sigilyph', 'silvally', 'sinistcha', 'slaking', 'slowbromega', 'slowkinggalar', 'spidops', 'stakataka', 'suicune', 'swanna', 'tangrowth', 'tapufini', 'tapukoko', 'tapulele', 'terrakion', 'togetic', 'tornadus', 'tornadustherian', 'torterra', 'tropius', 'tyranitarmega', 'vanilluxe', 'victini', 'victreebel', 'vivillon', 'volbeat', 'walkingwake', 'weezinggalar', 'whimsicott', 'wigglytuff', 'wobbuffet', 'xatu', 'yanmega', 'zeraora', 'zygarde10',
+
+			// week 2
+			'carbink', 'cubchoo', 'dragapult', 'farigiraf', 'garchompbase', 'glimmoramega', 'golembase', 'gumshoosbase', 'mamoswine', 'mantine', 'passimian', 'rotomfan', 'runerigus', 'sableyemega', 'screamtail', 'seismitoad', 'skeledirge', 'slaking', 'trevenant', 'volcanion',
+		].map((x) => [x, 1]));
+	}
+	if (format.id === 'gen9rdlvgc') {
+		gtt.whitelist = Object.fromEntries([
+			'alakazam', 'ambipom', 'annihilape', 'appletun', 'araquanid', 'arcanine', 'arctozolt', 'audinomega', 'azelf', 'banettemega', 'bastiodon', 'bewear', 'blaziken', 'braviary', 'breloom', 'celesteela', 'centiskorch', 'chandelure', 'chandeluremega', 'charizardmegay', 'chiyu', 'claydol', 'clefable', 'clodsire', 'cloyster', 'comfey', 'copperajah', 'corviknight', 'cramorant', 'crawdaunt', 'cryogonal', 'decidueyehisui', 'dedenne', 'dragapult', 'drednaw', 'dubwool', 'duraludon', 'emolga', 'empoleon', 'espathra', 'fearow', 'fezandipiti', 'fletchinder', 'florges', 'froslassmega', 'furret', 'galvantula', 'gengar', 'gholdengo', 'gogoat', 'golurk', 'gothitelle', 'gourgeist', 'granbull', 'hatterene', 'haxorus', 'hippowdon', 'ironcrown', 'ironhands', 'ironjugulis', 'jirachi', 'kabutops', 'keldeo', 'kleavor', 'leafeon', 'ledian', 'liepard', 'lilligant', 'lokix', 'lurantis', 'magearna', 'magmortar', 'magneton', 'mawilemega', 'meloetta', 'meowsticf', 'meowsticm', 'metagrossmega', 'mienshao', 'munkidori', 'nidoking', 'noctowl', 'noivern', 'octillery', 'oricorio', 'palossand', 'pincurchin', 'politoed', 'porygonz', 'quaquaval', 'raichu', 'rapidash', 'regice', 'registeel', 'reuniclus', 'revavroom', 'rhydon', 'rhyperior', 'riolu', 'sandaconda', 'sandyshocks', 'sawk', 'seviper', 'sigilyph', 'silvally', 'sinistcha', 'skarmory', 'slowbromega', 'spidops', 'stunfiskgalar', 'suicune', 'swanna', 'sylveon', 'tapufini', 'tapukoko', 'taurospaldeablaze', 'togetic', 'tornadus', 'tornadustherian', 'torterra', 'trevenant', 'tropius', 'typhlosionhisui', 'tyranitarmega', 'vanilluxe', 'victreebel', 'vivillon', 'volbeat', 'volcarona', 'wailord', 'walkingwake', 'whimsicott', 'wigglytuff', 'wochien', 'wobbuffet', 'wormadamtrash', 'xatu', 'zapdosgalar', 'zeraora',
+
+			// week 2
+			'chimechomega', 'diggersby', 'floetteeternal', 'forretress', 'garchomp', 'houndstone', 'hydrapple', 'indeedeef', 'kingambit', 'mimikyu', 'ninetalesalola', 'poltchageist', 'sawsbuck', 'skarmorymega',
+		].map((x) => [x, 1]));
 	}
 
 	if ([
@@ -1335,15 +1349,9 @@ for (const format of Dex.formats.all()) {
 			'alomowhat',
 		];
 	}
-	if (format.id === 'gen9rdlsingles') {
+	if (format.id === 'gen9rdlsingles' || format.id === 'gen9rdlvgc') {
 		gtt.newitems = [
-			'Feraligite',
-			'Froslassite',
-		];
-	}
-	if (format.id === 'gen9rdlvgc') {
-		gtt.newitems = [
-			'Froslassite',
+			'Raichunite X', 'Raichunite Y', 'Clefablite', 'Victreebelite', 'Starminite', 'Dragoninite', 'Meganiumite', 'Feraligite', 'Skarmorite', 'Chimechite', 'Absolite Z', 'Staraptite', 'Garchompite Z', 'Lucarionite Z', 'Froslassite', 'Heatranite', 'Darkranite', 'Emboarite', 'Excadrite', 'Scolipite', 'Scraftinite', 'Eelektrossite', 'Chandelurite', 'Golurkite', 'Chesnaughtite', 'Delphoxite', 'Greninjite', 'Pyroarite', 'Floettite', 'Meowsticite', 'Meowsticite', 'Malamarite', 'Barbaracite', 'Dragalgite', 'Hawluchanite', 'Zygardite', 'Crabominite', 'Golisopite', 'Drampanite', 'Magearnite', 'Magearnite', 'Zeraorite', 'Falinksite', 'Scovillainite', 'Glimmoranite', 'Tatsugirinite', 'Tatsugirinite', 'Tatsugirinite', 'Baxcalibrite',
 		];
 	}
 
