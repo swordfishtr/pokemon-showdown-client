@@ -58,8 +58,6 @@ const sidemods = [
 
 /** Modded formats that need format overrides */
 const gensmodformats = [
-	'[Gen 9] ND Generations Draft [2026 Anniversary]',
-	'[Gen 9] ND Generations Draft [2026 Anniversary VGC]',
 	'[Gen 9] ND Generations Draft [Gen 4]',
 	'[Gen 9] ND Generations Draft [Gen 4 VGC]',
 	'[Gen 9] Petpet Battle II',
