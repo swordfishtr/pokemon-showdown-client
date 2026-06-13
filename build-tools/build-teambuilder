@@ -903,8 +903,8 @@ for (const format of Dex.formats.all()) {
 			[...ruleTable.keys()]
 			.flatMap((rule) =>
 				// This works for custom Pokemon, but for multi-formes you have to spell out all of them.
-				rule.startsWith('+pokemon:') ? rule.slice(9) :
-				rule.startsWith('+basepokemon:') ? dex.species.get(rule.slice(13)).formeOrder?.map(toID) :
+				/^[+*]pokemon:/.test(rule) ? rule.slice(9) :
+				/^[+*]basepokemon:/.test(rule) ? dex.species.get(rule.slice(13)).formeOrder?.map(toID) :
 				null
 			)
 			.filter((x) => x)
@@ -946,8 +946,8 @@ for (const format of Dex.formats.all()) {
 			[...ruleTable.keys()]
 			.flatMap((rule) =>
 				// This works for custom Pokemon, but for multi-formes you have to spell out all of them.
-				rule.startsWith('-pokemon:') ? rule.slice(9) :
-				rule.startsWith('-basepokemon:') ? dex.species.get(rule.slice(13)).formeOrder?.map(toID) :
+				/^-pokemon:/.test(rule) ? rule.slice(9) :
+				/^-basepokemon:/.test(rule) ? dex.species.get(rule.slice(13)).formeOrder?.map(toID) :
 				null
 			)
 			.filter((x) => x)
