@@ -742,7 +742,8 @@ const check = {
 			/natdex/,
 			/nationaldex/,
 			/^gen\d+nd/,
-			/^ver|^val|^acu|^cor/,
+			// /^ver|^val|^acu|^cor/,
+			/^rev|^col/,
 		].some((regex) => regex.test(id));
 	},
 	idToRowColors(id) {
@@ -751,7 +752,7 @@ const check = {
 		].includes(id)) {
 			return '35';
 		}
-		if (/(?<!re)generations/.test(id) || /^ver|^val|^acu|^cor/.test(id)) {
+		if (/(?<!re)generations/.test(id) || /^rev|^col/.test(id)) {
 			return 'gens';
 		}
 	},
