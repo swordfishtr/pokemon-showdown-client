@@ -922,6 +922,9 @@ for (const format of Dex.formats.all()) {
 
 			// week 3
 			'crabominablemega', 'cobalion', 'eldegoss', 'masquerain', 'dracovish', 'hydrapple', 'machamp', 'virizion', 'zarude', 'diancie', 'grimmsnarl', 'corviknight', 'dugtrioalola', 'kingambit', 'empoleon', 'cacturne', 'meganiummega', 'exploud', 'beautifly', 'rotom', 'boltund', 'venusaur', 'ogerponcornerstone',
+
+			// week 4
+			'Nidoking', 'Quagsire', 'Talonflame', 'Typhlosion-Hisui', 'Masquerain', 'Eldegoss', 'Togedemaru', 'Excadrill', 'Excadrill-Mega', 'Pelipper', 'Gyarados-Mega', 'Jumpluff', 'Meganium', 'Latias', 'Ampharos-Mega', 'Chansey', 'Sawsbuck', 'Dodrio', 'Porygon2',
 		].map((x) => [x, 1]));
 	}
 	if (format.id === 'gen9rdlvgc') {
@@ -933,6 +936,9 @@ for (const format of Dex.formats.all()) {
 
 			// week 3
 			'luxray', 'pachirisu', 'seismitoad', 'barraskewda', 'aromatisse', 'tapubulu', 'gliscor', 'cameruptmega', 'archaludon', 'charizardmegax', 'dodrio', 'medicham', 'grumpig', 'alakazammega', 'unfezant', 'delphoxmega', 'gastrodon', 'mamoswine', 'ragingbolt',
+
+			// week 4
+			'Carbink', 'Enamorus-Therian', 'Scovillain-Mega', 'Regirock', 'Heatmor', 'Volcanion', 'Golem', 'Stakataka', 'Frosmoth ', 'Iron Bundle', 'Blissey', 'Jumpluff', 'Runerigus', 'Empoleon', 'Bibarel', 'Poltchageist', 'Tsareena',
 		].map((x) => [x, 1]));
 	}
 
