@@ -957,7 +957,7 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 			room.battle.myPokemon = request.side.pokemon;
 			this.team = request.side.pokemon;
 		}
-		const confirm = room.battle.confirmCmd !== null && 'Please confirm.';
+		const confirm = room.battle.confirmCmd === null ? '' : ' Please confirm.';
 		switch (request.requestType) {
 		case 'move': {
 			const index = choices.index();
@@ -968,7 +968,7 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 				return <div class="controls">
 					<div class="whatdo">
 						{this.renderOldChoices(request, choices)}
-						{pokemon.name} should use <strong>{moveName}</strong> at where? {confirm}
+						{pokemon.name} should use <strong>{moveName}</strong> at where?{confirm}
 					</div>
 					<div class="switchcontrols">
 						<div class="switchmenu">
@@ -983,7 +983,7 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 			return <div class="controls">
 				<div class="whatdo">
 					{this.renderOldChoices(request, choices)}
-					What will <strong>{pokemon.name}</strong> do? {confirm}
+					What will <strong>{pokemon.name}</strong> do?{confirm}
 				</div>
 				<div class="movecontrols">
 					<h3 class="moveselect">Attack</h3>
@@ -1003,7 +1003,7 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 			return <div class="controls">
 				<div class="whatdo">
 					{this.renderOldChoices(request, choices)}
-					What will <strong>{pokemon.name}</strong> do? {confirm}
+					What will <strong>{pokemon.name}</strong> do?{confirm}
 				</div>
 				<div class="switchcontrols">
 					<h3 class="switchselect">Switch</h3>
@@ -1015,9 +1015,9 @@ class BattlePanel extends PSRoomPanel<BattleRoom> {
 				<div class="whatdo">
 					{choices.alreadySwitchingIn.length > 0 ? (
 						[<button data-cmd="/cancel" class="button"><i class="fa fa-chevron-left" aria-hidden></i> Back</button>,
-							` What about the rest of your team? ${confirm}`]
+							` What about the rest of your team?${confirm}`]
 					) : (
-						`How will you start the battle? ${confirm}`
+						`How will you start the battle?${confirm}`
 					)}
 				</div>
 				<div class="switchcontrols">
