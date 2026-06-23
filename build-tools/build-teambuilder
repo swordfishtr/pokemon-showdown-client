@@ -925,7 +925,10 @@ for (const format of Dex.formats.all()) {
 
 			// week 4
 			'Nidoking', 'Quagsire', 'Talonflame', 'Typhlosion-Hisui', 'Masquerain', 'Eldegoss', 'Togedemaru', 'Excadrill', 'Excadrill-Mega', 'Pelipper', 'Gyarados-Mega', 'Jumpluff', 'Meganium', 'Latias', 'Ampharos-Mega', 'Chansey', 'Sawsbuck', 'Dodrio', 'Porygon2',
-		].map((x) => [x, 1]));
+
+			// week 5
+			'landorus', 'gliscor', 'mandibuzz', 'absol', 'flygon', 'swampert', 'kommoo', 'buzzwole', 'ironvaliant', 'pachirisu', 'starmiemega', 'leavanny', 'grimmsnarl', 'ironjugulis', 'irontreads', 'morpeko', 'heliolisk', 'ursalunabloodmoon', 'seismitoad',
+		].map((x) => [toID(x), 1]));
 	}
 	if (format.id === 'gen9rdlvgc') {
 		gtt.whitelist = Object.fromEntries([
@@ -939,7 +942,10 @@ for (const format of Dex.formats.all()) {
 
 			// week 4
 			'Carbink', 'Enamorus-Therian', 'Scovillain-Mega', 'Regirock', 'Heatmor', 'Volcanion', 'Golem', 'Stakataka', 'Frosmoth ', 'Iron Bundle', 'Blissey', 'Jumpluff', 'Runerigus', 'Empoleon', 'Bibarel', 'Poltchageist', 'Tsareena',
-		].map((x) => [x, 1]));
+
+			// week 5
+			'audinomega', 'drampamega', 'sableye', 'decidueye', 'pyukumuku', 'dusknoir', 'tinkaton', 'weezinggalar', 'whimsicott', 'gardevoirmega', 'landorus', 'kilowattrel', 'whiscash', 'landorustherian', 'palafin', 'walrein', 'poliwrath', 'floatzel', 'greninja', 'gastrodon', 'ludicolo',
+		].map((x) => [toID(x), 1]));
 	}
 
 	if ([
