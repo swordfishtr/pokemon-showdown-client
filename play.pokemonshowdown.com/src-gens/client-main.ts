@@ -48,7 +48,7 @@ class PSPrefs extends PSStreamModel<string | null> {
 	/**
 	 * The theme to use. "system" matches the theme of the system accessing the client.
 	 */
-	theme: 'light' | 'dark' | 'system' = 'light';
+	theme: 'light' | 'dark' | 'system' = 'system';
 	/**
 	 * Disables animated GIFs, but keeps other animations enabled.
 	 * Workaround for a Chrome 64 bug with GIFs.
