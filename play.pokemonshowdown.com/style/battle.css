@@ -90,6 +90,10 @@ License: GPLv2
 .battle-log .inner {
 	padding: 4px 8px 0px 8px;
 }
+/* user list covers a little bit of text, so we pad more */
+.battle-log.hasuserlist .inner {
+	padding: 24px 8px 0px 8px;
+}
 .battle-log .inner-preempt {
 	padding: 0 8px 4px 8px;
 }
