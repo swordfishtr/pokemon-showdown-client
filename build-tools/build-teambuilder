@@ -928,6 +928,9 @@ for (const format of Dex.formats.all()) {
 
 			// week 5
 			'landorus', 'gliscor', 'mandibuzz', 'absol', 'flygon', 'swampert', 'kommoo', 'buzzwole', 'ironvaliant', 'pachirisu', 'starmiemega', 'leavanny', 'grimmsnarl', 'ironjugulis', 'irontreads', 'morpeko', 'heliolisk', 'ursalunabloodmoon', 'seismitoad',
+
+			// week 6
+			'Stunfisk', 'Thundurus', 'Minior', 'Okidogi', 'Marowak Alola', 'Slither Wing', 'Nidoking', 'Blastoise', 'Slaking', 'Raikou', 'Lanturn', 'Mudsdale', 'Quagsire', 'Omastar', 'Basculegion-F',
 		].map((x) => [toID(x), 1]));
 	}
 	if (format.id === 'gen9rdlvgc') {
@@ -945,6 +948,9 @@ for (const format of Dex.formats.all()) {
 
 			// week 5
 			'audinomega', 'drampamega', 'sableye', 'decidueye', 'pyukumuku', 'dusknoir', 'tinkaton', 'weezinggalar', 'whimsicott', 'gardevoirmega', 'landorus', 'kilowattrel', 'whiscash', 'landorustherian', 'palafin', 'walrein', 'poliwrath', 'floatzel', 'greninja', 'gastrodon', 'ludicolo',
+
+			// week 6
+			'Wyrdeer', 'Chatot', 'Grafaiai', 'Toucannon', 'Kartana', 'Cherrim', 'Gouging Fire', 'Ampharos Mega', 'Jumpluff', 'Sunflora', 'Shymin Sky', 'Celebi', 'Iron Leaves', 'Victreebel Mega', 'Kingdra', 'Cyclizar', 'Sceptile Mega', 'Dragonite', 'Guzzlord', 'Dracozolt', 'Exeggutor Alola', 'Shiftry', 'Urshifu', 'Chien-Pao ', 'Bellibolt', 'Ceruledge', 'Medicham', 'Incineroar', 'Zygarde-10% ', 'Straptor Mega', 'Squawkabilly', 'Iron Moth', 'Furfrou',
 		].map((x) => [toID(x), 1]));
 	}
 
