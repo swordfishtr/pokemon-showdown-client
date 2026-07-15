@@ -1,5 +1,5 @@
 {
-	"genesect": {},
+	"genesect": {"Choice Scarf": {"moves": ["U-turn", "Blaze Kick", "Iron Head", "Explosion"], "item": "Choice Scarf", "ability": "Download", "nature": "Jolly", "evs": {"hp": 4, "atk": 252, "spe": 252}}},
 	"palkiaorigin": {},
 	"lugia": {},
 	"metagrossmega": {},
