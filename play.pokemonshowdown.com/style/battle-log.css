@@ -654,6 +654,14 @@ input[type=range]:active::-webkit-slider-thumb {
 	color: #111111;
 }
 
+.pdlbingo {
+	display: flex;
+	flex-wrap: wrap;
+}
+.pdlbingo.ladder th {
+	text-align: center;
+}
+
 .hidden {
 	display: none;
 }

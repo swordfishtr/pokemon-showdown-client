@@ -281,7 +281,7 @@ export class ChatTournament extends PSModel {
 
 				this.info = info;
 				this.updates = {};
-				this.update();
+				this.room.update(null);
 				break;
 
 			case 'battlestart': {
