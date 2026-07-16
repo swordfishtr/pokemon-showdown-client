@@ -1,6 +1,6 @@
 {
-	"genesect": {"Physical Scarf": {"moves": ["U-turn", "Blaze Kick", "Iron Head", "Explosion"], "item": "Choice Scarf", "ability": "Download", "nature": "Jolly", "evs": {"hp": 4, "atk": 252, "spe": 252}}, "Special Scarf": {"moves": ["U-turn", "Ice Beam", "Thunderbolt", "Flamethrower"], "item": "Choice Scarf", "ability": "Download", "nature": "Naive", "evs": {"atk": 4, "spa": 252, "spe": 252}}},
-	"palkiaorigin": {},
+	"genesect": {"Physical Scarf": {"moves": ["U-turn", "Blaze Kick", "Iron Head", "Explosion"], "item": "Choice Scarf", "ability": "Download", "nature": "Jolly", "evs": {"hp": 4, "atk": 252, "spe": 252}}, "Special Scarf": {"moves": ["U-turn", "Ice Beam", "Thunderbolt", "Flamethrower"], "item": "Choice Scarf", "ability": "Download", "nature": "Naive", "evs": {"atk": 4, "spa": 252, "spe": 252}}, "Shift Gear": {"moves": ["Shift Gear", "Leech Life", "Iron Head", "Blaze Kick"], "item": "Life Orb", "ability": "Download", "nature": "Adamant", "evs": {"hp": 4, "atk": 252, "spe": 252}}},
+	"palkiaorigin": {"Wallbreaker": {"moves": ["Hydro Pump", "Spacial Rend", "Fire Blast", "Substitute"], "item": "Lustrous Globe", "ability": "Pressue", "nature": "Timid", "evs": {"hp": 4, "spa": 252, "spe": 252}}},
 	"lugia": {},
 	"metagrossmega": {},
 	"manectricmega": {},
