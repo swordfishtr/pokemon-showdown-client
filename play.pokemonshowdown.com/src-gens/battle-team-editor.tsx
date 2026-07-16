@@ -743,7 +743,7 @@ export class TeamEditorState extends PSModel {
 				// null means fetching
 				TeamEditorState.sampleSets[formatid] = null;
 				// fetch(...) then update
-				fetch(`https://generationssd.co.uk/data/sets/${formatid}.json`)
+				fetch(`https://generationssd.co.uk/data/sets/${formatid}.json?${Date.now()}`)
 					.then((res) => res.json())
 					.then((sets) => {
 						for (const x in sets) {
