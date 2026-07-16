@@ -717,15 +717,57 @@ export class TeamEditorState extends PSModel {
 	/** counting only non-cosmetic species in boxes. */
 	getUserSets(speciesName: string): Teams.PokemonSet[] {
 		let species = this.gtt.getFormatSpecies(speciesName);
-		if(species.cosmeticFormes?.includes(species.name)) {
+		if (species.cosmeticFormes?.includes(species.name)) {
 			species = this.gtt.getFormatSpecies(species.baseSpecies);
 		}
 		const cached = this.userSetsCache[this.gtt.formatid]?.[species.id];
-		if(cached) return cached;
+		if (cached) return cached;
 		const userSets = PS.teams.getUserSets(species.id, this.gtt.formatid);
 		this.userSetsCache[this.gtt.formatid] ??= {};
 		this.userSetsCache[this.gtt.formatid][species.id] = userSets;
 		return userSets;
+	}
+
+	/**
+	 * { formatid: { speciesid: { SetName: PokemonSet } } }
+	 * 
+	 * during fetch: { formatid: null }
+	 */
+	static readonly sampleSets: Record<ID, null | Record<ID, Record<string, Teams.PokemonSet>>> = {};
+
+	getSampleSets(speciesName: string): null | Teams.PokemonSet[] {
+		const { formatid } = this.gtt;
+		const format = TeamEditorState.sampleSets[formatid];
+		if (!format) {
+			if (format === undefined) {
+				// null means fetching
+				TeamEditorState.sampleSets[formatid] = null;
+				// fetch(...) then update
+				fetch(`https://generationssd.co.uk/data/sets/${formatid}.json`)
+					.then((res) => res.json())
+					.then((sets) => {
+						for (const x in sets) {
+							if (typeof sets[x] !== 'object') {
+								throw new Error(`JSON error in value of ${x}`);
+							}
+						}
+						TeamEditorState.sampleSets[formatid] = sets;
+						this.update();
+					})
+					.catch((err) => {
+						console.error(`Failed to load sample sets for ${formatid}:`, err);
+						TeamEditorState.sampleSets[formatid] = {};
+						this.update();
+					});
+			}
+			return null;
+		}
+		let species = this.gtt.getFormatSpecies(speciesName);
+		if (species.cosmeticFormes?.includes(species.name)) {
+			species = this.gtt.getFormatSpecies(species.baseSpecies);
+		}
+		return Object.entries(format[species.id] || {})
+			.map(([setName, set]) => ({ ...set, name: setName }));
 	}
 }
 
@@ -1598,20 +1640,13 @@ class TeamWizard extends preact.Component<{
 
 	/////
 
-	handleLoadUserSet = (ev: Event) => {
-		const index = parseInt((ev.target as HTMLButtonElement).value);
-		if(Number.isNaN(index)) return;
-		this.loadUserSet(index);
-	};
-	loadUserSet = (index: number) => {
+	loadSet(set: Teams.PokemonSet) {
 		const { editor } = this.props;
 		const { setIndex } = editor.innerFocus!;
-		const activeSet = editor.sets[setIndex];
-		const userSets = editor.getUserSets(activeSet.species);
-		const selectedSet = structuredClone(userSets[index]);
-		if (!selectedSet) return;
-		delete selectedSet.name;
-		editor.sets[setIndex] = selectedSet;
+		const clone = structuredClone(set);
+		if (!set) return;
+		delete clone.name;
+		editor.sets[setIndex] = clone;
 		editor.save();
 		this.props.forceUpdateParent();
 	}
@@ -1620,7 +1655,10 @@ class TeamWizard extends preact.Component<{
 		const { setIndex, type, index } = editor.innerFocus!;
 		const set = editor.sets[setIndex];
 		const cur = (i: number) => setIndex === i ? ' cur' : '';
-		const userSets = (set && type === 'ability') ? editor.getUserSets(set.species) : null;
+		const externalSets = (set && type === 'ability') ? {
+			box: editor.getUserSets(set.species),
+			sample: editor.getSampleSets(set.species),
+		} : null;
 		const mobileClass = TeamEditor.probablyMobile() ? ' mobile' : '';
 		const scrollResultsDesktop = mobileClass ? undefined: this.updateScroll;
 		const scrollResultsMobile = mobileClass ? this.updateScroll : undefined;
@@ -1661,13 +1699,13 @@ class TeamWizard extends preact.Component<{
 							search={editor.search} resultIndex={index} resultSlice={this.resultSlice}
 							onSelect={this.selectResult}
 						/>
-						{userSets && (
+						{externalSets && (
 							<div class="sample-sets">
 								<h3>Box sets</h3>
-								{userSets.length > 0 ? (
+								{externalSets.box.length > 0 ? (
 									<div>
-										{userSets.map((set, i) => (
-											<button class="button" value={i} style={{ width: '100%' }} onClick={this.handleLoadUserSet}>
+										{externalSets.box.map((set) => (
+											<button class="button" style={{ width: '100%' }} onClick={() => this.loadSet(set)}>
 												<small>
 													<PSIcon pokemon={set} /> {set.name || set.species}
 													{set.ability && ` [${set.ability}]`}{set.item && ` @ ${set.item}`}
@@ -1678,6 +1716,30 @@ class TeamWizard extends preact.Component<{
 									</div>
 								) : (
 									<div>No {set.species} sets found in boxes</div>
+								)}
+							</div>
+						)}
+						{externalSets && (
+							<div class="sample-sets">
+								<h3>Sample sets</h3>
+								{externalSets.sample ? (
+									externalSets.sample.length > 0 ? (
+										<div>
+											{externalSets.sample.map((set) => (
+												<button class="button" style={{ width: '100%' }} onClick={() => this.loadSet(set)}>
+													<small>
+														<PSIcon pokemon={set} /> {set.name || set.species}
+														{set.ability && ` [${set.ability}]`}{set.item && ` @ ${set.item}`}
+														{} - {set.moves.join(' / ') || '(No moves)'}
+													</small>
+												</button>
+											))}
+										</div>
+									) : (
+										<div>No {set.species} sample sets found</div>
+									)
+								) : (
+									<div>Loading {editor.gtt.format.name} sample sets ...</div>
 								)}
 							</div>
 						)}
