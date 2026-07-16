@@ -1,5 +1,5 @@
 {
-	"genesect": {"Choice Scarf": {"moves": ["U-turn", "Blaze Kick", "Iron Head", "Explosion"], "item": "Choice Scarf", "ability": "Download", "nature": "Jolly", "evs": {"hp": 4, "atk": 252, "spe": 252}}},
+	"genesect": {"Physical Scarf": {"moves": ["U-turn", "Blaze Kick", "Iron Head", "Explosion"], "item": "Choice Scarf", "ability": "Download", "nature": "Jolly", "evs": {"hp": 4, "atk": 252, "spe": 252}}}, {"Special Scarf": {"moves": ["U-turn", "Ice Beam", "Thunderbolt", "Flamethrower"], "item": "Choice Scarf", "ability": "Download", "nature": "Naive", "evs": {"atk": 4, "spa": 252, "spe": 252}}}
 	"palkiaorigin": {},
 	"lugia": {},
 	"metagrossmega": {},
