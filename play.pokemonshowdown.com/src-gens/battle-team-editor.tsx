@@ -767,7 +767,7 @@ export class TeamEditorState extends PSModel {
 			species = this.gtt.getFormatSpecies(species.baseSpecies);
 		}
 		return Object.entries(format[species.id] || {})
-			.map(([setName, set]) => ({ ...set, name: setName }));
+			.map(([setName, set]) => ({ ...set, species: species.name, name: setName }));
 	}
 }
 
