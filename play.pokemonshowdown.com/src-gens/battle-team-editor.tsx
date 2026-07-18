@@ -2734,8 +2734,8 @@ class ExportSetForm extends preact.Component<{
 		const el = this.base?.getElementsByTagName('textarea')[0];
 		if (el) {
 			el.value = this.export();
-			el.focus();
 			el.select();
+			el.focus();
 		}
 	}
 	render() {
@@ -2751,7 +2751,14 @@ class ExportSetForm extends preact.Component<{
 				<button class="button" value="pokepaste" disabled={this.format === 'pokepaste'} onClick={this.switch}>Pokepaste</button>
 				<button class="button" value="json" disabled={this.format === 'json'} onClick={this.switch}>JSON</button>
 				<button class="button" value="packed" disabled={this.format === 'packed'} onClick={this.switch}>Packed</button>
-				<textarea class="textbox teamtextbox"></textarea>
+				<br></br>
+				<textarea class="textbox teamtextbox" style={{
+					width: '300px',
+					height: '240px',
+					padding: '8px 8px 8px 8px',
+					'margin-top': '5px',
+				}}></textarea>
+				<br></br>
 				<button class="button" disabled={!format} onClick={this.import}>Import {format}</button>
 			</div>
 		);
