@@ -742,7 +742,6 @@ export class TeamEditorState extends PSModel {
 			if (format === undefined) {
 				// null means fetching
 				TeamEditorState.sampleSets[formatid] = null;
-				// fetch(...) then update
 				fetch(`https://generationssd.co.uk/data/sets/${formatid}.json?${Date.now()}`)
 					.then((res) => res.json())
 					.then((sets) => {
@@ -1107,7 +1106,6 @@ class TeamWizard extends preact.Component<{
 	editor: TeamEditorState, onChange?: () => void, forceUpdateParent: (callback?: () => void) => void,
 }> {
 	readonly PREFIX_SEARCHBOX = 'innerfocus-searchbox-';
-	readonly exportStates: boolean[] = [];
 	constructor() {
 		super(...arguments);
 		window.wizard = this;
@@ -1291,28 +1289,24 @@ class TeamWizard extends preact.Component<{
 	handleCopySet = (ev: Event) => {
 		const target = ev.currentTarget as HTMLButtonElement;
 		const i = parseInt(target.value);
-		if(Number.isNaN(i)) return;
+		if (Number.isNaN(i)) return;
 		this.copySet(i, false);
 		ev.preventDefault();
 	};
-	/** Export to OS clipboard */
-	handleExportSet = async (ev: Event) => {
+	handleExportSetPopup = async (ev: Event) => {
+		const { editor } = this.props;
 		const target = ev.currentTarget as HTMLButtonElement;
 		const i = parseInt(target.value);
-		const { editor } = this.props;
-		try {
-			await navigator.clipboard.writeText(Teams.exportSet(editor.sets[i], editor.gtt.dex, false).trim());
-			this.exportStates[i] = true;
-		}
-		catch {
-			this.exportStates[i] = false;
-		}
-		this.forceUpdate();
+		if (Number.isNaN(i)) return;
+		const popupid = `popup-${PS.popups.length}` as RoomID;
+		PS.popupJSX((<ExportSetForm editor={editor} index={i} close={() => PS.leave(popupid)}></ExportSetForm>), target);
+		ev.preventDefault();
+		ev.stopPropagation();
 	};
 	handleCutSet = (ev: Event) => {
 		const target = ev.currentTarget as HTMLButtonElement;
 		const i = parseInt(target.value);
-		if(Number.isNaN(i)) return;
+		if (Number.isNaN(i)) return;
 		this.copySet(i, true);
 		ev.preventDefault();
 	};
@@ -1364,16 +1358,6 @@ class TeamWizard extends preact.Component<{
 		while (set.moves.length < 4) set.moves.push('');
 		const overfull = set.moves.length > 4 ? ' overfull' : '';
 		const readOnlyClass = editor.readonly ? ' message-error' : '';
-		let exportStateClass = '';
-		let exportStateText = 'Export';
-		if (this.exportStates[i] === true) {
-			exportStateClass = ' success';
-			exportStateText = 'Exported!';
-		}
-		else if (this.exportStates[i] === false) {
-			exportStateClass = ' failure';
-			exportStateText = 'Failed!';
-		}
 
 		const cur = (t: SelectionType) => (
 			editor.readonly || (editor.innerFocus?.type === t && editor.innerFocus.setIndex === i) ? ' cur' : ''
@@ -1384,8 +1368,8 @@ class TeamWizard extends preact.Component<{
 				<button class="option" onClick={this.handleCopySet} value={i}>
 					<i class="fa fa-copy" aria-hidden></i> Copy
 				</button> {}
-				<button class={`option${exportStateClass}`} onClick={this.handleExportSet} value={i}>
-					<i class="fa fa-upload" aria-hidden></i> {exportStateText}
+				<button class="option" onClick={this.handleExportSetPopup} value={i}>
+					<i class="fa fa-upload" aria-hidden></i> Import/Export
 				</button> {}
 				<button class={`option${readOnlyClass}`} onClick={editor.innerFocus ? this.handleCutSetPopup : this.handleCutSet} value={i}>
 					<i class="fa fa-arrows" aria-hidden></i> Move
@@ -1754,7 +1738,6 @@ class TeamWizard extends preact.Component<{
 
 	changeFocus(input: Partial<TeamEditorState['innerFocus']>) {
 		const { editor } = this.props;
-		this.exportStates.length = 0;
 		if(!input) {
 			editor.innerFocus = null;
 			this.props.forceUpdateParent();
@@ -2690,4 +2673,87 @@ class DetailsForm extends preact.Component<{
 		this.props.onChange();
 		this.forceUpdate();
 	};
+}
+
+class ExportSetForm extends preact.Component<{
+	editor: TeamEditorState,
+	index: number,
+	close: () => void,
+}> {
+	format: 'pokepaste' | 'json' | 'packed' = 'pokepaste';
+	switch = (event: Event) => {
+		const format = (event.currentTarget as HTMLButtonElement).value;
+		this.format = format as 'pokepaste';
+		const el = this.base?.getElementsByTagName('textarea')[0];
+		if (el) {
+			el.value = this.export();
+		}
+		this.forceUpdate();
+	}
+	export(): string {
+		const { editor, index } = this.props;
+		const set = editor.sets[index];
+		switch (this.format) {
+			case 'pokepaste': return Teams.exportSet(set, editor.gtt.dex, false);
+			case 'json': return JSON.stringify(set);
+			case 'packed': return Teams.pack([set]);
+		}
+		return 'unknown export format';
+	}
+	import = () => {
+		const { editor, index } = this.props;
+		const text = this.base?.getElementsByTagName('textarea')[0]?.value;
+		if (typeof text === 'string') {
+			switch (this.format) {
+				case 'pokepaste':
+				case 'packed': {
+					try {
+						const [set] = Teams.import(text);
+						editor.sets[index] = set;
+					}
+					catch(err) {
+						console.error(err);
+					}
+					break;
+				}
+				case 'json': {
+					try {
+						const set = JSON.parse(text) as Teams.PokemonSet;
+						editor.sets[index] = set;
+					}
+					catch(err) {
+						console.error(err);
+					}
+					break;
+				}
+			}
+		}
+		this.props.close();
+	}
+	override componentDidMount() {
+		const el = this.base?.getElementsByTagName('textarea')[0];
+		if (el) {
+			el.value = this.export();
+			el.focus();
+			el.select();
+		}
+	}
+	render() {
+		const format = this.format === 'pokepaste'
+			? 'Pokepaste'
+			: this.format === 'json'
+				? 'JSON'
+				: this.format === 'packed'
+					? 'Packed'
+					: '';
+		return (
+			<div class="pad">
+				<button class="button" value="pokepaste" disabled={this.format === 'pokepaste'} onClick={this.switch}>Pokepaste</button>
+				<button class="button" value="json" disabled={this.format === 'json'} onClick={this.switch}>JSON</button>
+				<button class="button" value="packed" disabled={this.format === 'packed'} onClick={this.switch}>Packed</button>
+				<textarea class="textbox teamtextbox"></textarea>
+				<button class="button" disabled={!format} onClick={this.import}>Import {format}</button>
+			</div>
+		);
+	}
 }
