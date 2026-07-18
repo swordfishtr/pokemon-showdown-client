@@ -2687,6 +2687,8 @@ class ExportSetForm extends preact.Component<{
 		const el = this.base?.getElementsByTagName('textarea')[0];
 		if (el) {
 			el.value = this.export();
+			el.focus();
+			el.select();
 		}
 		this.forceUpdate();
 	}
@@ -2734,8 +2736,8 @@ class ExportSetForm extends preact.Component<{
 		const el = this.base?.getElementsByTagName('textarea')[0];
 		if (el) {
 			el.value = this.export();
-			el.select();
 			el.focus();
+			el.select();
 		}
 	}
 	render() {
