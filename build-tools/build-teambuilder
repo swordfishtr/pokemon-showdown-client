@@ -743,7 +743,8 @@ const check = {
 			/nationaldex/,
 			/^gen\d+nd/,
 			// /^ver|^val|^acu|^cor/,
-			/^rev|^col/,
+			// /^rev|^col/,
+			/^tru|^ide|^abs/,
 		].some((regex) => regex.test(id));
 	},
 	idToRowColors(id) {
@@ -752,7 +753,7 @@ const check = {
 		].includes(id)) {
 			return '35';
 		}
-		if (/(?<!re)generations/.test(id) || /^rev|^col/.test(id)) {
+		if (/(?<!re)generations/.test(id) || /^tru|^ide|^abs/.test(id)) {
 			return 'gens';
 		}
 	},
@@ -846,7 +847,7 @@ const flags = {
 
 // region TABLE PROPS
 
-// Formats that reuse another's table
+// Formats that reuse another format's table
 const reuse = {
 	'gen94v4duubo3': 'gen94v4duu',
 	'gen9ndvgclcbo3': 'gen9ndvgclc',
@@ -910,48 +911,6 @@ for (const format of Dex.formats.all()) {
 			.filter((x) => x)
 			.map((id) => [id, 1])
 		);
-	}
-
-	// We do these here because the formats have to explicitly unban the gen 9 future species.
-	if (format.id === 'gen9rdlsingles') {
-		gtt.whitelist = Object.fromEntries([
-			'alakazam', 'ambipom', 'annihilape', 'araquanid', 'arcanine', 'arctozolt', 'azelf', 'azumarill', 'banettemega', 'bastiodon', 'bellossom', 'bewear', 'blaziken', 'braviary', 'breloom', 'celesteela', 'centiskorch', 'chandelure', 'charizardmegay', 'chiyu', 'claydol', 'clefable', 'clodsire', 'cloyster', 'copperajah', 'cramorant', 'crawdaunt', 'cryogonal', 'donphan', 'drednaw', 'dubwool', 'emolga', 'espathra', 'exeggutor', 'fearow', 'feraligatrmega', 'fezandipiti', 'froslassmega', 'furret', 'galvantula', 'garchompmega', 'gastrodon', 'gholdengo', 'gogoat', 'golem', 'gothitelle', 'gourgeist', 'granbull', 'greattusk', 'gyarados', 'hatterene', 'haxorus', 'hippowdon', 'honchkrow', 'hypno', 'ironhands', 'irontreads', 'jirachi', 'jumpluff', 'kabutops', 'keldeo', 'keldeoresolute', 'kingdra', 'kleavor', 'leafeon', 'lilligant', 'lokix', 'lurantis', 'magneton', 'mamoswine', 'manectricmega', 'marowak', 'mawilemega', 'meloetta', 'meowsticf', 'meowsticm', 'mienshao', 'mrmime', 'munkidori', 'nidoking', 'noctowl', 'noivern', 'octillery', 'omastar', 'palossand', 'pincurchin', 'plusle', 'politoed', 'porygonz', 'primarina', 'purugly', 'quagsire', 'quaquaval', 'ragingbolt', 'raichu', 'regice', 'registeel', 'relicanth', 'reuniclus', 'revavroom', 'rhydon', 'rhyperior', 'sandaconda', 'sandslash', 'sandyshocks', 'sawk', 'scolipede', 'seviper', 'sigilyph', 'silvally', 'sinistcha', 'slaking', 'slowbromega', 'slowkinggalar', 'spidops', 'stakataka', 'suicune', 'swanna', 'tangrowth', 'tapufini', 'tapukoko', 'tapulele', 'terrakion', 'togetic', 'tornadus', 'tornadustherian', 'torterra', 'tropius', 'tyranitarmega', 'vanilluxe', 'victini', 'victreebel', 'vivillon', 'volbeat', 'walkingwake', 'weezinggalar', 'whimsicott', 'wigglytuff', 'wobbuffet', 'xatu', 'yanmega', 'zeraora', 'zygarde10',
-
-			// week 2
-			'carbink', 'cinccino', 'dragapult', 'farigiraf', 'garchompbase', 'glimmoramega', 'golembase', 'gumshoosbase', 'mamoswine', 'mantine', 'passimian', 'rotomfan', 'runerigus', 'sableyemega', 'screamtail', 'seismitoad', 'skeledirge', 'slaking', 'trevenant', 'volcanion',
-
-			// week 3
-			'crabominablemega', 'cobalion', 'eldegoss', 'masquerain', 'dracovish', 'hydrapple', 'machamp', 'virizion', 'zarude', 'diancie', 'grimmsnarl', 'corviknight', 'dugtrioalola', 'kingambit', 'empoleon', 'cacturne', 'meganiummega', 'exploud', 'beautifly', 'rotom', 'boltund', 'venusaur', 'ogerponcornerstone',
-
-			// week 4
-			'Nidoking', 'Quagsire', 'Talonflame', 'Typhlosion-Hisui', 'Masquerain', 'Eldegoss', 'Togedemaru', 'Excadrill', 'Excadrill-Mega', 'Pelipper', 'Gyarados-Mega', 'Jumpluff', 'Meganium', 'Latias', 'Ampharos-Mega', 'Chansey', 'Sawsbuck', 'Dodrio', 'Porygon2',
-
-			// week 5
-			'landorus', 'gliscor', 'mandibuzz', 'absol', 'flygon', 'swampert', 'kommoo', 'buzzwole', 'ironvaliant', 'pachirisu', 'starmiemega', 'leavanny', 'grimmsnarl', 'ironjugulis', 'irontreads', 'morpeko', 'heliolisk', 'ursalunabloodmoon', 'seismitoad',
-
-			// week 6
-			'Stunfisk', 'Thundurus', 'Minior', 'Okidogi', 'Marowak Alola', 'Slither Wing', 'Nidoking', 'Blastoise', 'Slaking', 'Raikou', 'Lanturn', 'Mudsdale', 'Quagsire', 'Omastar', 'Basculegion-F',
-		].map((x) => [toID(x), 1]));
-	}
-	if (format.id === 'gen9rdlvgc') {
-		gtt.whitelist = Object.fromEntries([
-			'alakazam', 'ambipom', 'annihilape', 'appletun', 'araquanid', 'arcanine', 'arctozolt', 'audinomega', 'azelf', 'banettemega', 'bastiodon', 'bewear', 'blaziken', 'braviary', 'breloom', 'celesteela', 'centiskorch', 'chandelure', 'chandeluremega', 'charizardmegay', 'chiyu', 'claydol', 'clefable', 'clodsire', 'cloyster', 'comfey', 'copperajah', 'corviknight', 'cramorant', 'crawdaunt', 'cryogonal', 'decidueyehisui', 'dedenne', 'dragapult', 'drednaw', 'dubwool', 'duraludon', 'emolga', 'empoleon', 'espathra', 'fearow', 'fezandipiti', 'fletchinder', 'florges', 'froslassmega', 'furret', 'galvantula', 'gengar', 'gholdengo', 'gogoat', 'golurk', 'gothitelle', 'gourgeist', 'granbull', 'hatterene', 'haxorus', 'hippowdon', 'ironcrown', 'ironhands', 'ironjugulis', 'jirachi', 'kabutops', 'keldeo', 'kleavor', 'leafeon', 'ledian', 'liepard', 'lilligant', 'lokix', 'lurantis', 'magearna', 'magmortar', 'magneton', 'mawilemega', 'meloetta', 'meowsticf', 'meowsticm', 'metagrossmega', 'mienshao', 'munkidori', 'nidoking', 'noctowl', 'noivern', 'octillery', 'oricorio', 'palossand', 'pincurchin', 'politoed', 'porygonz', 'quaquaval', 'raichu', 'rapidash', 'regice', 'registeel', 'reuniclus', 'revavroom', 'rhydon', 'rhyperior', 'riolu', 'sandaconda', 'sandyshocks', 'sawk', 'seviper', 'sigilyph', 'silvally', 'sinistcha', 'skarmory', 'slowbromega', 'spidops', 'stunfiskgalar', 'suicune', 'swanna', 'sylveon', 'tapufini', 'tapukoko', 'taurospaldeablaze', 'togetic', 'tornadus', 'tornadustherian', 'torterra', 'trevenant', 'tropius', 'typhlosionhisui', 'tyranitarmega', 'vanilluxe', 'victreebel', 'vivillon', 'volbeat', 'volcarona', 'wailord', 'walkingwake', 'whimsicott', 'wigglytuff', 'wochien', 'wobbuffet', 'wormadamtrash', 'xatu', 'zapdosgalar', 'zeraora',
-
-			// week 2
-			'chimechomega', 'diggersby', 'floetteeternal', 'forretress', 'garchomp', 'houndstone', 'hydrapple', 'indeedeef', 'kingambit', 'mimikyu', 'ninetalesalola', 'poltchageist', 'sawsbuck', 'skarmorymega',
-
-			// week 3
-			'luxray', 'pachirisu', 'seismitoad', 'barraskewda', 'aromatisse', 'tapubulu', 'gliscor', 'cameruptmega', 'archaludon', 'charizardmegax', 'dodrio', 'medicham', 'grumpig', 'alakazammega', 'unfezant', 'delphoxmega', 'gastrodon', 'mamoswine', 'ragingbolt',
-
-			// week 4
-			'Carbink', 'Enamorus-Therian', 'Scovillain-Mega', 'Regirock', 'Heatmor', 'Volcanion', 'Golem', 'Stakataka', 'Frosmoth ', 'Iron Bundle', 'Blissey', 'Jumpluff', 'Runerigus', 'Empoleon', 'Bibarel', 'Poltchageist', 'Tsareena',
-
-			// week 5
-			'audinomega', 'drampamega', 'sableye', 'decidueye', 'pyukumuku', 'dusknoir', 'tinkaton', 'weezinggalar', 'whimsicott', 'gardevoirmega', 'landorus', 'kilowattrel', 'whiscash', 'landorustherian', 'palafin', 'walrein', 'poliwrath', 'floatzel', 'greninja', 'gastrodon', 'ludicolo',
-
-			// week 6
-			'Wyrdeer', 'Chatot', 'Grafaiai', 'Toucannon', 'Kartana', 'Cherrim', 'Gouging Fire', 'Ampharos Mega', 'Jumpluff', 'Sunflora', 'Shymin Sky', 'Celebi', 'Iron Leaves', 'Victreebel Mega', 'Kingdra', 'Cyclizar', 'Sceptile Mega', 'Dragonite', 'Guzzlord', 'Dracozolt', 'Exeggutor Alola', 'Shiftry', 'Urshifu', 'Chien-Pao ', 'Bellibolt', 'Ceruledge', 'Medicham', 'Incineroar', 'Zygarde-10% ', 'Straptor Mega', 'Squawkabilly', 'Iron Moth', 'Furfrou',
-		].map((x) => [toID(x), 1]));
 	}
 
 	if ([
@@ -1775,6 +1734,36 @@ for (const format of Dex.formats.all()) {
 			'watmelberry',
 			'pamtreberry',
 			'durinberry',
+		];
+	}
+	if ([
+		'gen9ndgenerationsdraftgen5',
+		'gen9ndgenerationsdraftgen5vgc',
+	].includes(format.id) ||
+	['[TRU] ', '[IDE] ', '[ABS] '].some((x => format.name.startsWith(x)))) {
+		gtt.newitems = [
+			'belueberry',
+			'watmelberry',
+			'pamtreberry',
+			'durinberry',
+			'buggem',
+			'darkgem',
+			'dragongem',
+			'electricgem',
+			'fairygem',
+			'fightinggem',
+			'firegem',
+			'flyinggem',
+			'ghostgem',
+			'grassgem',
+			'groundgem',
+			'icegem',
+			'normalgem',
+			'poisongem',
+			'psychicgem',
+			'rockgem',
+			'steelgem',
+			'watergem',
 		];
 	}
 	if (format.id === 'gen9nd35pokesmegaapril') {
