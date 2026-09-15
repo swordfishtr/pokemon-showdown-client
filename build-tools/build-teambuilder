@@ -695,9 +695,9 @@ for (const mod of sidemods) {
 const check = {
 	idToMod(id) {
 		if ([
-			'gen9rdlsingles',
-			'gen9rdlvgc',
-		].includes(id)) {
+			/^gen9ndgenerationsdraftgen5/,
+			/^tru|^ide|^abs/,
+		].some((regex) => regex.test(id))) {
 			return 'champions';
 		}
 		const formatsStartingWithNumber = [
@@ -730,7 +730,6 @@ const check = {
 		if([
 			/bss/,
 			/vgc/,
-			/rdl/,
 		].some((regex) => regex.test(id))) {
 			return 50;
 		}
@@ -875,12 +874,10 @@ for (const format of Dex.formats.all()) {
 
 	gtt.natdex = check.idToNatdex(format.id) ? gtt.mod : null;
 	if ([
-		'gen335pokesperfectb1',
-		'gen535pokesperfectb2',
-		'gen535pokesperfectb3',
-		'gen9rdlsingles',
-		'gen9rdlvgc',
-	].includes(format.id)) {
+		/^gen335pokesperfectb/,
+		/^gen9ndgenerationsdraftgen5/,
+		/^tru|^ide|^abs/,
+	].some((regex) => regex.test(format.id))) {
 		gtt.natdex = 'gen9';
 	}
 
@@ -1769,11 +1766,6 @@ for (const format of Dex.formats.all()) {
 	if (format.id === 'gen9nd35pokesmegaapril') {
 		gtt.newitems = [
 			'alomowhat',
-		];
-	}
-	if (format.id === 'gen9rdlsingles' || format.id === 'gen9rdlvgc') {
-		gtt.newitems = [
-			'Raichunite X', 'Raichunite Y', 'Clefablite', 'Victreebelite', 'Starminite', 'Dragoninite', 'Meganiumite', 'Feraligite', 'Skarmorite', 'Chimechite', 'Absolite Z', 'Staraptite', 'Garchompite Z', 'Lucarionite Z', 'Froslassite', 'Heatranite', 'Darkranite', 'Emboarite', 'Excadrite', 'Scolipite', 'Scraftinite', 'Eelektrossite', 'Chandelurite', 'Golurkite', 'Chesnaughtite', 'Delphoxite', 'Greninjite', 'Pyroarite', 'Floettite', 'Meowsticite', 'Meowsticite', 'Malamarite', 'Barbaracite', 'Dragalgite', 'Hawluchanite', 'Zygardite', 'Crabominite', 'Golisopite', 'Drampanite', 'Magearnite', 'Magearnite', 'Zeraorite', 'Falinksite', 'Scovillainite', 'Glimmoranite', 'Tatsugirinite', 'Tatsugirinite', 'Tatsugirinite', 'Baxcalibrite',
 		];
 	}
 
