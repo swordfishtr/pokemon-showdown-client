@@ -730,6 +730,8 @@ const check = {
 		if([
 			/bss/,
 			/vgc/,
+			/^gen9ndgenerationsdraftgen5/,
+			/^tru|^ide|^abs/,
 		].some((regex) => regex.test(id))) {
 			return 50;
 		}
