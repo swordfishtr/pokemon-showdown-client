@@ -917,7 +917,7 @@ export class DexSearch {
 
 abstract class BattleTypedSearch<T extends SearchType> {
 	searchType: T;
-	
+
 	/** Metadata for format, mod, dex */
 	readonly gtt: GTTIndex;
 
@@ -1870,53 +1870,59 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 
 		const ref35Moves = this.gtt.format.moves;
 
-		let learnsetid = this.firstLearnsetid(species.id);
 		let moves: string[] = [];
 		let sketchMoves: string[] = [];
 		let sketch = false;
 		let gen = `${dex.gen}`;
 		const minGenCode: { [gen: number]: string } = { 6: 'p', 7: 'q', 8: 'g', 9: 'a' };
 
-		let parent: AnyObject;
-		if (this.gtt.format.natdex) {
-			parent = GensTeambuilderTable;
+		const learnsetsUnion = [
+			this.gtt.format.natdex
+				? GensTeambuilderTable
+				: this.gtt.format.learnsets
+					? this.gtt.format
+					: this.gtt.mod.learnsets
+						? this.gtt.mod
+						: GensTeambuilderTable
+		];
+		if (this.gtt.format.natdex && this.gtt.format.mod === 'champions') {
+			// natdex champions, meaning a union of natdex and champions learnsets.
+			// like RDL and Gens Draft 5
+			learnsetsUnion.push(this.gtt.mod);
 		}
-		else {
-			if (this.gtt.format.learnsets) parent = this.gtt.format;
-			else if (this.gtt.mod.learnsets) parent = this.gtt.mod;
-			else parent = GensTeambuilderTable;
-		}
-		
-		while (learnsetid) {
-			let learnset = parent.learnsets[learnsetid];
-			if (learnset) {
-				for (let moveid in learnset) {
-					if (moves.includes(moveid)) continue;
-					let learnsetEntry = learnset[moveid];
-					if (regionBornLegality && !learnsetEntry.includes(minGenCode[dex.gen])) {
-						continue;
+		for (const learnsetsContainer of learnsetsUnion) {
+			let learnsetid = this.firstLearnsetid(species.id);
+			while (learnsetid) {
+				let learnset = learnsetsContainer.learnsets[learnsetid];
+				if (learnset) {
+					for (let moveid in learnset) {
+						if (moves.includes(moveid)) continue;
+						let learnsetEntry = learnset[moveid];
+						if (regionBornLegality && !learnsetEntry.includes(minGenCode[dex.gen])) {
+							continue;
+						}
+						if (
+							this.eggMovesOnly(learnsetid, species.id) &&
+							(!learnsetEntry.includes('e') || dex.gen !== 9)
+						) {
+							continue;
+						}
+						const move = this.gtt.getFormatMove(moveid, dex);
+						if (
+							!learnsetEntry.includes(gen) &&
+							(!isTradebacks ? true : !(move.gen <= dex.gen && learnsetEntry.includes(`${dex.gen + 1}`)))
+						) {
+							continue;
+						}
+						if (!this.gtt.format.natdex && move.isNonstandard === "Past") {
+							continue;
+						}
+						moves.push(moveid);
+						if (moveid === 'sketch') sketch = true;
 					}
-					if (
-						this.eggMovesOnly(learnsetid, species.id) &&
-						(!learnsetEntry.includes('e') || dex.gen !== 9)
-					) {
-						continue;
-					}
-					const move = this.gtt.getFormatMove(moveid, dex);
-					if (
-						!learnsetEntry.includes(gen) &&
-						(!isTradebacks ? true : !(move.gen <= dex.gen && learnsetEntry.includes(`${dex.gen + 1}`)))
-					) {
-						continue;
-					}
-					if (!this.gtt.format.natdex && move.isNonstandard === "Past") {
-						continue;
-					}
-					moves.push(moveid);
-					if (moveid === 'sketch') sketch = true;
 				}
+				learnsetid = this.nextLearnsetid(learnsetid, species.id, true);
 			}
-			learnsetid = this.nextLearnsetid(learnsetid, species.id, true);
 		}
 
 		if (sketch || isHackmons) {
