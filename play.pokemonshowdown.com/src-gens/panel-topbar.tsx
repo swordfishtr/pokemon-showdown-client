@@ -225,7 +225,7 @@ export class PSHeader extends preact.Component {
 			<div class="scrollable-part">
 				<img
 					class="logo"
-					src={"https://generationssd.co.uk/pokemonshowdownbeta.png"}
+					src={"https://generationssd.co.za/pokemonshowdownbeta.png"}
 					alt="Pokémon Showdown! (beta)"
 					height="50"
 				/>
@@ -266,7 +266,7 @@ export class PSHeader extends preact.Component {
 					<li>
 						<img
 							class="logo"
-							src={"https://generationssd.co.uk/pokemonshowdownbeta.png"}
+							src={"https://generationssd.co.za/pokemonshowdownbeta.png"}
 							alt="Pokémon Showdown! (beta)"
 							height="48"
 						/>

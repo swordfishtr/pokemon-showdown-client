@@ -150,7 +150,7 @@ export class BattleRoom extends ChatRoom {
 
 	loadReplay() {
 		const replayid = this.id.slice(7);
-		Net(`https://replay.generationssd.co.uk/${replayid}.json`).get().catch().then(data => {
+		Net(`https://replay.generationssd.co.za/${replayid}.json`).get().catch().then(data => {
 			try {
 				const replay = JSON.parse(data);
 				this.title = `[${replay.format}] ${replay.players.join(' vs. ')}`;

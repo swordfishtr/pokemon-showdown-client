@@ -28,8 +28,7 @@ else if(window.top) {
 
 	const opener = window.top;
 	const allowedOrigins = [
-		'https://generationssd.co.uk',
-		'https://wip.generationssd.co.uk',
+		'https://generationssd.co.za',
 	];
 	// This will throw if not changed before using opener.postMessage()
 	let origin = '';

@@ -182,7 +182,7 @@ export const PSBackground = new class extends PSStreamModel<string | null> {
 
 		bgUrl ||= (bgid === 'solidblue'
 			? '#344b6c'
-			: `https://generationssd.co.uk/fx/client-bg-${bgid}.${pngbg.includes(bgid) ? 'png' : 'jpg'}`);
+			: `https://generationssd.co.za/fx/client-bg-${bgid}.${pngbg.includes(bgid) ? 'png' : 'jpg'}`);
 
 		// April Fool's 2016 - Digimon theme
 		// bgid = 'digimon';

@@ -216,7 +216,7 @@ PSConnection.connect();
  */
 export const LoginManager = new class {
 
-	readonly child = 'https://login.generationssd.co.uk';
+	readonly child = 'https://login.generationssd.co.za';
 	readonly encoder = new TextEncoder();
 	readonly decoder = new TextDecoder();
 
@@ -224,7 +224,7 @@ export const LoginManager = new class {
 	count = 0;
 
 	/**
-	 * Initial handshake with login.generationssd.co.uk
+	 * Initial handshake with login.generationssd.co.za
 	 * Some websocket messages will come before the LoginManager iframe loads.
 	 * Await this if you don't want your request to be voided as a result of that.
 	 */

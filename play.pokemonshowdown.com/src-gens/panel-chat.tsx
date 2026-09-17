@@ -1168,7 +1168,7 @@ export class ChatTextEntry extends preact.Component<{
 		if (room.connected === 'client-only' && room.id.startsWith('battle-')) {
 			return <div
 				class="chat-log-add hasuserlist" onClick={this.focusIfNoSelection} style={{ left: this.props.left || 0 }}
-			><CopyableURLBox url={`https://replay.generationssd.co.uk/${room.id.slice(7)}`} /></div>;
+			><CopyableURLBox url={`https://replay.generationssd.co.za/${room.id.slice(7)}`} /></div>;
 		}
 		return <div
 			class="chat-log-add hasuserlist" onClick={this.focusIfNoSelection} style={{ left: this.props.left || 0 }}

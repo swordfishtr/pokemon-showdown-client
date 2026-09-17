@@ -206,7 +206,7 @@ export class BattleRoom extends ChatRoom {
 	override receiveLine(args: Args) {
 		switch (args[0]) {
 		case 'noinit': {
-			const url = `https://replay.generationssd.co.uk/${this.id.slice(7)}`;
+			const url = `https://replay.generationssd.co.za/${this.id.slice(7)}`;
 			this.loadReplay(url);
 			return;
 		}
