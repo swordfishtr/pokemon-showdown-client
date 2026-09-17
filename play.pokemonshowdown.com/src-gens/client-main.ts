@@ -19,6 +19,7 @@ import { BattleTextParser, type Args } from './battle-text-parser';
 import type { BattleRoom } from './panel-battle';
 import { Teams } from './battle-teams';
 import { DexSearch } from './battle-dex-search';
+import preact from '../js/lib/preact';
 
 declare const BattleTextAFD: any;
 declare const BattleTextNotAFD: any;
@@ -628,7 +629,7 @@ class PSUser extends PSStreamModel<PSLoginState | null> {
 		PS.connection?.disconnect();
 		// Hog requested an extra message here as we transfer to the .za domain
 		if (location.host === 'generationssd.co.uk') {
-			PS.alert(`BACKUP YOUR TEAMS AND TRANSFER THEM TO\n<a href="https://generationssd.co.za/">https://generationssd.co.za/</a>\n\nYou have been logged out and disconnected.\n\nIf you wanted to change your name while staying connected, use the 'Change Name' button or the '/nick' command.`);
+			PS.alert(`BACKUP YOUR TEAMS AND TRANSFER THEM TO\nhttps://generationssd.co.za/\n\nYou have been logged out and disconnected.\n\nIf you wanted to change your name while staying connected, use the 'Change Name' button or the '/nick' command.`);
 		}
 		else {
 			PS.alert("You have been logged out and disconnected.\n\nIf you wanted to change your name while staying connected, use the 'Change Name' button or the '/nick' command.");
